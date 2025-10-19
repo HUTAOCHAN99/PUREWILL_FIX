@@ -1,13 +1,13 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:purewill/screen/auth/newpassword_screen.dart';
-import 'package:purewill/screen/home/home_screen.dart';
-import 'package:purewill/services/auth_service.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:purewill/ui/auth/auth_provider.dart';
+import 'package:purewill/ui/auth/screen/newpassword_screen.dart';
+import 'package:purewill/ui/auth/view_model/auth_view_model.dart';
 
 enum VerificationType { registration, resetPassword }
 
-class VerificationScreen extends StatefulWidget {
+class VerificationScreen extends ConsumerStatefulWidget {
   final String email;
   final VerificationType type;
 
@@ -18,16 +18,15 @@ class VerificationScreen extends StatefulWidget {
   });
 
   @override
-  State<VerificationScreen> createState() => _VerificationScreenState();
+  ConsumerState<VerificationScreen> createState() => _VerificationScreenState();
 }
 
-class _VerificationScreenState extends State<VerificationScreen> {
+class _VerificationScreenState extends ConsumerState<VerificationScreen> {
   final List<TextEditingController> _controllers = List.generate(
     6,
     (index) => TextEditingController(),
   );
   final List<FocusNode> _focusNodes = List.generate(6, (index) => FocusNode());
-  final AuthService _authService = AuthService();
 
   int _countdown = 30;
   bool _isCountdownActive = true;
@@ -64,10 +63,85 @@ class _VerificationScreenState extends State<VerificationScreen> {
     });
   }
 
+  void _showSnackBar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message), duration: const Duration(seconds: 4)),
+    );
+  }
+
+  String? getCode() {
+    final code = _controllers.map((controller) => controller.text).join();
+    if (code.length != 6) {
+      _showSnackBar("Please enter the complete 6-digit code");
+      return null;
+    }
+    return code;
+  }
+
+  void _resendCode() async {
+    if (!_isCountdownActive) {
+      _startCountdown();
+      try {
+        if (widget.type == VerificationType.registration) {
+          ref.read(authNotifierProvider.notifier).resendSignupOTP(widget.email);
+        } else {
+          ref
+              .read(authNotifierProvider.notifier)
+              .resendPasswordResetOtp(widget.email);
+        }
+      } catch (e) {
+        _showSnackBar("Failed to resend code: $e");
+      }
+    }
+  }
+
+  Future<void> verifCode() async {
+    final otp = getCode();
+    if (otp != null) {
+      if (widget.type == VerificationType.registration) {
+        ref
+            .read(authNotifierProvider.notifier)
+            .verifySignupOtp(widget.email, otp);
+      } else {
+        ref
+            .read(authNotifierProvider.notifier)
+            .verifyPasswordResetOtp(widget.email, otp);
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _timer.cancel();
+    for (var controller in _controllers) controller.dispose();
+    for (var focusNode in _focusNodes) focusNode.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
+    ref.listen<AuthState>(authNotifierProvider, (previous, next) {
+      if (next.status == AuthStatus.failure) {
+        _showSnackBar("verifikasi Gagal: ${next.errorMessage}");
+        // Navigator.pushReplacementNamed(context, '/login');
+      } else if (next.status == AuthStatus.success && next.user != null) {
+        if (widget.type == VerificationType.registration) {
+          _showSnackBar("signup password Berhasil!");
+        } else {
+          _showSnackBar("reset password Berhasil!");
+        }
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (context) =>
+                NewPasswordScreen(key: widget.key, email: widget.email),
+          ),
+        );
+      }
+    });
     final screenHeight = MediaQuery.of(context).size.height;
     final screenWidth = MediaQuery.of(context).size.width;
+    final authState = ref.watch(authNotifierProvider);
+    final isLoading = authState.status == AuthStatus.loading;
 
     return Scaffold(
       body: Container(
@@ -311,8 +385,10 @@ class _VerificationScreenState extends State<VerificationScreen> {
                                               _focusNodes[index - 1]
                                                   .requestFocus();
                                             }
-                                            if (_isAllFieldsFilled())
-                                              _verifyCode();
+
+                                            if (_isAllFieldsFilled()) {
+                                              verifCode();
+                                            }
                                           },
                                         ),
                                       );
@@ -327,7 +403,11 @@ class _VerificationScreenState extends State<VerificationScreen> {
                               SizedBox(
                                 width: double.infinity,
                                 child: ElevatedButton(
-                                  onPressed: _isVerifying ? null : _verifyCode,
+                                  onPressed: isLoading
+                                      ? null
+                                      : () async {
+                                          await verifCode();
+                                        },
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: Colors.black,
                                     foregroundColor: Colors.white,
@@ -446,95 +526,64 @@ class _VerificationScreenState extends State<VerificationScreen> {
   bool _isAllFieldsFilled() =>
       _controllers.every((controller) => controller.text.isNotEmpty);
 
-  void _verifyCode() async {
-    final code = _controllers.map((controller) => controller.text).join();
-    if (code.length != 6) {
-      _showSnackBar("Please enter the complete 6-digit code");
-      return;
-    }
+  // void _verifyCode() async {
+  //   final code = _controllers.map((controller) => controller.text).join();
+  //   if (code.length != 6) {
+  //     _showSnackBar("Please enter the complete 6-digit code");
+  //     return;
+  //   }
 
-    setState(() => _isVerifying = true);
+  //   setState(() => _isVerifying = true);
 
-    try {
-      if (widget.type == VerificationType.registration) {
-        // VERIFIKASI OTP UNTUK SIGNUP
-        final response = await _authService.verifySignupOtp(
-          email: widget.email,
-          otp: code,
-        );
+  //   try {
+  //     if (widget.type == VerificationType.registration) {
+  //       // VERIFIKASI OTP UNTUK SIGNUP
+  //       final response = await _authService.verifySignupOtp(
+  //         email: widget.email,
+  //         otp: code,
+  //       );
 
-        if (response.user != null) {
-          _showSnackBar(
-            "Email verified successfully! Your account is now active.",
-          );
+  //       if (response.user != null) {
+  //         _showSnackBar(
+  //           "Email verified successfully! Your account is now active.",
+  //         );
 
-          Navigator.pushAndRemoveUntil(
-            context,
-            MaterialPageRoute(builder: (context) => HomeScreen()),
-            (route) => false,
-          );
-        }
-      } else {
-        // VERIFIKASI OTP UNTUK RESET PASSWORD
-        final response = await _authService.verifyPasswordResetOtp(
-          email: widget.email,
-          otp: code,
-        );
+  //         Navigator.pushAndRemoveUntil(
+  //           context,
+  //           MaterialPageRoute(builder: (context) => HomeScreen()),
+  //           (route) => false,
+  //         );
+  //       }
+  //     } else {
+  //       // VERIFIKASI OTP UNTUK RESET PASSWORD
+  //       final response = await _authService.verifyPasswordResetOtp(
+  //         email: widget.email,
+  //         otp: code,
+  //       );
 
-        if (response.user != null) {
-          _showSnackBar(
-            "Verification successful! You can now set your new password.",
-          );
+  //       if (response.user != null) {
+  //         _showSnackBar(
+  //           "Verification successful! You can now set your new password.",
+  //         );
 
-          // Navigate to new password screen
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(
-              builder: (context) => NewPasswordScreen(
-                email: widget.email,
-                verificationCode: code,
-              ),
-            ),
-          );
-        }
-      }
-    } on AuthException catch (e) {
-      _showSnackBar("Verification failed: ${e.message}");
-    } catch (e) {
-      _showSnackBar("An error occurred during verification");
-    } finally {
-      if (mounted) setState(() => _isVerifying = false);
-    }
-  }
-
-  void _resendCode() async {
-    if (!_isCountdownActive) {
-      _startCountdown();
-      try {
-        if (widget.type == VerificationType.registration) {
-          await _authService.resendSignupOtp(widget.email);
-          _showSnackBar("Verification code has been resent to ${widget.email}");
-        } else {
-          await _authService.resendPasswordResetOtp(widget.email);
-          _showSnackBar("Reset code has been resent to ${widget.email}");
-        }
-      } catch (e) {
-        _showSnackBar("Failed to resend code: $e");
-      }
-    }
-  }
-
-  void _showSnackBar(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message), duration: const Duration(seconds: 4)),
-    );
-  }
-
-  @override
-  void dispose() {
-    _timer.cancel();
-    for (var controller in _controllers) controller.dispose();
-    for (var focusNode in _focusNodes) focusNode.dispose();
-    super.dispose();
-  }
+  //         // Navigate to new password screen
+  //         Navigator.pushReplacement(
+  //           context,
+  //           MaterialPageRoute(
+  //             builder: (context) => NewPasswordScreen(
+  //               email: widget.email,
+  //               verificationCode: code,
+  //             ),
+  //           ),
+  //         );
+  //       }
+  //     }
+  //   } on AuthException catch (e) {
+  //     _showSnackBar("Verification failed: ${e.message}");
+  //   } catch (e) {
+  //     _showSnackBar("An error occurred during verification");
+  //   } finally {
+  //     if (mounted) setState(() => _isVerifying = false);
+  //   }
+  // }
 }

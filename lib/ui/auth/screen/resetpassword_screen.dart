@@ -1,37 +1,65 @@
 import 'package:flutter/material.dart';
-import 'package:purewill/screen/auth/login_screen.dart';
-import 'package:purewill/services/auth_service.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:purewill/ui/auth/auth_provider.dart';
+import 'package:purewill/ui/auth/screen/verif_screen.dart';
+import 'package:purewill/ui/auth/screen/login_screen.dart';
+import 'package:purewill/ui/auth/view_model/auth_view_model.dart';
 
-class NewPasswordScreen extends StatefulWidget {
-  final String email;
-  final String verificationCode;
-
-  const NewPasswordScreen({
-    super.key,
-    required this.email,
-    required this.verificationCode,
-  });
+class ResetPasswordScreen extends ConsumerStatefulWidget {
+  const ResetPasswordScreen({super.key});
 
   @override
-  State<NewPasswordScreen> createState() => _NewPasswordScreenState();
+  ConsumerState<ResetPasswordScreen> createState() =>
+      _ResetPasswordScreenState();
 }
 
-class _NewPasswordScreenState extends State<NewPasswordScreen> {
-  final TextEditingController _newPasswordController = TextEditingController();
-  final TextEditingController _confirmPasswordController =
-      TextEditingController();
-  bool _obscureNewPassword = true;
-  bool _obscureConfirmPassword = true;
-  bool _isLoading = false;
-
-  final AuthService _authService = AuthService();
+class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
+  final TextEditingController _emailController = TextEditingController();
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
 
   @override
+  void initState() {
+    super.initState();
+  }
+
+  void _showSnackBar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        duration: const Duration(seconds: 3),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    ref.listen<AuthState>(authNotifierProvider, (previous, next) {
+      if (next.status == AuthStatus.failure) {
+        _showSnackBar("reset password Gagal: ${next.errorMessage}");
+      } else if (next.status == AuthStatus.success) {
+        _showSnackBar("reset password Berhasil!");
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (context) => VerificationScreen(
+              email: _emailController.text.trim(),
+              type: VerificationType.resetPassword,
+            ),
+          ),
+        );
+      }
+    });
+
     final screenHeight = MediaQuery.of(context).size.height;
     final screenWidth = MediaQuery.of(context).size.width;
+    final authState = ref.watch(authNotifierProvider);
+    final isLoading = authState.status == AuthStatus.loading;
 
     return Scaffold(
       body: Container(
@@ -121,7 +149,7 @@ class _NewPasswordScreenState extends State<NewPasswordScreen> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                // Title section
+                                // Title section dengan icon message.png dan container kotak
                                 Row(
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   crossAxisAlignment: CrossAxisAlignment.center,
@@ -156,15 +184,19 @@ class _NewPasswordScreenState extends State<NewPasswordScreen> {
                                         ],
                                       ),
                                       child: Center(
-                                        child: Icon(
-                                          Icons.lock_reset,
-                                          color: Colors.white,
-                                          size: screenWidth * 0.06,
+                                        child: Container(
+                                          width: screenWidth * 0.06,
+                                          height: screenWidth * 0.06,
+                                          child: Icon(
+                                            Icons.email,
+                                            color: Colors.white,
+                                            size: screenWidth * 0.06,
+                                          ),
                                         ),
                                       ),
                                     ),
-                                    SizedBox(width: 8),
-                                    // Text
+                                    SizedBox(width: 4),
+                                    // Teks di samping icon
                                     Column(
                                       mainAxisAlignment:
                                           MainAxisAlignment.center,
@@ -172,7 +204,7 @@ class _NewPasswordScreenState extends State<NewPasswordScreen> {
                                           CrossAxisAlignment.start,
                                       children: [
                                         Text(
-                                          "New",
+                                          "Reset",
                                           style: TextStyle(
                                             color: Colors.black,
                                             fontSize: screenWidth * 0.038,
@@ -180,13 +212,18 @@ class _NewPasswordScreenState extends State<NewPasswordScreen> {
                                             height: 1.1,
                                           ),
                                         ),
-                                        Text(
-                                          "Password",
-                                          style: TextStyle(
-                                            color: Colors.black,
-                                            fontSize: screenWidth * 0.038,
-                                            fontWeight: FontWeight.bold,
-                                            height: 1.1,
+                                        Padding(
+                                          padding: EdgeInsets.only(
+                                            left: screenWidth * 0.02,
+                                          ),
+                                          child: Text(
+                                            "Password",
+                                            style: TextStyle(
+                                              color: Colors.black,
+                                              fontSize: screenWidth * 0.038,
+                                              fontWeight: FontWeight.bold,
+                                              height: 1.1,
+                                            ),
                                           ),
                                         ),
                                       ],
@@ -199,7 +236,7 @@ class _NewPasswordScreenState extends State<NewPasswordScreen> {
                                 // Description text
                                 Center(
                                   child: Text(
-                                    "Create your new password",
+                                    "Enter your email to receive a reset code",
                                     style: TextStyle(
                                       color: Colors.black,
                                       fontSize: screenWidth * 0.035,
@@ -211,12 +248,12 @@ class _NewPasswordScreenState extends State<NewPasswordScreen> {
 
                                 SizedBox(height: screenHeight * 0.02),
 
-                                // New Password TextField
+                                // Email TextField
                                 Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     const Text(
-                                      "New Password",
+                                      "Email",
                                       style: TextStyle(
                                         fontSize: 14,
                                         fontWeight: FontWeight.bold,
@@ -248,102 +285,7 @@ class _NewPasswordScreenState extends State<NewPasswordScreen> {
                                         children: [
                                           Expanded(
                                             child: TextFormField(
-                                              controller:
-                                                  _newPasswordController,
-                                              validator:
-                                                  _authService.validatePassword,
-                                              obscureText: _obscureNewPassword,
-                                              style: const TextStyle(
-                                                color: Colors.black,
-                                                fontSize: 16,
-                                              ),
-                                              decoration: InputDecoration(
-                                                border: InputBorder.none,
-                                                contentPadding:
-                                                    const EdgeInsets.symmetric(
-                                                      horizontal: 16,
-                                                      vertical: 12,
-                                                    ),
-                                                hintText: "Enter new password",
-                                                hintStyle: TextStyle(
-                                                  color: Colors.grey[500],
-                                                  fontSize: 16,
-                                                ),
-                                                errorStyle: const TextStyle(
-                                                  fontSize: 0,
-                                                  height: 0,
-                                                ),
-                                              ),
-                                            ),
-                                          ),
-                                          IconButton(
-                                            onPressed: () {
-                                              setState(() {
-                                                _obscureNewPassword =
-                                                    !_obscureNewPassword;
-                                              });
-                                            },
-                                            icon: Icon(
-                                              _obscureNewPassword
-                                                  ? Icons.visibility
-                                                  : Icons.visibility_off,
-                                              color: Colors.grey,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ],
-                                ),
-
-                                SizedBox(height: screenHeight * 0.02),
-
-                                // Confirm Password TextField
-                                Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    const Text(
-                                      "Confirm Password",
-                                      style: TextStyle(
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.bold,
-                                        color: Colors.black,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 6),
-                                    Container(
-                                      height: 50,
-                                      decoration: BoxDecoration(
-                                        color: const Color.fromARGB(
-                                          255,
-                                          254,
-                                          254,
-                                          254,
-                                        ),
-                                        borderRadius: BorderRadius.circular(8),
-                                        border: Border.all(
-                                          color: const Color.fromARGB(
-                                            217,
-                                            217,
-                                            217,
-                                            255,
-                                          ),
-                                          width: 1,
-                                        ),
-                                      ),
-                                      child: Row(
-                                        children: [
-                                          Expanded(
-                                            child: TextFormField(
-                                              controller:
-                                                  _confirmPasswordController,
-                                              validator: (value) => _authService
-                                                  .validateConfirmPassword(
-                                                    _newPasswordController.text,
-                                                    value,
-                                                  ),
-                                              obscureText:
-                                                  _obscureConfirmPassword,
+                                              controller: _emailController,
                                               style: const TextStyle(
                                                 color: Colors.black,
                                                 fontSize: 16,
@@ -356,7 +298,7 @@ class _NewPasswordScreenState extends State<NewPasswordScreen> {
                                                       vertical: 12,
                                                     ),
                                                 hintText:
-                                                    "Confirm new password",
+                                                    "Enter your email address",
                                                 hintStyle: TextStyle(
                                                   color: Colors.grey[500],
                                                   fontSize: 16,
@@ -368,18 +310,13 @@ class _NewPasswordScreenState extends State<NewPasswordScreen> {
                                               ),
                                             ),
                                           ),
-                                          IconButton(
-                                            onPressed: () {
-                                              setState(() {
-                                                _obscureConfirmPassword =
-                                                    !_obscureConfirmPassword;
-                                              });
-                                            },
-                                            icon: Icon(
-                                              _obscureConfirmPassword
-                                                  ? Icons.visibility
-                                                  : Icons.visibility_off,
-                                              color: Colors.grey,
+                                          Padding(
+                                            padding: const EdgeInsets.all(8.0),
+                                            child: Image.asset(
+                                              "assets/images/auth/mail.png",
+                                              width: 20,
+                                              height: 20,
+                                              fit: BoxFit.contain,
                                             ),
                                           ),
                                         ],
@@ -390,13 +327,21 @@ class _NewPasswordScreenState extends State<NewPasswordScreen> {
 
                                 SizedBox(height: screenHeight * 0.02),
 
-                                // Reset Password button
+                                // Send Reset Code button
                                 SizedBox(
                                   width: double.infinity,
                                   child: ElevatedButton(
-                                    onPressed: _isLoading
+                                    onPressed: isLoading
                                         ? null
-                                        : _resetPassword,
+                                        : () async {
+                                            await ref
+                                                .read(
+                                                  authNotifierProvider.notifier,
+                                                )
+                                                .sendPasswordResetOTP(
+                                                  _emailController.text.trim(),
+                                                );
+                                          },
                                     style: ElevatedButton.styleFrom(
                                       backgroundColor: Colors.black,
                                       foregroundColor: Colors.white,
@@ -411,7 +356,7 @@ class _NewPasswordScreenState extends State<NewPasswordScreen> {
                                         fontWeight: FontWeight.bold,
                                       ),
                                     ),
-                                    child: _isLoading
+                                    child: isLoading
                                         ? const SizedBox(
                                             height: 20,
                                             width: 20,
@@ -423,8 +368,87 @@ class _NewPasswordScreenState extends State<NewPasswordScreen> {
                                                   ),
                                             ),
                                           )
-                                        : const Text("Reset Password"),
+                                        : const Text("Send Reset Code"),
                                   ),
+                                ),
+
+                                SizedBox(height: screenHeight * 0.02),
+
+                                // Back to Login text
+                                Container(
+                                  width: double.infinity,
+                                  child: GestureDetector(
+                                    onTap: () {
+                                      Navigator.pushReplacement(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (context) => LoginScreen(),
+                                        ),
+                                      );
+                                    },
+                                    child: Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      children: [
+                                        Icon(
+                                          Icons.arrow_back_ios_rounded,
+                                          color: Colors.black,
+                                          size: 20,
+                                          weight: 900,
+                                        ),
+                                        SizedBox(width: 8),
+                                        Text(
+                                          "Back To Login",
+                                          style: TextStyle(
+                                            color: Colors.black,
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 16,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+
+                          SizedBox(height: screenHeight * 0.03),
+
+                          // Teks dengan icon hint
+                          Container(
+                            width: double.infinity,
+                            padding: EdgeInsets.symmetric(
+                              horizontal: screenWidth * 0.02,
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: [
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Icon(
+                                      Icons.error,
+                                      color: Colors.black,
+                                      size: screenWidth * 0.06,
+                                    ),
+                                    SizedBox(width: screenWidth * 0.02),
+                                    SizedBox(
+                                      width: screenWidth * 0.6,
+                                      child: Text(
+                                        "We'll send you a secure reset code to your email address. "
+                                        "Check your inbox and follow the instructions to create a new password",
+                                        style: TextStyle(
+                                          color: Colors.black,
+                                          fontSize: screenWidth * 0.032,
+                                          fontWeight: FontWeight.normal,
+                                          height: 1.4,
+                                        ),
+                                        textAlign: TextAlign.justify,
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ],
                             ),
@@ -434,64 +458,45 @@ class _NewPasswordScreenState extends State<NewPasswordScreen> {
                     ),
                   ),
                 ),
+
+                // Help section
+                Container(
+                  width: double.infinity,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        "Need help?",
+                        style: TextStyle(
+                          color: Colors.black,
+                          fontSize: screenWidth * 0.035,
+                          fontWeight: FontWeight.w400,
+                        ),
+                      ),
+                      SizedBox(height: 4),
+                      GestureDetector(
+                        onTap: () {
+                          // Contact support logic
+                        },
+                        child: Text(
+                          "Contact support",
+                          style: TextStyle(
+                            color: Colors.black,
+                            fontSize: screenWidth * 0.038,
+                            fontWeight: FontWeight.bold,
+                            decoration: TextDecoration.underline,
+                            decorationColor: Colors.black,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ],
             ),
           ),
         ),
       ),
     );
-  }
-
-  Future<void> _resetPassword() async {
-    if (!_formKey.currentState!.validate()) {
-      return;
-    }
-
-    setState(() {
-      _isLoading = true;
-    });
-
-    try {
-      // Langsung update password karena OTP sudah diverifikasi di screen sebelumnya
-      final response = await _authService.updatePassword(
-        _newPasswordController.text,
-      );
-
-      if (response.user != null) {
-        _showSnackBar("Password has been reset successfully");
-
-        // Navigate back to login screen
-        Navigator.pushAndRemoveUntil(
-          context,
-          MaterialPageRoute(builder: (context) => LoginScreen()),
-          (route) => false,
-        );
-      }
-    } on AuthException catch (error) {
-      _showSnackBar("Failed to reset password: ${error.message}");
-    } catch (error) {
-      _showSnackBar("An error occurred while resetting password");
-    } finally {
-      setState(() {
-        _isLoading = false;
-      });
-    }
-  }
-
-  void _showSnackBar(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        duration: const Duration(seconds: 3),
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
-  }
-
-  @override
-  void dispose() {
-    _newPasswordController.dispose();
-    _confirmPasswordController.dispose();
-    super.dispose();
   }
 }

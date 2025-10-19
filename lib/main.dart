@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:purewill/ui/habit-tracker/screen/home_screen.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:purewill/screen/auth/login_screen.dart';
-import 'package:purewill/screen/auth/register_screen.dart';
-import 'package:purewill/screen/auth/resetpassword_screen.dart';
+import 'package:purewill/ui/auth/screen/login_screen.dart';
+import 'package:purewill/ui/auth/screen/signup_screen.dart';
+import 'package:purewill/ui/auth/screen/resetpassword_screen.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -17,7 +19,7 @@ Future<void> main() async {
     anonKey: dotenv.env['SUPABASE_ANON_KEY']!,
   );
 
-  runApp(const MyApp());
+  runApp(const ProviderScope(child: MyApp()));
 }
 
 class MyApp extends StatelessWidget {
@@ -27,14 +29,13 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'PureWill',
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-      ),
+      theme: ThemeData(primarySwatch: Colors.blue),
       home: const LoginScreen(),
       routes: {
         '/login': (context) => const LoginScreen(),
-        '/register': (context) => const RegisterScreen(),
-        '/reset-password': (context) => const ResetPasswordScreen(),
+        '/home': (context) => const HomeScreen(),
+        '/signup': (context) => const SignupScreen(),
+        '/signup-password': (context) => const ResetPasswordScreen(),
       },
     );
   }

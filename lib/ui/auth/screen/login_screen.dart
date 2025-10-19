@@ -1,33 +1,60 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
-import 'package:purewill/screen/auth/register_screen.dart';
-import 'package:purewill/screen/auth/resetpassword_screen.dart';
-import 'package:purewill/screen/home/home_screen.dart';
-import 'package:purewill/services/auth_service.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:purewill/ui/auth/auth_provider.dart';
+import 'package:purewill/ui/auth/screen/signup_screen.dart';
+import 'package:purewill/ui/auth/screen/resetpassword_screen.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:purewill/ui/auth/view_model/auth_view_model.dart';
 
-class LoginScreen extends StatefulWidget {
+class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
 
   @override
-  State<LoginScreen> createState() => _LoginScreenState();
+  ConsumerState<LoginScreen> createState() => _LoginScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
+class _LoginScreenState extends ConsumerState<LoginScreen> {
   bool _obscurePassword = true;
-  bool _isLoading = false;
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-
-  final AuthService _authService = AuthService();
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+
+  void _showSnackBar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        duration: const Duration(seconds: 3),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
+
+  @override
+  void initState() {
+    super.initState();
+  }
 
   @override
   Widget build(BuildContext context) {
+    ref.listen<AuthState>(authNotifierProvider, (previous, next) {
+      if (next.status == AuthStatus.failure) {
+        _showSnackBar("Login Gagal: ${next.errorMessage}");
+      } else if (next.status == AuthStatus.success && next.user != null) {
+        _showSnackBar("Login Berhasil!");
+        Navigator.pushReplacementNamed(context, '/home');
+      }
+    });
     final screenHeight = MediaQuery.of(context).size.height;
     final screenWidth = MediaQuery.of(context).size.width;
 
+    final authState = ref.watch(authNotifierProvider);
+    final isLoading = authState.status == AuthStatus.loading;
     return Scaffold(
       body: Container(
         width: double.infinity,
@@ -44,7 +71,7 @@ class _LoginScreenState extends State<LoginScreen> {
             child: Column(
               children: [
                 // Logo section
-                Container(
+                SizedBox(
                   height: screenHeight * 0.25,
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -100,11 +127,11 @@ class _LoginScreenState extends State<LoginScreen> {
                         width: double.infinity,
                         padding: EdgeInsets.all(screenWidth * 0.05),
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.9),
+                          color: Colors.white.withValues(),
                           borderRadius: BorderRadius.circular(16),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.1),
+                              color: Colors.black.withValues(),
                               blurRadius: 10,
                               offset: const Offset(0, 4),
                             ),
@@ -141,14 +168,14 @@ class _LoginScreenState extends State<LoginScreen> {
                                           0,
                                           0,
                                           0,
-                                        ).withOpacity(0.1),
+                                        ).withValues(),
                                         blurRadius: 8,
                                         offset: const Offset(0, 2),
                                       ),
                                     ],
                                   ),
                                   child: Center(
-                                    child: Container(
+                                    child: SizedBox(
                                       width: screenWidth * 0.06,
                                       height: screenWidth * 0.06,
                                       child: Image.asset(
@@ -224,7 +251,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                   Expanded(
                                     child: TextFormField(
                                       controller: _emailController,
-                                      validator: _authService.validateEmail,
+                                      // validator: _authService.validateEmail,
                                       style: const TextStyle(
                                         color: Colors.black,
                                         fontSize: 16,
@@ -285,7 +312,6 @@ class _LoginScreenState extends State<LoginScreen> {
                                   Expanded(
                                     child: TextFormField(
                                       controller: _passwordController,
-                                      validator: _authService.validatePassword,
                                       obscureText: _obscurePassword,
                                       style: const TextStyle(
                                         color: Colors.black,
@@ -370,7 +396,16 @@ class _LoginScreenState extends State<LoginScreen> {
                             SizedBox(
                               width: double.infinity,
                               child: ElevatedButton(
-                                onPressed: _isLoading ? null : _login,
+                                onPressed: isLoading
+                                    ? null
+                                    : () {
+                                        ref
+                                            .read(authNotifierProvider.notifier)
+                                            .login(
+                                              _emailController.text.trim(),
+                                              _passwordController.text.trim(),
+                                            );
+                                      },
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: Colors.black,
                                   foregroundColor: Colors.white,
@@ -385,7 +420,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                     fontWeight: FontWeight.bold,
                                   ),
                                 ),
-                                child: _isLoading
+                                child: isLoading
                                     ? const SizedBox(
                                         height: 20,
                                         width: 20,
@@ -419,7 +454,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                     Navigator.push(
                                       context,
                                       MaterialPageRoute(
-                                        builder: (context) => RegisterScreen(),
+                                        builder: (context) => SignupScreen(),
                                       ),
                                     );
                                   },
@@ -451,7 +486,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 SizedBox(height: screenHeight * 0.05),
 
                 // Help section
-                Container(
+                SizedBox(
                   width: double.infinity,
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
@@ -489,71 +524,5 @@ class _LoginScreenState extends State<LoginScreen> {
         ),
       ),
     );
-  }
-
-  Future<void> _login() async {
-  if (!_formKey.currentState!.validate()) {
-    return;
-  }
-
-  setState(() {
-    _isLoading = true;
-  });
-
-  try {
-    final response = await _authService.loginWithEmail(
-      email: _emailController.text,
-      password: _passwordController.text,
-    );
-
-    if (response?.user != null) {
-      // Login successful, navigate to home screen
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => HomeScreen()),
-      );
-      _showSnackBar("Login successful!");
-    }
-  } on AuthException catch (error) {
-    String errorMessage = "Login failed";
-    
-    // Handle specific error messages
-    if (error.message.contains('Invalid login credentials')) {
-      errorMessage = "Invalid email or password";
-    } else if (error.message.contains('Email not confirmed')) {
-      errorMessage = "Please verify your email address first";
-    } else if (error.message.contains('User profile not found')) {
-      errorMessage = "Account not found. Please register first";
-    } else {
-      errorMessage = "Login failed: ${error.message}";
-    }
-    
-    _showSnackBar(errorMessage);
-  } on TimeoutException catch (_) {
-    _showSnackBar("Connection timeout. Please try again.");
-  } catch (error) {
-    _showSnackBar("An unexpected error occurred during login");
-  } finally {
-    setState(() {
-      _isLoading = false;
-    });
-  }
-}
-
-  void _showSnackBar(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        duration: const Duration(seconds: 3),
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
-  }
-
-  @override
-  void dispose() {
-    _emailController.dispose();
-    _passwordController.dispose();
-    super.dispose();
   }
 }
