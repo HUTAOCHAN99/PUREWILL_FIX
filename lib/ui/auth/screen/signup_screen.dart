@@ -34,7 +34,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
   }
 
   @override
-  void initState() {
+  Widget build(BuildContext context) {
     ref.listen<AuthState>(authNotifierProvider, (previous, next) {
       if (next.status == AuthStatus.failure) {
         _showSnackBar("Daftar Gagal: ${next.errorMessage}");
@@ -42,11 +42,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
         _showSnackBar("Daftar Berhasil!");
       }
     });
-    super.initState();
-  }
 
-  @override
-  Widget build(BuildContext context) {
     final screenHeight = MediaQuery.of(context).size.height;
     final screenWidth = MediaQuery.of(context).size.width;
     final authState = ref.watch(authNotifierProvider);
