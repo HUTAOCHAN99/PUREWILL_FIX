@@ -33,7 +33,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final habitsState = ref.watch(habitNotifierProvider);
 
     // Calculate progress
-    final completedHabits = habitsState.habits.where((h) => h.status == 'completed').length;
+    final completedHabits = habitsState.habits
+        .where((h) => h.status == 'completed')
+        .length;
     final totalHabits = habitsState.habits.length;
     final progress = totalHabits > 0 ? completedHabits / totalHabits : 0.0;
 
@@ -134,118 +136,111 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       bottomNavigationBar: _buildCleanBottomNavigationBar(),
 
       floatingActionButton: SpeedDial(
-  icon: Icons.add,
-  activeIcon: Icons.close,
-  backgroundColor: const Color(0xFF7C3AED),
-  foregroundColor: Colors.white,
-  overlayColor: Colors.black,
-  overlayOpacity: 0.4,
-  spacing: 12,
-  spaceBetweenChildren: 12,
-  children: [
-    SpeedDialChild(
-      child: const Icon(Icons.add, color: Colors.white),
-      backgroundColor: Colors.green,
-      foregroundColor: Colors.white,
-      label: 'Add New Habit',
-      // onTap: () => _navigateToAddHabit(),
-    ),
-    SpeedDialChild(
-      child: const Icon(Icons.edit, color: Colors.white),
-      backgroundColor: Colors.blue,
-      foregroundColor: Colors.white,
-      label: 'Edit Habits',
-      // onTap: () => _navigateToEditHabits(),
-    ),
-    SpeedDialChild(
-      child: const Icon(Icons.notifications, color: Colors.white),
-      backgroundColor: Colors.orange,
-      foregroundColor: Colors.white,
-      label: 'Reminder Settings',
-      // onTap: () => _navigateToReminderSettings(),
-    ),
-  ],
-),
-
+        icon: Icons.add,
+        activeIcon: Icons.close,
+        backgroundColor: const Color(0xFF7C3AED),
+        foregroundColor: Colors.white,
+        overlayColor: Colors.black,
+        overlayOpacity: 0.4,
+        spacing: 12,
+        spaceBetweenChildren: 12,
+        children: [
+          SpeedDialChild(
+            child: const Icon(Icons.add, color: Colors.white),
+            backgroundColor: Colors.green,
+            foregroundColor: Colors.white,
+            label: 'Add New Habit',
+            onTap: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (context) => const AddHabitScreen()),
+              );
+            },
+          ),
+          SpeedDialChild(
+            child: const Icon(Icons.edit, color: Colors.white),
+            backgroundColor: Colors.blue,
+            foregroundColor: Colors.white,
+            label: 'Edit Habits',
+            // onTap: () => _navigateToEditHabits(),
+          ),
+          SpeedDialChild(
+            child: const Icon(Icons.notifications, color: Colors.white),
+            backgroundColor: Colors.orange,
+            foregroundColor: Colors.white,
+            label: 'Reminder Settings',
+            // onTap: () => _navigateToReminderSettings(),
+          ),
+        ],
+      ),
     );
   }
 
+  Widget _buildHeader() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      decoration: BoxDecoration(
+        color: const Color.fromRGBO(176, 230, 216, 1),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          // Nama Aplikasi
+          const Row(
+            children: [
+              SizedBox(width: 8),
+              Text(
+                'PureWill',
+                style: TextStyle(
+                  color: Colors.black,
+                  fontSize: 22,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: -0.5,
+                ),
+              ),
+            ],
+          ),
 
-Widget _buildHeader() {
-  return Container(
-    padding: const EdgeInsets.symmetric(
-      horizontal: 20,
-      vertical: 16,
-    ),
-    decoration: BoxDecoration(
-      color: const Color.fromRGBO(176, 230, 216, 1), 
-      boxShadow: [
-        BoxShadow(
-          color: Colors.black.withOpacity(0.05),
-          blurRadius: 8,
-          offset: const Offset(0, 2),
-        ),
-      ],
-    ),
-    child: Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        // Nama Aplikasi
-        const Row(
-          children: [
-            SizedBox(width: 8),
-            Text(
-              'PureWill',
-              style: TextStyle(
-                color: Colors.black,
-                fontSize: 22,
-                fontWeight: FontWeight.w700,
-                letterSpacing: -0.5,
+          // Icon User dengan Circle Avatar
+          Container(
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(color: Colors.grey.shade300, width: 1.5),
+            ),
+            child: CircleAvatar(
+              radius: 18,
+              backgroundColor: Colors.white,
+              child: IconButton(
+                icon: const Icon(
+                  Icons.person,
+                  color: Color(0xFF7C3AED),
+                  size: 18,
+                ),
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
+                onPressed: () {
+                  _showUserProfileMenu();
+                },
               ),
             ),
-          ],
-        ),
-
-        // Icon User dengan Circle Avatar
-        Container(
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            border: Border.all(
-              color: Colors.grey.shade300,
-              width: 1.5,
-            ),
           ),
-          child: CircleAvatar(
-            radius: 18,
-            backgroundColor: Colors.white,
-            child: IconButton(
-              icon: const Icon(
-                Icons.person,
-                color: Color(0xFF7C3AED),
-                size: 18,
-              ),
-              padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(),
-              onPressed: () {
-                _showUserProfileMenu();
-              },
-            ),
-          ),
-        ),
-      ],
-    ),
-  );
-}
-
+        ],
+      ),
+    );
+  }
 
   // Method untuk show user profile menu
   void _showUserProfileMenu() {
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(
-          top: Radius.circular(20),
-        ),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (context) {
         return Container(
@@ -263,19 +258,15 @@ Widget _buildHeader() {
                 ),
               ),
               const SizedBox(height: 20),
-              
+
               // User info
               const CircleAvatar(
                 radius: 30,
                 backgroundColor: Color(0xFF7C3AED),
-                child: Icon(
-                  Icons.person,
-                  color: Colors.white,
-                  size: 30,
-                ),
+                child: Icon(Icons.person, color: Colors.white, size: 30),
               ),
               const SizedBox(height: 12),
-              
+
               Text(
                 _getUserDisplayName(),
                 style: const TextStyle(
@@ -285,13 +276,10 @@ Widget _buildHeader() {
               ),
               Text(
                 _getUserEmail(),
-                style: const TextStyle(
-                  color: Colors.grey,
-                  fontSize: 14,
-                ),
+                style: const TextStyle(color: Colors.grey, fontSize: 14),
               ),
               const SizedBox(height: 20),
-              
+
               // Menu items
               _buildMenuButton(
                 icon: Icons.settings_outlined,
@@ -318,7 +306,7 @@ Widget _buildHeader() {
                 },
               ),
               const SizedBox(height: 10),
-              
+
               // Logout button
               Container(
                 width: double.infinity,
@@ -391,9 +379,7 @@ Widget _buildHeader() {
               // Implement logout logic
               _performLogout();
             },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
-            ),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
             child: const Text('Logout'),
           ),
         ],
@@ -417,12 +403,7 @@ Widget _buildHeader() {
     return Container(
       decoration: const BoxDecoration(
         color: Colors.white,
-        border: Border(
-          top: BorderSide(
-            color: Color(0xFFF0F0F0),
-            width: 1.0,
-          ),
-        ),
+        border: Border(top: BorderSide(color: Color(0xFFF0F0F0), width: 1.0)),
       ),
       child: ClipRect(
         child: BottomNavigationBar(
@@ -445,7 +426,7 @@ Widget _buildHeader() {
             setState(() {
               _currentIndex = index;
             });
-            
+
             // Navigasi ke AddHabitScreen ketika Habits Tracker ditekan
             if (index == 2) {
               Navigator.of(context).push(
@@ -578,7 +559,9 @@ Widget _buildHeader() {
             ElevatedButton(
               onPressed: () {
                 Navigator.of(context).push(
-                  MaterialPageRoute(builder: (context) => const AddHabitScreen()),
+                  MaterialPageRoute(
+                    builder: (context) => const AddHabitScreen(),
+                  ),
                 );
               },
               child: const Text('Add Habit'),
@@ -590,11 +573,13 @@ Widget _buildHeader() {
 
     return Column(
       children: habitsState.habits.map((habit) {
-        final iconData = DefaultHabitsService.getDefaultHabitIcons()[habit.name] ?? 
-                        Icons.assignment_outlined;
-        final color = DefaultHabitsService.getDefaultHabitColors()[habit.name] ?? 
-                     Colors.grey;
-        
+        final iconData =
+            DefaultHabitsService.getDefaultHabitIcons()[habit.name] ??
+            Icons.assignment_outlined;
+        final color =
+            DefaultHabitsService.getDefaultHabitColors()[habit.name] ??
+            Colors.grey;
+
         // Calculate progress based on habit status or target value
         final progress = _calculateHabitProgress(habit);
         final isCompleted = habit.status == 'completed';
@@ -622,8 +607,8 @@ Widget _buildHeader() {
         return '${habit.targetValue} glasses';
       } else if (habit.name.toLowerCase().contains('read')) {
         return '${habit.targetValue} pages';
-      } else if (habit.name.toLowerCase().contains('workout') || 
-                 habit.name.toLowerCase().contains('exercise')) {
+      } else if (habit.name.toLowerCase().contains('workout') ||
+          habit.name.toLowerCase().contains('exercise')) {
         return '${habit.targetValue} minutes';
       } else if (habit.name.toLowerCase().contains('sleep')) {
         return 'Before ${habit.targetValue} PM';
@@ -653,7 +638,7 @@ Widget _buildHeader() {
     // Handle ketika habit di-tap
     // Bisa untuk menandai sebagai completed, dll.
     print('Habit tapped: ${habit.name}');
-    
+
     // Jika habit default, minta user untuk menambahkannya ke habits mereka
     if (habit.isDefault) {
       _showAddDefaultHabitDialog(habit);
@@ -694,7 +679,7 @@ Widget _buildHeader() {
   void _toggleHabitCompletion(HabitModel habit) {
     final viewModel = ref.read(habitNotifierProvider.notifier);
     final newStatus = habit.status == 'completed' ? 'neutral' : 'completed';
-    
+
     // Update status habit di local state terlebih dahulu untuk feedback langsung
     final updatedHabit = HabitModel(
       id: habit.id,
@@ -715,13 +700,13 @@ Widget _buildHeader() {
     // TODO: Implement update habit status di repository
     // Untuk sementara, reload habits untuk melihat perubahan
     viewModel.loadUserHabits();
-    
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
-          newStatus == 'completed' 
-            ? '${habit.name} marked as completed!'
-            : '${habit.name} marked as not completed',
+          newStatus == 'completed'
+              ? '${habit.name} marked as completed!'
+              : '${habit.name} marked as not completed',
         ),
         duration: const Duration(seconds: 2),
       ),
@@ -837,10 +822,16 @@ class HabitCard extends StatelessWidget {
             ),
             const SizedBox(width: 12),
             Icon(
-              isCompleted ? Icons.check_circle : 
-              isDefault ? Icons.add_circle_outline : Icons.circle_outlined,
-              color: isCompleted ? Colors.green : 
-                    isDefault ? Colors.blue : Colors.grey,
+              isCompleted
+                  ? Icons.check_circle
+                  : isDefault
+                  ? Icons.add_circle_outline
+                  : Icons.circle_outlined,
+              color: isCompleted
+                  ? Colors.green
+                  : isDefault
+                  ? Colors.blue
+                  : Colors.grey,
               size: 28,
             ),
           ],

@@ -1,4 +1,6 @@
 // lib/ui/habit-tracker/screen/add_habit_screen.dart
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:purewill/ui/habit-tracker/habit_provider.dart';
@@ -27,7 +29,7 @@ class _AddHabitScreenState extends ConsumerState<AddHabitScreen> {
   TimeOfDay? _selectedTime;
   int _duration = 30;
   String _durationUnit = 'Minutes';
-  
+
   // Tambahan untuk reminder
   bool _reminderEnabled = false;
   TimeOfDay? _reminderTime;
@@ -35,7 +37,6 @@ class _AddHabitScreenState extends ConsumerState<AddHabitScreen> {
   final List<Map<String, dynamic>> _frequencyOptions = [
     {'value': 'daily', 'label': 'Daily'},
     {'value': 'weekly', 'label': 'Weekly'},
-    {'value': 'custom', 'label': 'Custom'},
   ];
 
   final List<String> _durationUnits = ['Minutes', 'Hours'];
@@ -43,7 +44,7 @@ class _AddHabitScreenState extends ConsumerState<AddHabitScreen> {
   @override
   void initState() {
     super.initState();
-    
+
     // Jika ada default habit, pre-fill form
     if (widget.defaultHabit != null) {
       _nameController.text = widget.defaultHabit!.name;
@@ -177,7 +178,12 @@ class _AddHabitScreenState extends ConsumerState<AddHabitScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Add New Habit'),
-        backgroundColor: Colors.white,
+        backgroundColor: const Color.fromRGBO(
+          176,
+          230,
+          216,
+          1,
+        ), // 💚 warna baru
         foregroundColor: Colors.black,
         elevation: 0,
         leading: IconButton(
@@ -185,549 +191,661 @@ class _AddHabitScreenState extends ConsumerState<AddHabitScreen> {
           onPressed: () => Navigator.of(context).pop(),
         ),
       ),
-      body: Container(
-        decoration: const BoxDecoration(
-          image: DecorationImage(
-            image: AssetImage('assets/images/home/bg.png'),
-            fit: BoxFit.cover,
+
+      body: Stack(
+        children: [
+          // Background image dengan blur effect
+          Positioned.fill(
+            child: Image.asset('assets/images/home/bg.png', fit: BoxFit.cover),
           ),
-        ),
-        child: SafeArea(
-          child: Form(
-            key: _formKey,
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Habit Name Section
-                  const Text(
-                    'Habit Name',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.black87,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  TextFormField(
-                    controller: _nameController,
-                    decoration: InputDecoration(
-                      hintText: 'e.g. Read for 30 minutes',
-                      filled: true,
-                      fillColor: Colors.white.withOpacity(0.9),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide.none,
-                      ),
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 12,
+
+          // Blur effect overlay
+          Positioned.fill(
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 8.0, sigmaY: 8.0),
+              child: Container(color: Colors.black.withOpacity(0.1)),
+            ),
+          ),
+
+          // Content
+          SafeArea(
+            child: Form(
+              key: _formKey,
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Habit Name Section
+                    const Text(
+                      'Habit Name',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.black87,
                       ),
                     ),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Please enter habit name';
-                      }
-                      if (value.length < 2) {
-                        return 'Habit name must be at least 2 characters';
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 24),
-
-                  // Category Section
-                  const Text(
-                    'Category',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.black87,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Container(
-                    width: double.infinity,
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.9),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: categoriesAsync.when(
-                      data: (categories) {
-                        print('=== CATEGORIES UI BUILDER ===');
-                        print('Categories length: ${categories.length}');
-
-                        if (categories.isEmpty) {
-                          return Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 12,
-                            ),
-                            decoration: BoxDecoration(
-                              border: Border.all(color: Colors.orange),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: const Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'No categories available',
-                                  style: TextStyle(color: Colors.orange),
-                                ),
-                                SizedBox(height: 4),
-                                Text(
-                                  'You can still create a habit without category',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: Colors.grey,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          );
-                        }
-
-                        return DropdownButtonFormField<int>(
-                          value: _selectedCategoryId,
-                          decoration: InputDecoration(
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide.none,
-                            ),
-                            contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 12,
-                            ),
-                            hintText: 'Select a category',
-                            filled: true,
-                            fillColor: Colors.white,
-                          ),
-                          items: [
-                            const DropdownMenuItem(
-                              value: null,
-                              child: Text(
-                                'Select a category (Optional)',
-                                style: TextStyle(color: Colors.grey),
-                              ),
-                            ),
-                            ...categories.map((category) {
-                              return DropdownMenuItem(
-                                value: category.id,
-                                child: Text(
-                                  category.name,
-                                  style: const TextStyle(fontSize: 14),
-                                ),
-                              );
-                            }).toList(),
-                          ],
-                          onChanged: (value) {
-                            setState(() {
-                              _selectedCategoryId = value;
-                              print('Category selected: $value');
-                            });
-                          },
-                          validator: (value) {
-                            return null; // Category is optional
-                          },
-                        );
-                      },
-                      loading: () {
-                        print('=== CATEGORIES LOADING ===');
-                        return Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 12,
-                          ),
-                          child: const Row(
-                            children: [
-                              SizedBox(
-                                width: 16,
-                                height: 16,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                ),
-                              ),
-                              SizedBox(width: 12),
-                              Text('Loading categories...'),
-                            ],
-                          ),
-                        );
-                      },
-                      error: (error, stack) {
-                        print('=== CATEGORIES ERROR IN UI ===');
-                        print('Error: $error');
-                        print('Stack: $stack');
-
-                        return Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 12,
-                          ),
-                          decoration: BoxDecoration(
-                            border: Border.all(color: Colors.red),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text(
-                                'Failed to load categories',
-                                style: TextStyle(color: Colors.red),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                'Error: $error',
-                                style: const TextStyle(
-                                  fontSize: 12,
-                                  color: Colors.grey,
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              const Text(
-                                'You can still create habits without categories',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: Colors.grey,
-                                ),
-                              ),
-                            ],
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-
-                  // Frequency Section
-                  const Text(
-                    'Frequency',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.black87,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Column(
-                    children: _frequencyOptions.map((frequency) {
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: 8),
-                        child: Container(
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.9),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: RadioListTile<String>(
-                            title: Text(
-                              frequency['label'],
-                              style: const TextStyle(fontSize: 14),
-                            ),
-                            value: frequency['value'],
-                            groupValue: _selectedFrequency,
-                            onChanged: (value) {
-                              setState(() {
-                                _selectedFrequency = value!;
-                                print('Frequency selected: $value');
-                              });
-                            },
-                            contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                            ),
-                          ),
-                        ),
-                      );
-                    }).toList(),
-                  ),
-                  const SizedBox(height: 24),
-
-                  // Target Time Section
-                  const Text(
-                    'Target Time',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.black87,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  GestureDetector(
-                    onTap: _selectTime,
-                    child: Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 12,
-                      ),
+                    const SizedBox(height: 8),
+                    Container(
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.9),
                         borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            _selectedTime != null
-                                ? '${_selectedTime!.hour.toString().padLeft(2, '0')}:${_selectedTime!.minute.toString().padLeft(2, '0')}'
-                                : '--:--',
-                            style: TextStyle(
-                              fontSize: 16,
-                              color: _selectedTime != null
-                                  ? Colors.black
-                                  : Colors.grey,
-                              fontWeight: _selectedTime != null
-                                  ? FontWeight.w500
-                                  : FontWeight.normal,
-                            ),
-                          ),
-                          Checkbox(
-                            value: _selectedTime != null,
-                            onChanged: (value) {
-                              if (value == true) {
-                                _selectTime();
-                              } else {
-                                setState(() {
-                                  _selectedTime = null;
-                                });
-                              }
-                            },
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.1),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4),
                           ),
                         ],
                       ),
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-
-                  // Duration Section
-                  const Text(
-                    'Duration',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.black87,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      Expanded(
-                        flex: 2,
-                        child: Container(
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.9),
+                      child: TextFormField(
+                        controller: _nameController,
+                        decoration: InputDecoration(
+                          hintText: 'e.g. Read for 30 minutes',
+                          filled: true,
+                          fillColor: Colors.white.withOpacity(0.95),
+                          border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide.none,
                           ),
-                          child: TextFormField(
-                            controller: _durationController,
-                            keyboardType: TextInputType.number,
-                            decoration: InputDecoration(
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide: BorderSide.none,
-                              ),
-                              contentPadding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                                vertical: 12,
-                              ),
-                              hintText: 'Duration',
-                            ),
-                            onChanged: (value) {
-                              final parsedValue = int.tryParse(value) ?? 30;
-                              setState(() {
-                                _duration = parsedValue;
-                              });
-                            },
-                            validator: (value) {
-                              if (value == null || value.isEmpty) {
-                                return 'Please enter duration';
-                              }
-                              final parsed = int.tryParse(value);
-                              if (parsed == null || parsed <= 0) {
-                                return 'Please enter valid duration';
-                              }
-                              return null;
-                            },
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 12,
                           ),
                         ),
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Please enter habit name';
+                          }
+                          if (value.length < 2) {
+                            return 'Habit name must be at least 2 characters';
+                          }
+                          return null;
+                        },
                       ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        flex: 3,
-                        child: Container(
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.9),
-                            borderRadius: BorderRadius.circular(12),
+                    ),
+                    const SizedBox(height: 24),
+
+                    // Category Section
+                    const Text(
+                      'Category',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.black87,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Container(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(12),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.1),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4),
                           ),
-                          child: DropdownButtonFormField<String>(
-                            value: _durationUnit,
-                            decoration: InputDecoration(
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide: BorderSide.none,
+                        ],
+                      ),
+                      child: Container(
+                        width: double.infinity,
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.95),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: categoriesAsync.when(
+                          data: (categories) {
+                            print('=== CATEGORIES UI BUILDER ===');
+                            print('Categories length: ${categories.length}');
+
+                            if (categories.isEmpty) {
+                              return Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                  vertical: 12,
+                                ),
+                                decoration: BoxDecoration(
+                                  border: Border.all(color: Colors.orange),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: const Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'No categories available',
+                                      style: TextStyle(color: Colors.orange),
+                                    ),
+                                    SizedBox(height: 4),
+                                    Text(
+                                      'You can still create a habit without category',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: Colors.grey,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            }
+
+                            return DropdownButtonFormField<int>(
+                              value: _selectedCategoryId,
+                              decoration: InputDecoration(
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: BorderSide.none,
+                                ),
+                                contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                  vertical: 12,
+                                ),
+                                hintText: 'Select a category',
+                                filled: true,
+                                fillColor: Colors.transparent,
                               ),
-                              contentPadding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                                vertical: 12,
-                              ),
-                            ),
-                            items: _durationUnits
-                                .map(
-                                  (unit) => DropdownMenuItem(
-                                    value: unit,
-                                    child: Text(unit),
+                              items: [
+                                const DropdownMenuItem(
+                                  value: null,
+                                  child: Text(
+                                    'Select a category (Optional)',
+                                    style: TextStyle(color: Colors.grey),
                                   ),
-                                )
-                                .toList(),
-                            onChanged: (value) {
-                              setState(() {
-                                _durationUnit = value!;
-                                print('Duration unit selected: $value');
-                              });
-                            },
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Target: $_duration ${_durationUnit.toLowerCase()}',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey[600],
-                      fontStyle: FontStyle.italic,
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-
-                  // Reminder Section
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.9),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            const Text(
-                              'Reminder',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.black87,
-                              ),
-                            ),
-                            Switch(
-                              value: _reminderEnabled,
+                                ),
+                                ...categories.map((category) {
+                                  return DropdownMenuItem(
+                                    value: category.id,
+                                    child: Text(
+                                      category.name,
+                                      style: const TextStyle(fontSize: 14),
+                                    ),
+                                  );
+                                }).toList(),
+                              ],
                               onChanged: (value) {
                                 setState(() {
-                                  _reminderEnabled = value;
-                                  if (value && _reminderTime == null) {
-                                    _reminderTime = TimeOfDay.now();
-                                  }
+                                  _selectedCategoryId = value;
+                                  print('Category selected: $value');
                                 });
                               },
-                              activeColor: Colors.purple,
-                            ),
-                          ],
-                        ),
-                        if (_reminderEnabled) ...[
-                          const SizedBox(height: 12),
-                          const Text(
-                            'Reminder Time',
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w500,
-                              color: Colors.black87,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          GestureDetector(
-                            onTap: _selectReminderTime,
-                            child: Container(
-                              width: double.infinity,
+                              validator: (value) {
+                                return null; // Category is optional
+                              },
+                            );
+                          },
+                          loading: () {
+                            print('=== CATEGORIES LOADING ===');
+                            return Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 12,
+                              ),
+                              child: const Row(
+                                children: [
+                                  SizedBox(
+                                    width: 16,
+                                    height: 16,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                    ),
+                                  ),
+                                  SizedBox(width: 12),
+                                  Text('Loading categories...'),
+                                ],
+                              ),
+                            );
+                          },
+                          error: (error, stack) {
+                            print('=== CATEGORIES ERROR IN UI ===');
+                            print('Error: $error');
+                            print('Stack: $stack');
+
+                            return Container(
                               padding: const EdgeInsets.symmetric(
                                 horizontal: 16,
                                 vertical: 12,
                               ),
                               decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(8),
-                                border: Border.all(
-                                  color: Colors.grey.shade300,
-                                ),
+                                border: Border.all(color: Colors.red),
+                                borderRadius: BorderRadius.circular(12),
                               ),
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
+                                  const Text(
+                                    'Failed to load categories',
+                                    style: TextStyle(color: Colors.red),
+                                  ),
+                                  const SizedBox(height: 4),
                                   Text(
-                                    _reminderTime != null
-                                        ? '${_reminderTime!.hour.toString().padLeft(2, '0')}:${_reminderTime!.minute.toString().padLeft(2, '0')}'
-                                        : 'Select time',
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      color: _reminderTime != null
-                                          ? Colors.black
-                                          : Colors.grey,
+                                    'Error: $error',
+                                    style: const TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.grey,
                                     ),
                                   ),
-                                  Icon(
-                                    Icons.access_time,
-                                    color: Colors.grey.shade500,
+                                  const SizedBox(height: 8),
+                                  const Text(
+                                    'You can still create habits without categories',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.grey,
+                                    ),
                                   ),
                                 ],
                               ),
+                            );
+                          },
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+
+                    // Frequency Section
+                    const Text(
+                      'Frequency',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.black87,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Column(
+                      children: _frequencyOptions.map((frequency) {
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 8),
+                          child: Container(
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(12),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.1),
+                                  blurRadius: 10,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
+                            ),
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: Colors.white.withOpacity(0.95),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: RadioListTile<String>(
+                                title: Text(
+                                  frequency['label'],
+                                  style: const TextStyle(fontSize: 14),
+                                ),
+                                value: frequency['value'],
+                                groupValue: _selectedFrequency,
+                                onChanged: (value) {
+                                  setState(() {
+                                    _selectedFrequency = value!;
+                                    print('Frequency selected: $value');
+                                  });
+                                },
+                                contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                ),
+                              ),
                             ),
                           ),
-                          const SizedBox(height: 8),
-                          Text(
-                            _reminderEnabled 
-                                ? 'Reminder: ${_reminderEnabled ? "Active" : "Non-active"}'
-                                : 'Reminder: Non-active',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.grey[600],
-                              fontStyle: FontStyle.italic,
-                            ),
+                        );
+                      }).toList(),
+                    ),
+                    const SizedBox(height: 24),
+
+                    // Target Time Section
+                    const Text(
+                      'Target Time',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.black87,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Container(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(12),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.1),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4),
                           ),
                         ],
+                      ),
+                      child: GestureDetector(
+                        onTap: _selectTime,
+                        child: Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 12,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.95),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                _selectedTime != null
+                                    ? '${_selectedTime!.hour.toString().padLeft(2, '0')}:${_selectedTime!.minute.toString().padLeft(2, '0')}'
+                                    : '--:--',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  color: _selectedTime != null
+                                      ? Colors.black
+                                      : Colors.grey,
+                                  fontWeight: _selectedTime != null
+                                      ? FontWeight.w500
+                                      : FontWeight.normal,
+                                ),
+                              ),
+                              Checkbox(
+                                value: _selectedTime != null,
+                                onChanged: (value) {
+                                  if (value == true) {
+                                    _selectTime();
+                                  } else {
+                                    setState(() {
+                                      _selectedTime = null;
+                                    });
+                                  }
+                                },
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+
+                    // Duration Section
+                    const Text(
+                      'Duration',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.black87,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Expanded(
+                          flex: 2,
+                          child: Container(
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(12),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.1),
+                                  blurRadius: 10,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
+                            ),
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: Colors.white.withOpacity(0.95),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: TextFormField(
+                                controller: _durationController,
+                                keyboardType: TextInputType.number,
+                                decoration: InputDecoration(
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    borderSide: BorderSide.none,
+                                  ),
+                                  contentPadding: const EdgeInsets.symmetric(
+                                    horizontal: 16,
+                                    vertical: 12,
+                                  ),
+                                  hintText: 'Duration',
+                                  filled: true,
+                                  fillColor: Colors.transparent,
+                                ),
+                                onChanged: (value) {
+                                  final parsedValue = int.tryParse(value) ?? 30;
+                                  setState(() {
+                                    _duration = parsedValue;
+                                  });
+                                },
+                                validator: (value) {
+                                  if (value == null || value.isEmpty) {
+                                    return 'Please enter duration';
+                                  }
+                                  final parsed = int.tryParse(value);
+                                  if (parsed == null || parsed <= 0) {
+                                    return 'Please enter valid duration';
+                                  }
+                                  return null;
+                                },
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          flex: 3,
+                          child: Container(
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(12),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.1),
+                                  blurRadius: 10,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
+                            ),
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: Colors.white.withOpacity(0.95),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: DropdownButtonFormField<String>(
+                                value: _durationUnit,
+                                decoration: InputDecoration(
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    borderSide: BorderSide.none,
+                                  ),
+                                  contentPadding: const EdgeInsets.symmetric(
+                                    horizontal: 16,
+                                    vertical: 12,
+                                  ),
+                                  filled: true,
+                                  fillColor: Colors.transparent,
+                                ),
+                                items: _durationUnits
+                                    .map(
+                                      (unit) => DropdownMenuItem(
+                                        value: unit,
+                                        child: Text(unit),
+                                      ),
+                                    )
+                                    .toList(),
+                                onChanged: (value) {
+                                  setState(() {
+                                    _durationUnit = value!;
+                                    print('Duration unit selected: $value');
+                                  });
+                                },
+                              ),
+                            ),
+                          ),
+                        ),
                       ],
                     ),
-                  ),
-                  const SizedBox(height: 24),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Target: $_duration ${_durationUnit.toLowerCase()}',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey[600],
+                        fontStyle: FontStyle.italic,
+                      ),
+                    ),
+                    const SizedBox(height: 24),
 
-                  // Save Button
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: _saveHabit,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.purple,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
+                    // Reminder Section
+                    Container(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(12),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.1),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.95),
                           borderRadius: BorderRadius.circular(12),
                         ),
-                        elevation: 2,
-                      ),
-                      child: const Text(
-                        'Save Habit',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                const Text(
+                                  'Reminder',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.black87,
+                                  ),
+                                ),
+                                Switch(
+                                  value: _reminderEnabled,
+                                  onChanged: (value) {
+                                    setState(() {
+                                      _reminderEnabled = value;
+                                      if (value && _reminderTime == null) {
+                                        _reminderTime = TimeOfDay.now();
+                                      }
+                                    });
+                                  },
+                                  activeColor: Colors.purple,
+                                ),
+                              ],
+                            ),
+                            if (_reminderEnabled) ...[
+                              const SizedBox(height: 12),
+                              const Text(
+                                'Reminder Time',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w500,
+                                  color: Colors.black87,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              GestureDetector(
+                                onTap: _selectReminderTime,
+                                child: Container(
+                                  width: double.infinity,
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 16,
+                                    vertical: 12,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(
+                                      color: Colors.grey.shade300,
+                                    ),
+                                  ),
+                                  child: Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Text(
+                                        _reminderTime != null
+                                            ? '${_reminderTime!.hour.toString().padLeft(2, '0')}:${_reminderTime!.minute.toString().padLeft(2, '0')}'
+                                            : 'Select time',
+                                        style: TextStyle(
+                                          fontSize: 16,
+                                          color: _reminderTime != null
+                                              ? Colors.black
+                                              : Colors.grey,
+                                        ),
+                                      ),
+                                      Icon(
+                                        Icons.access_time,
+                                        color: Colors.grey.shade500,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                _reminderEnabled
+                                    ? 'Reminder: ${_reminderEnabled ? "Active" : "Non-active"}'
+                                    : 'Reminder: Non-active',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.grey[600],
+                                  fontStyle: FontStyle.italic,
+                                ),
+                              ),
+                            ],
+                          ],
                         ),
                       ),
                     ),
-                  ),
-                ],
+                    const SizedBox(height: 24),
+
+                    // Save Button
+                    Container(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(12),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.purple.withOpacity(0.3),
+                            blurRadius: 15,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          onPressed: _saveHabit,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.purple,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            elevation: 0,
+                          ),
+                          child: const Text(
+                            'Save Habit',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
-        ),
+        ],
       ),
     );
   }
