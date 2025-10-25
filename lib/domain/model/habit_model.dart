@@ -1,10 +1,21 @@
+// lib/domain/model/habit_model.dart
+import 'package:flutter/material.dart';
+
 class HabitModel {
   final int id;
   final String userId;
   final String name;
   final String frequency;
   final DateTime startDate;
-  final bool isCompleted;
+  final bool isActive;
+  final int? categoryId;
+  final String? notes;
+  final DateTime? endDate;
+  final int? targetValue;
+  final String status;
+  final bool reminderEnabled;
+  final TimeOfDay? reminderTime;
+  final bool isDefault; // Tambahkan field untuk menandai habit default
 
   HabitModel({
     required this.id,
@@ -12,29 +23,84 @@ class HabitModel {
     required this.name,
     required this.frequency,
     required this.startDate,
-    required this.isCompleted,
+    this.isActive = true,
+    this.categoryId,
+    this.notes,
+    this.endDate,
+    this.targetValue,
+    this.status = 'neutral',
+    this.reminderEnabled = false,
+    this.reminderTime,
+    this.isDefault = false, // Default false
   });
 
   factory HabitModel.fromJson(Map<String, dynamic> json) {
+    // Parse reminder time jika ada
+    TimeOfDay? parseReminderTime(dynamic time) {
+      if (time is String) {
+        final parts = time.split(':');
+        if (parts.length == 2) {
+          return TimeOfDay(
+            hour: int.parse(parts[0]),
+            minute: int.parse(parts[1]),
+          );
+        }
+      }
+      return null;
+    }
+
     return HabitModel(
       id: json['id'],
       userId: json['user_id'],
       name: json['name'],
-      frequency: json['frequency'],
-      // Supabase mengembalikan format String, perlu di-parse
+      frequency: json['frecuency_type'] ?? 'daily',
       startDate: DateTime.parse(json['start_date']),
-      isCompleted: json['is_completed'],
+      isActive: json['is_active'] ?? true,
+      categoryId: json['category_id'],
+      notes: json['notes'],
+      endDate: json['end_date'] != null ? DateTime.parse(json['end_date']) : null,
+      targetValue: json['target_value'],
+      status: json['status'] ?? 'neutral',
+      reminderEnabled: json['reminder_enabled'] ?? false,
+      reminderTime: parseReminderTime(json['reminder_time']),
+      isDefault: json['is_default'] ?? false,
     );
   }
 
   Map<String, dynamic> toJson() {
-    return {
+    final json = <String, dynamic>{
       'user_id': userId,
       'name': name,
-      'frequency': frequency,
-      // Format tanggal ke String ISO 8601
+      'frecuency_type': frequency,
       'start_date': startDate.toIso8601String(),
-      'is_completed': isCompleted,
+      'is_active': isActive,
+      'status': status,
+      'reminder_enabled': reminderEnabled,
+      'is_default': isDefault,
     };
+    
+    if (reminderTime != null) {
+      json['reminder_time'] = '${reminderTime!.hour.toString().padLeft(2, '0')}:${reminderTime!.minute.toString().padLeft(2, '0')}';
+    }
+    
+    if (categoryId != null) {
+      json['category_id'] = categoryId!;
+    }
+    if (notes != null) {
+      json['notes'] = notes!;
+    }
+    if (endDate != null) {
+      json['end_date'] = endDate!.toIso8601String();
+    }
+    if (targetValue != null) {
+      json['target_value'] = targetValue!;
+    }
+    
+    return json;
+  }
+
+  @override
+  String toString() {
+    return 'HabitModel{id: $id, name: $name, isDefault: $isDefault}';
   }
 }

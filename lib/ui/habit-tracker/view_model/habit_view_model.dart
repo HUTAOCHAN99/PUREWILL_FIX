@@ -32,7 +32,7 @@ class HabitsState {
 class HabitsViewModel extends StateNotifier<HabitsState> {
   final HabitRepository _habitRepository;
   final DailyLogRepository _dailyLogRepository;
-  final String _currentUserId; 
+  final String _currentUserId;
 
   HabitsViewModel(
     this._habitRepository,
@@ -79,19 +79,26 @@ class HabitsViewModel extends StateNotifier<HabitsState> {
       );
     }
   }
+
   Future<void> addHabit({
     required String name,
     required String frequency,
     required DateTime startDate,
+    int? categoryId,
+    String? notes,
+    int? targetValue,
   }) async {
     try {
       final newHabit = HabitModel(
-        id: 0, 
+        id: 0,
         userId: _currentUserId,
         name: name,
         frequency: frequency,
         startDate: startDate,
-        isCompleted: false,
+        isActive: true, // Default true
+        categoryId: categoryId,
+        targetValue: targetValue,
+        status: 'neutral', // Default status
       );
 
       await _habitRepository.createHabit(newHabit);
@@ -101,6 +108,7 @@ class HabitsViewModel extends StateNotifier<HabitsState> {
         status: HabitStatus.failure,
         errorMessage: 'Gagal menambahkan kebiasaan baru.',
       );
+      rethrow;
     }
   }
 }

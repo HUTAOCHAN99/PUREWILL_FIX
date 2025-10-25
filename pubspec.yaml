@@ -34,6 +34,7 @@ dependencies:
   flutter_dotenv: ^5.1.0
   percent_indicator: ^4.2.3
   flutter_riverpod: ^3.0.3
+  flutter_speed_dial: ^6.0.0
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
@@ -72,6 +73,7 @@ flutter:
     - assets/images/auth/show.png
     - assets/images/auth/hide.png
     - assets/images/auth/persons.png
+    - assets/images/home/bg.png
     - .env
     
     
