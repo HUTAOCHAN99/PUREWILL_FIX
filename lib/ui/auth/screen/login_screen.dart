@@ -127,13 +127,15 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         width: double.infinity,
                         padding: EdgeInsets.all(screenWidth * 0.05),
                         decoration: BoxDecoration(
-                          color: Colors.white.withValues(),
+                          color: Colors.white,
                           borderRadius: BorderRadius.circular(16),
+                          // Tambahkan shadow untuk container form
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withValues(),
-                              blurRadius: 10,
-                              offset: const Offset(0, 4),
+                              color: Colors.black.withOpacity(0.1),
+                              blurRadius: 12,
+                              offset: const Offset(0, 6),
+                              spreadRadius: 2,
                             ),
                           ],
                         ),
@@ -161,18 +163,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                       color: Colors.grey[300]!,
                                       width: 1,
                                     ),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: const Color.fromARGB(
-                                          255,
-                                          0,
-                                          0,
-                                          0,
-                                        ).withValues(),
-                                        blurRadius: 8,
-                                        offset: const Offset(0, 2),
-                                      ),
-                                    ],
                                   ),
                                   child: Center(
                                     child: SizedBox(
@@ -245,6 +235,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                   ),
                                   width: 1,
                                 ),
+                                // Tambahkan shadow subtle untuk text field
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.05),
+                                    blurRadius: 4,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ],
                               ),
                               child: Row(
                                 children: [
@@ -261,9 +259,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                         isCollapsed: true,
                                         contentPadding:
                                             const EdgeInsets.symmetric(
-                                              horizontal: 16,
-                                              vertical: 10,
-                                            ),
+                                          horizontal: 16,
+                                          vertical: 10,
+                                        ),
                                         hintText: "Enter your email address",
                                         hintStyle: TextStyle(
                                           color: Colors.grey[500],
@@ -306,6 +304,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                   ),
                                   width: 1,
                                 ),
+                                // Tambahkan shadow subtle untuk text field
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.05),
+                                    blurRadius: 4,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ],
                               ),
                               child: Row(
                                 children: [
@@ -322,9 +328,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                         isCollapsed: true,
                                         contentPadding:
                                             const EdgeInsets.symmetric(
-                                              horizontal: 16,
-                                              vertical: 10,
-                                            ),
+                                          horizontal: 16,
+                                          vertical: 10,
+                                        ),
                                         hintText: "Enter your password",
                                         hintStyle: TextStyle(
                                           color: Colors.grey[500],
@@ -415,6 +421,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(8),
                                   ),
+                                  // Tambahkan shadow untuk tombol login
+                                  elevation: 4,
+                                  shadowColor: Colors.black.withOpacity(0.3),
                                   textStyle: const TextStyle(
                                     fontSize: 16,
                                     fontWeight: FontWeight.bold,
@@ -428,8 +437,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                           strokeWidth: 2,
                                           valueColor:
                                               AlwaysStoppedAnimation<Color>(
-                                                Colors.white,
-                                              ),
+                                            Colors.white,
+                                          ),
                                         ),
                                       )
                                     : const Text("Login"),
