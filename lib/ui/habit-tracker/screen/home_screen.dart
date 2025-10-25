@@ -571,8 +571,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       );
     }
 
+    // Pisahkan habits menjadi default dan user habits
+    final defaultHabits = habitsState.habits.where((h) => h.isDefault).toList();
+    final userHabits = habitsState.habits.where((h) => !h.isDefault).toList();
+
+    // Gabungkan dengan default habits di atas
+    final sortedHabits = [...defaultHabits, ...userHabits];
+
     return Column(
-      children: habitsState.habits.map((habit) {
+      children: sortedHabits.map((habit) {
         final iconData =
             DefaultHabitsService.getDefaultHabitIcons()[habit.name] ??
             Icons.assignment_outlined;
