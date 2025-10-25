@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:purewill/ui/auth/auth_provider.dart';
 import 'package:purewill/ui/auth/screen/login_screen.dart';
+import 'package:purewill/ui/auth/screen/verif_screen.dart';
 import 'package:purewill/ui/auth/view_model/auth_view_model.dart';
 
 class SignupScreen extends ConsumerStatefulWidget {
@@ -39,7 +40,15 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
       if (next.status == AuthStatus.failure) {
         _showSnackBar("Daftar Gagal: ${next.errorMessage}");
       } else if (next.status == AuthStatus.success && next.user != null) {
-        _showSnackBar("Daftar Berhasil!");
+        _showSnackBar("Kode verifikasi telah dikirim !");
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (context) => VerificationScreen(
+              email: _emailController.text.trim(),
+              type: VerificationType.registration,
+            ),
+          ),
+        );
       }
     });
 
