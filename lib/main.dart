@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:purewill/ui/habit-tracker/screen/auth_wrapper.dart';
 import 'package:purewill/ui/habit-tracker/screen/home_screen.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:purewill/ui/auth/screen/login_screen.dart';
@@ -30,7 +31,7 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'PureWill',
       theme: ThemeData(primarySwatch: Colors.blue),
-      home: const LoginScreen(),
+      home: AuthWrapper(),
       routes: {
         '/login': (context) => const LoginScreen(),
         '/home': (context) => const HomeScreen(),

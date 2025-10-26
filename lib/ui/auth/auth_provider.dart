@@ -19,3 +19,10 @@ final authNotifierProvider = StateNotifierProvider<AuthViewModel, AuthState>((
   final repository = ref.watch(authRepositoryProvider);
   return AuthViewModel(repository);
 });
+
+final authStateChangesProvider = StreamProvider<User?>((ref) {
+  final supabaseClient = ref.watch(supabaseClientProvider);
+  return supabaseClient.auth.onAuthStateChange.map(
+    (event) => event.session?.user,
+  );
+});

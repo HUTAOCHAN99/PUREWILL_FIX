@@ -74,18 +74,28 @@ class AuthViewModel extends StateNotifier<AuthState> {
   }
 
   Future<void> logout() async {
-    try {
-      state = state.copyWith(status: AuthStatus.loading, errorMessage: null);
-      await _repository.logout();
-    } on AuthException catch (e) {
-      state = state.copyWith(
-        status: AuthStatus.failure,
-        errorMessage: e.message,
-      );
-    } catch (e) {
-      state = state.copyWith(status: AuthStatus.failure, errorMessage: "error");
-    }
+  try {
+    state = state.copyWith(status: AuthStatus.loading, errorMessage: null);
+    await _repository.logout();
+    
+    // Clear user data setelah logout success
+    state = state.copyWith(
+      status: AuthStatus.success,
+      user: null,
+      errorMessage: null,
+    );
+  } on AuthException catch (e) {
+    state = state.copyWith(
+      status: AuthStatus.failure,
+      errorMessage: e.message,
+    );
+  } catch (e) {
+    state = state.copyWith(
+      status: AuthStatus.failure, 
+      errorMessage: "Logout failed"
+    );
   }
+}
 
   Future<void> verifySignupOtp(String email, String otp) async {
     try {

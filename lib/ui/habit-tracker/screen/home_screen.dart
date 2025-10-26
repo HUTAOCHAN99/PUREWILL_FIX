@@ -4,6 +4,8 @@ import 'package:flutter_speed_dial/flutter_speed_dial.dart';
 import 'package:percent_indicator/linear_percent_indicator.dart';
 import 'package:purewill/data/services/default_habits_service.dart';
 import 'package:purewill/domain/model/habit_model.dart';
+import 'package:purewill/ui/auth/auth_provider.dart' hide supabaseClientProvider;
+import 'package:purewill/ui/auth/screen/login_screen.dart';
 import 'package:purewill/ui/habit-tracker/screen/add_habit_screen.dart';
 import 'package:purewill/ui/habit-tracker/habit_provider.dart';
 import 'package:purewill/ui/habit-tracker/view_model/habit_view_model.dart';
@@ -651,15 +653,53 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
-  void _performLogout() {
-    // TODO: Implement logout logic
+void _performLogout() async {
+  try {
+    // Tampilkan loading indicator
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(
+        child: CircularProgressIndicator(),
+      ),
+    );
+
+    // Gunakan AuthViewModel untuk logout
+    final authViewModel = ref.read(authNotifierProvider.notifier);
+    await authViewModel.logout();
+
+    // Tutup dialog loading
+    if (Navigator.of(context).canPop()) {
+      Navigator.of(context).pop();
+    }
+
+    // Navigate ke login screen dan clear semua stack
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (context) => LoginScreen()),
+      (Route<dynamic> route) => false,
+    );
+
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text('Logged out successfully'),
         duration: Duration(seconds: 2),
       ),
     );
+  } catch (e) {
+    // Tutup dialog loading jika ada error
+    if (Navigator.of(context).canPop()) {
+      Navigator.of(context).pop();
+    }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Logout failed: $e'),
+        backgroundColor: Colors.red,
+        duration: const Duration(seconds: 3),
+      ),
+    );
   }
+}
 }
 
 class HabitCard extends StatelessWidget {
