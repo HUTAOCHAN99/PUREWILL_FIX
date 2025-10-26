@@ -5,6 +5,7 @@ import 'package:purewill/data/repository/daily_log_repository.dart';
 import 'package:purewill/data/repository/habit_repository.dart';
 import 'package:purewill/data/repository/user_repository.dart';
 import 'package:purewill/domain/model/category_model.dart';
+import 'package:purewill/domain/model/daily_log_model.dart';
 import 'package:purewill/ui/habit-tracker/view_model/habit_view_model.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -27,17 +28,16 @@ final userRepositoryProvider = Provider<UserRepository>((ref) {
   return UserRepository(client);
 });
 
-final habitNotifierProvider =
-    StateNotifierProvider<HabitsViewModel, HabitsState>((ref) {
-      final _habitRepository = ref.watch(habitRepositoryProvider);
-      final _dailyLogRepository = ref.watch(dailyLogRepositoryProvider);
-      final client = ref.watch(supabaseClientProvider);
-      final userId = client.auth.currentUser?.id;
-      if (userId != null) {
-        return HabitsViewModel(_habitRepository, _dailyLogRepository, userId);
-      }
-      return HabitsViewModel(_habitRepository, _dailyLogRepository, "");
-    });
+final habitNotifierProvider = StateNotifierProvider<HabitsViewModel, HabitsState>((ref) {
+  final _habitRepository = ref.watch(habitRepositoryProvider);
+  final _dailyLogRepository = ref.watch(dailyLogRepositoryProvider);
+  final client = ref.watch(supabaseClientProvider);
+  final userId = client.auth.currentUser?.id;
+  if (userId != null) {
+    return HabitsViewModel(_habitRepository, _dailyLogRepository, userId);
+  }
+  return HabitsViewModel(_habitRepository, _dailyLogRepository, "");
+});
 
 final categoryRepositoryProvider = Provider<CategoryRepository>((ref) {
   final client = ref.watch(supabaseClientProvider);
@@ -49,7 +49,7 @@ final categoriesProvider = FutureProvider<List<CategoryModel>>((ref) async {
     print('=== CATEGORIES PROVIDER INITIATED ===');
     
     final repository = ref.watch(categoryRepositoryProvider);
-    print('Repository: ${repository != null}');
+    print('Repository: ${repository.hashCode}');
     
     final categories = await repository.fetchCategories();
     
@@ -64,7 +64,31 @@ final categoriesProvider = FutureProvider<List<CategoryModel>>((ref) async {
     print('Stack: $stackTrace');
     print('Returning empty list as fallback');
     
-    // Return empty list instead of throwing to prevent UI crash
     return [];
+  }
+});
+
+final todayLogsProvider = FutureProvider<Map<int, DailyLogModel>>((ref) async {
+  try {
+    final dailyLogRepo = ref.watch(dailyLogRepositoryProvider);
+    final todayLogs = await dailyLogRepo.fetchLogsByDate(DateTime.now());
+    
+    final logsMap = <int, DailyLogModel>{};
+    for (final log in todayLogs) {
+      logsMap[log.habitId] = log;
+    }
+    
+    return logsMap;
+  } catch (e) {
+    return {};
+  }
+});
+
+final todayCompletionStatusProvider = FutureProvider<Map<int, bool>>((ref) async {
+  try {
+    final viewModel = ref.read(habitNotifierProvider.notifier);
+    return await viewModel.getTodayCompletionStatus();
+  } catch (e) {
+    return {};
   }
 });

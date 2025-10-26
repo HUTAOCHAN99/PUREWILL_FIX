@@ -22,6 +22,7 @@ class DailyLogRepository {
         'is_completed': isCompleted,
         'actual_value': actualValue,
         'notes': notes,
+        'created_at': DateTime.now().toIso8601String(),
       };
 
       final response = await _supabaseClient
@@ -30,7 +31,7 @@ class DailyLogRepository {
           .select()
           .single();
 
-        return DailyLogModel.fromJson(response);
+      return DailyLogModel.fromJson(response);
     } catch (e, stackTrace) {
       log(
         'RECORD LOG FAILURE: Failed to record log for habit $habitId on ${date.toIso8601String().substring(0, 10)}.',
@@ -50,7 +51,7 @@ class DailyLogRepository {
           .eq('habit_id', habitId)
           .order('log_date', ascending: false);
 
-        return response.map((data) => DailyLogModel.fromJson(data)).toList();
+      return response.map((data) => DailyLogModel.fromJson(data)).toList();
     } catch (e, stackTrace) {
       log(
         'FETCH LOGS FAILURE: Failed to fetch logs for habit $habitId.',
@@ -75,14 +76,14 @@ class DailyLogRepository {
           .gte(
             'log_date',
             startDate.toIso8601String().substring(0, 10),
-          ) // Greater Than or Equal
+          )
           .lte(
             'log_date',
             endDate.toIso8601String().substring(0, 10),
-          ) // Less Than or Equal
+          )
           .order('log_date', ascending: true);
 
-        return response.map((data) => DailyLogModel.fromJson(data)).toList();
+      return response.map((data) => DailyLogModel.fromJson(data)).toList();
     } catch (e, stackTrace) {
       log(
         'FETCH LOGS RANGE FAILURE: Failed to fetch logs for habit $habitId in range.',
@@ -91,6 +92,52 @@ class DailyLogRepository {
         name: 'DAILY_LOG_REPO',
       );
       rethrow;
+    }
+  }
+
+  Future<List<DailyLogModel>> fetchLogsByDate(DateTime date) async {
+    try {
+      final response = await _supabaseClient
+          .from(_logTableName)
+          .select('*')
+          .eq('log_date', date.toIso8601String().substring(0, 10))
+          .order('created_at', ascending: false);
+
+      return response.map((data) => DailyLogModel.fromJson(data)).toList();
+    } catch (e, stackTrace) {
+      log(
+        'FETCH LOGS BY DATE FAILURE: Failed to fetch logs for date ${date.toIso8601String().substring(0, 10)}.',
+        error: e,
+        stackTrace: stackTrace,
+        name: 'DAILY_LOG_REPO',
+      );
+      rethrow;
+    }
+  }
+
+  Future<DailyLogModel?> getTodayLogForHabit(int habitId) async {
+    try {
+      final today = DateTime.now().toIso8601String().substring(0, 10);
+      
+      final response = await _supabaseClient
+          .from(_logTableName)
+          .select('*')
+          .eq('habit_id', habitId)
+          .eq('log_date', today)
+          .maybeSingle();
+
+      if (response != null) {
+        return DailyLogModel.fromJson(response);
+      }
+      return null;
+    } catch (e, stackTrace) {
+      log(
+        'GET TODAY LOG FAILURE: Failed to fetch today log for habit $habitId.',
+        error: e,
+        stackTrace: stackTrace,
+        name: 'DAILY_LOG_REPO',
+      );
+      return null;
     }
   }
 

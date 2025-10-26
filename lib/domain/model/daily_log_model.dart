@@ -5,6 +5,7 @@ class DailyLogModel {
   final bool isCompleted;
   final double? actualValue;
   final String? notes;
+  final DateTime? createdAt;
 
   DailyLogModel({
     required this.id,
@@ -13,6 +14,7 @@ class DailyLogModel {
     required this.isCompleted,
     this.actualValue,
     this.notes,
+    this.createdAt,
   });
 
   factory DailyLogModel.fromJson(Map<String, dynamic> json) {
@@ -23,19 +25,18 @@ class DailyLogModel {
       isCompleted: json['is_completed'],
       actualValue: json['actual_value']?.toDouble(), 
       notes: json['notes'],
+      createdAt: json['created_at'] != null ? DateTime.parse(json['created_at']) : null,
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
       'habit_id': habitId,
-      'log_date': logDate.toIso8601String().substring(
-        0,
-        10,
-      ), // Hanya tanggal (YYYY-MM-DD)
+      'log_date': logDate.toIso8601String().substring(0, 10),
       'is_completed': isCompleted,
       'actual_value': actualValue,
       'notes': notes,
+      'created_at': createdAt?.toIso8601String(),
     };
   }
 }

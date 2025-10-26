@@ -71,6 +71,11 @@ class HabitRepository {
       print('User habits: ${userHabits.length}');
       print('Available default habits: ${availableDefaultHabits.length}');
       print('Total habits: ${allHabits.length}');
+      
+      // Debug print untuk melihat data habit
+      for (var habit in allHabits) {
+        print('Habit: ${habit.name}, Target: ${habit.targetValue}, Unit: ${habit.unit}, IsDefault: ${habit.isDefault}');
+      }
       print('========================');
 
       return allHabits;
@@ -84,28 +89,59 @@ class HabitRepository {
       
       // Fallback: return default habits jika error
       print('=== USING DEFAULT HABITS AS FALLBACK ===');
-      return DefaultHabitsService.getDefaultHabits();
+      final defaultHabits = DefaultHabitsService.getDefaultHabits();
+      
+      // Debug print untuk default habits
+      for (var habit in defaultHabits) {
+        print('Default Habit: ${habit.name}, Target: ${habit.targetValue}, Unit: ${habit.unit}');
+      }
+      
+      return defaultHabits;
     }
   }
 
-  // Hapus method updateHabitStatus atau perbaiki
   Future<void> updateHabitStatus({
     required int habitId,
-    required bool isActive, // Ganti dengan isActive
+    required String status,
   }) async {
     try {
       await _supabaseClient
           .from(_habitTableName)
-          .update({'is_active': isActive})
+          .update({'status': status})
           .eq('id', habitId);
 
       log(
-        'UPDATE HABIT STATUS SUCCESS: Habit $habitId updated.',
+        'UPDATE HABIT STATUS SUCCESS: Habit $habitId updated to $status.',
         name: 'HABIT_REPO',
       );
     } catch (e, stackTrace) {
       log(
         'UPDATE HABIT FAILURE: Failed to update status for habit $habitId.',
+        error: e,
+        stackTrace: stackTrace,
+        name: 'HABIT_REPO',
+      );
+      rethrow;
+    }
+  }
+
+  Future<void> updateHabit({
+    required int habitId,
+    required Map<String, dynamic> updates,
+  }) async {
+    try {
+      await _supabaseClient
+          .from(_habitTableName)
+          .update(updates)
+          .eq('id', habitId);
+
+      log(
+        'UPDATE HABIT SUCCESS: Habit $habitId updated with $updates.',
+        name: 'HABIT_REPO',
+      );
+    } catch (e, stackTrace) {
+      log(
+        'UPDATE HABIT FAILURE: Failed to update habit $habitId.',
         error: e,
         stackTrace: stackTrace,
         name: 'HABIT_REPO',
@@ -127,6 +163,130 @@ class HabitRepository {
         name: 'HABIT_REPO',
       );
       rethrow;
+    }
+  }
+
+  Future<HabitModel?> getHabitById(int habitId) async {
+    try {
+      final response = await _supabaseClient
+          .from(_habitTableName)
+          .select('*')
+          .eq('id', habitId)
+          .maybeSingle();
+
+      if (response != null) {
+        return HabitModel.fromJson(response);
+      }
+      return null;
+    } catch (e, stackTrace) {
+      log(
+        'GET HABIT BY ID FAILURE: Failed to fetch habit $habitId.',
+        error: e,
+        stackTrace: stackTrace,
+        name: 'HABIT_REPO',
+      );
+      return null;
+    }
+  }
+
+  Future<List<HabitModel>> getHabitsByCategory(int categoryId) async {
+    try {
+      final response = await _supabaseClient
+          .from(_habitTableName)
+          .select('*')
+          .eq('category_id', categoryId)
+          .order('name', ascending: true);
+
+      return response.map((data) => HabitModel.fromJson(data)).toList();
+    } catch (e, stackTrace) {
+      log(
+        'GET HABITS BY CATEGORY FAILURE: Failed to fetch habits for category $categoryId.',
+        error: e,
+        stackTrace: stackTrace,
+        name: 'HABIT_REPO',
+      );
+      return [];
+    }
+  }
+
+  Future<List<HabitModel>> searchHabits(String query) async {
+    try {
+      final response = await _supabaseClient
+          .from(_habitTableName)
+          .select('*')
+          .ilike('name', '%$query%')
+          .order('name', ascending: true);
+
+      return response.map((data) => HabitModel.fromJson(data)).toList();
+    } catch (e, stackTrace) {
+      log(
+        'SEARCH HABITS FAILURE: Failed to search habits with query: $query.',
+        error: e,
+        stackTrace: stackTrace,
+        name: 'HABIT_REPO',
+      );
+      return [];
+    }
+  }
+
+  Future<int> getHabitsCount(String userId) async {
+    try {
+      final response = await _supabaseClient
+          .from(_habitTableName)
+          .select()
+          .eq('user_id', userId);
+
+      return response.length;
+    } catch (e, stackTrace) {
+      log(
+        'GET HABITS COUNT FAILURE: Failed to count habits for user $userId.',
+        error: e,
+        stackTrace: stackTrace,
+        name: 'HABIT_REPO',
+      );
+      return 0;
+    }
+  }
+
+  Future<List<HabitModel>> getActiveHabits(String userId) async {
+    try {
+      final response = await _supabaseClient
+          .from(_habitTableName)
+          .select('*')
+          .eq('user_id', userId)
+          .eq('is_active', true)
+          .order('name', ascending: true);
+
+      return response.map((data) => HabitModel.fromJson(data)).toList();
+    } catch (e, stackTrace) {
+      log(
+        'GET ACTIVE HABITS FAILURE: Failed to fetch active habits for user $userId.',
+        error: e,
+        stackTrace: stackTrace,
+        name: 'HABIT_REPO',
+      );
+      return [];
+    }
+  }
+
+  Future<List<HabitModel>> getCompletedHabits(String userId) async {
+    try {
+      final response = await _supabaseClient
+          .from(_habitTableName)
+          .select('*')
+          .eq('user_id', userId)
+          .eq('status', 'completed')
+          .order('name', ascending: true);
+
+      return response.map((data) => HabitModel.fromJson(data)).toList();
+    } catch (e, stackTrace) {
+      log(
+        'GET COMPLETED HABITS FAILURE: Failed to fetch completed habits for user $userId.',
+        error: e,
+        stackTrace: stackTrace,
+        name: 'HABIT_REPO',
+      );
+      return [];
     }
   }
 }

@@ -1,4 +1,3 @@
-// lib/domain/model/category_model.dart
 class CategoryModel {
   final int id;
   final String name;
@@ -14,7 +13,6 @@ class CategoryModel {
     print('=== PARSING CATEGORY JSON ===');
     print('Raw JSON: $json');
     
-    // Handle different date formats from Supabase
     DateTime parseCreatedAt(dynamic date) {
       if (date is String) {
         return DateTime.parse(date);

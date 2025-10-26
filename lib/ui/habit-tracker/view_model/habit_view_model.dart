@@ -1,3 +1,4 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
 import 'package:purewill/domain/model/habit_model.dart';
 import '../../../data/repository/habit_repository.dart';
@@ -23,7 +24,7 @@ class HabitsState {
   }) {
     return HabitsState(
       status: status ?? this.status,
-      errorMessage: errorMessage,
+      errorMessage: errorMessage ?? this.errorMessage,
       habits: habits ?? this.habits,
     );
   }
@@ -45,38 +46,97 @@ class HabitsViewModel extends StateNotifier<HabitsState> {
 
     try {
       final habits = await _habitRepository.fetchUserHabits(_currentUserId);
-
       state = state.copyWith(status: HabitStatus.success, habits: habits);
     } catch (e) {
       state = state.copyWith(
         status: HabitStatus.failure,
-        errorMessage: 'Gagal memuat kebiasaan.',
+        errorMessage: 'Failed to load habits.',
       );
     }
   }
 
-  Future<void> recordHabitCompletion({
+  Future<void> toggleHabitCompletion(HabitModel habit) async {
+    try {
+      final today = DateTime.now();
+      final existingLog = await _dailyLogRepository.getTodayLogForHabit(habit.id);
+      
+      if (existingLog != null) {
+        // Toggle completion status
+        await _dailyLogRepository.recordLog(
+          habitId: habit.id,
+          date: today,
+          isCompleted: !existingLog.isCompleted,
+          actualValue: habit.targetValue?.toDouble(),
+          notes: existingLog.notes,
+        );
+      } else {
+        // Create new log as completed
+        await _dailyLogRepository.recordLog(
+          habitId: habit.id,
+          date: today,
+          isCompleted: true,
+          actualValue: habit.targetValue?.toDouble(),
+          notes: 'Completed via app',
+        );
+      }
+
+      // Update habit status in habits table
+      final newStatus = existingLog?.isCompleted == true ? 'neutral' : 'completed';
+      await _habitRepository.updateHabitStatus(
+        habitId: habit.id,
+        status: newStatus,
+      );
+
+      // Reload habits untuk update UI
+      await loadUserHabits();
+    } catch (e) {
+      state = state.copyWith(
+        status: HabitStatus.failure,
+        errorMessage: 'Failed to update habit status.',
+      );
+    }
+  }
+
+  Future<void> completeHabitWithValue({
     required int habitId,
-    required double value,
+    required double actualValue,
     String? notes,
   }) async {
-    final now = DateTime.now();
-
     try {
       await _dailyLogRepository.recordLog(
         habitId: habitId,
-        date: now,
+        date: DateTime.now(),
         isCompleted: true,
-        actualValue: value,
+        actualValue: actualValue,
         notes: notes,
+      );
+
+      await _habitRepository.updateHabitStatus(
+        habitId: habitId,
+        status: 'completed',
       );
 
       await loadUserHabits();
     } catch (e) {
       state = state.copyWith(
         status: HabitStatus.failure,
-        errorMessage: 'Gagal mencatat penyelesaian kebiasaan.',
+        errorMessage: 'Failed to record habit completion.',
       );
+    }
+  }
+
+  Future<Map<int, bool>> getTodayCompletionStatus() async {
+    try {
+      final todayLogs = await _dailyLogRepository.fetchLogsByDate(DateTime.now());
+      final completionStatus = <int, bool>{};
+      
+      for (final log in todayLogs) {
+        completionStatus[log.habitId] = log.isCompleted;
+      }
+      
+      return completionStatus;
+    } catch (e) {
+      return {};
     }
   }
 
@@ -95,10 +155,10 @@ class HabitsViewModel extends StateNotifier<HabitsState> {
         name: name,
         frequency: frequency,
         startDate: startDate,
-        isActive: true, // Default true
+        isActive: true,
         categoryId: categoryId,
         targetValue: targetValue,
-        status: 'neutral', // Default status
+        status: 'neutral',
       );
 
       await _habitRepository.createHabit(newHabit);
@@ -106,7 +166,7 @@ class HabitsViewModel extends StateNotifier<HabitsState> {
     } catch (e) {
       state = state.copyWith(
         status: HabitStatus.failure,
-        errorMessage: 'Gagal menambahkan kebiasaan baru.',
+        errorMessage: 'Failed to add new habit.',
       );
       rethrow;
     }

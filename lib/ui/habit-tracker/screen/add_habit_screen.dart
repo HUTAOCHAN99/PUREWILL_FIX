@@ -1,4 +1,5 @@
 // lib/ui/habit-tracker/screen/add_habit_screen.dart
+import 'dart:io';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
@@ -23,12 +24,14 @@ class AddHabitScreen extends ConsumerStatefulWidget {
 class _AddHabitScreenState extends ConsumerState<AddHabitScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
-  final _durationController = TextEditingController(text: '30');
+  final _targetValueController = TextEditingController(text: '30');
+  final _customUnitController = TextEditingController();
+  
   int? _selectedCategoryId;
   String _selectedFrequency = 'daily';
-  TimeOfDay? _selectedTime;
-  int _duration = 30;
-  String _durationUnit = 'Minutes';
+  int _targetValue = 30;
+  String _selectedUnit = 'glasses'; // Default unit
+  bool _showCustomUnit = false;
 
   // Tambahan untuk reminder
   bool _reminderEnabled = false;
@@ -39,7 +42,14 @@ class _AddHabitScreenState extends ConsumerState<AddHabitScreen> {
     {'value': 'weekly', 'label': 'Weekly'},
   ];
 
-  final List<String> _durationUnits = ['Minutes', 'Hours'];
+  // Opsi satuan yang tersedia
+  final List<String> _unitOptions = [
+    'glasses',
+    'pages', 
+    'minutes',
+    'hours',
+    'other' // Opsi untuk custom unit
+  ];
 
   @override
   void initState() {
@@ -48,11 +58,16 @@ class _AddHabitScreenState extends ConsumerState<AddHabitScreen> {
     // Jika ada default habit, pre-fill form
     if (widget.defaultHabit != null) {
       _nameController.text = widget.defaultHabit!.name;
-      _duration = widget.defaultHabit!.targetValue ?? 30;
-      _durationController.text = _duration.toString();
+      _targetValue = widget.defaultHabit!.targetValue ?? 30;
+      _targetValueController.text = _targetValue.toString();
       _selectedFrequency = widget.defaultHabit!.frequency;
+      
+      // Set unit dari default habit jika ada
+      if (widget.defaultHabit!.unit != null) {
+        _selectedUnit = widget.defaultHabit!.unit!;
+      }
     } else {
-      _durationController.text = _duration.toString();
+      _targetValueController.text = _targetValue.toString();
     }
 
     // Load categories when screen initializes
@@ -64,20 +79,9 @@ class _AddHabitScreenState extends ConsumerState<AddHabitScreen> {
   @override
   void dispose() {
     _nameController.dispose();
-    _durationController.dispose();
+    _targetValueController.dispose();
+    _customUnitController.dispose();
     super.dispose();
-  }
-
-  Future<void> _selectTime() async {
-    final TimeOfDay? picked = await showTimePicker(
-      context: context,
-      initialTime: _selectedTime ?? TimeOfDay.now(),
-    );
-    if (picked != null) {
-      setState(() {
-        _selectedTime = picked;
-      });
-    }
   }
 
   Future<void> _selectReminderTime() async {
@@ -96,23 +100,24 @@ class _AddHabitScreenState extends ConsumerState<AddHabitScreen> {
     if (_formKey.currentState!.validate()) {
       final viewModel = ref.read(habitNotifierProvider.notifier);
 
+      // Tentukan unit yang akan digunakan
+      String? finalUnit;
+      if (_selectedUnit == 'other' && _customUnitController.text.isNotEmpty) {
+        finalUnit = _customUnitController.text.trim();
+      } else if (_selectedUnit != 'other') {
+        finalUnit = _selectedUnit;
+      }
+
       // Debug print
       print('=== SAVING HABIT ===');
       print('Name: ${_nameController.text}');
       print('Category: $_selectedCategoryId');
       print('Frequency: $_selectedFrequency');
-      print('Duration: $_duration $_durationUnit');
+      print('Target Value: $_targetValue');
+      print('Unit: $finalUnit');
       print('Reminder Enabled: $_reminderEnabled');
       print('Reminder Time: $_reminderTime');
       print('==================');
-
-      // Calculate target value based on duration and unit
-      int? targetValue;
-      if (_durationUnit == 'Hours') {
-        targetValue = _duration * 60; // Convert hours to minutes
-      } else {
-        targetValue = _duration;
-      }
 
       // Get current user ID
       final supabaseClient = ref.read(supabaseClientProvider);
@@ -133,7 +138,8 @@ class _AddHabitScreenState extends ConsumerState<AddHabitScreen> {
         frequency: _selectedFrequency,
         startDate: DateTime.now(),
         categoryId: _selectedCategoryId,
-        targetValue: targetValue,
+        targetValue: _targetValue,
+        unit: finalUnit, // TAMBAHAN: Simpan unit
         isActive: true,
         status: 'neutral',
         reminderEnabled: _reminderEnabled,
@@ -178,12 +184,7 @@ class _AddHabitScreenState extends ConsumerState<AddHabitScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Add New Habit'),
-        backgroundColor: const Color.fromRGBO(
-          176,
-          230,
-          216,
-          1,
-        ), // 💚 warna baru
+        backgroundColor: const Color.fromRGBO(176, 230, 216, 1),
         foregroundColor: Colors.black,
         elevation: 0,
         leading: IconButton(
@@ -240,7 +241,7 @@ class _AddHabitScreenState extends ConsumerState<AddHabitScreen> {
                       child: TextFormField(
                         controller: _nameController,
                         decoration: InputDecoration(
-                          hintText: 'e.g. Read for 30 minutes',
+                          hintText: 'e.g. Morning Meditation',
                           filled: true,
                           fillColor: Colors.white.withOpacity(0.95),
                           border: OutlineInputBorder(
@@ -294,9 +295,6 @@ class _AddHabitScreenState extends ConsumerState<AddHabitScreen> {
                         ),
                         child: categoriesAsync.when(
                           data: (categories) {
-                            print('=== CATEGORIES UI BUILDER ===');
-                            print('Categories length: ${categories.length}');
-
                             if (categories.isEmpty) {
                               return Container(
                                 padding: const EdgeInsets.symmetric(
@@ -363,16 +361,11 @@ class _AddHabitScreenState extends ConsumerState<AddHabitScreen> {
                               onChanged: (value) {
                                 setState(() {
                                   _selectedCategoryId = value;
-                                  print('Category selected: $value');
                                 });
-                              },
-                              validator: (value) {
-                                return null; // Category is optional
                               },
                             );
                           },
                           loading: () {
-                            print('=== CATEGORIES LOADING ===');
                             return Container(
                               padding: const EdgeInsets.symmetric(
                                 horizontal: 16,
@@ -394,10 +387,6 @@ class _AddHabitScreenState extends ConsumerState<AddHabitScreen> {
                             );
                           },
                           error: (error, stack) {
-                            print('=== CATEGORIES ERROR IN UI ===');
-                            print('Error: $error');
-                            print('Stack: $stack');
-
                             return Container(
                               padding: const EdgeInsets.symmetric(
                                 horizontal: 16,
@@ -415,14 +404,6 @@ class _AddHabitScreenState extends ConsumerState<AddHabitScreen> {
                                     style: TextStyle(color: Colors.red),
                                   ),
                                   const SizedBox(height: 4),
-                                  Text(
-                                    'Error: $error',
-                                    style: const TextStyle(
-                                      fontSize: 12,
-                                      color: Colors.grey,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 8),
                                   const Text(
                                     'You can still create habits without categories',
                                     style: TextStyle(
@@ -479,7 +460,6 @@ class _AddHabitScreenState extends ConsumerState<AddHabitScreen> {
                                 onChanged: (value) {
                                   setState(() {
                                     _selectedFrequency = value!;
-                                    print('Frequency selected: $value');
                                   });
                                 },
                                 contentPadding: const EdgeInsets.symmetric(
@@ -493,78 +473,9 @@ class _AddHabitScreenState extends ConsumerState<AddHabitScreen> {
                     ),
                     const SizedBox(height: 24),
 
-                    // Target Time Section
+                    // Target Value Section
                     const Text(
-                      'Target Time',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.black87,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Container(
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(12),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.1),
-                            blurRadius: 10,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
-                      ),
-                      child: GestureDetector(
-                        onTap: _selectTime,
-                        child: Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 12,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.95),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(
-                                _selectedTime != null
-                                    ? '${_selectedTime!.hour.toString().padLeft(2, '0')}:${_selectedTime!.minute.toString().padLeft(2, '0')}'
-                                    : '--:--',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  color: _selectedTime != null
-                                      ? Colors.black
-                                      : Colors.grey,
-                                  fontWeight: _selectedTime != null
-                                      ? FontWeight.w500
-                                      : FontWeight.normal,
-                                ),
-                              ),
-                              Checkbox(
-                                value: _selectedTime != null,
-                                onChanged: (value) {
-                                  if (value == true) {
-                                    _selectTime();
-                                  } else {
-                                    setState(() {
-                                      _selectedTime = null;
-                                    });
-                                  }
-                                },
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-
-                    // Duration Section
-                    const Text(
-                      'Duration',
+                      'Target',
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
@@ -574,6 +485,7 @@ class _AddHabitScreenState extends ConsumerState<AddHabitScreen> {
                     const SizedBox(height: 8),
                     Row(
                       children: [
+                        // Target Value Input
                         Expanded(
                           flex: 2,
                           child: Container(
@@ -593,7 +505,7 @@ class _AddHabitScreenState extends ConsumerState<AddHabitScreen> {
                                 borderRadius: BorderRadius.circular(12),
                               ),
                               child: TextFormField(
-                                controller: _durationController,
+                                controller: _targetValueController,
                                 keyboardType: TextInputType.number,
                                 decoration: InputDecoration(
                                   border: OutlineInputBorder(
@@ -604,23 +516,23 @@ class _AddHabitScreenState extends ConsumerState<AddHabitScreen> {
                                     horizontal: 16,
                                     vertical: 12,
                                   ),
-                                  hintText: 'Duration',
+                                  hintText: 'Value',
                                   filled: true,
                                   fillColor: Colors.transparent,
                                 ),
                                 onChanged: (value) {
                                   final parsedValue = int.tryParse(value) ?? 30;
                                   setState(() {
-                                    _duration = parsedValue;
+                                    _targetValue = parsedValue;
                                   });
                                 },
                                 validator: (value) {
                                   if (value == null || value.isEmpty) {
-                                    return 'Please enter duration';
+                                    return 'Please enter target value';
                                   }
                                   final parsed = int.tryParse(value);
                                   if (parsed == null || parsed <= 0) {
-                                    return 'Please enter valid duration';
+                                    return 'Please enter valid target value';
                                   }
                                   return null;
                                 },
@@ -629,6 +541,8 @@ class _AddHabitScreenState extends ConsumerState<AddHabitScreen> {
                           ),
                         ),
                         const SizedBox(width: 12),
+                        
+                        // Unit Selection
                         Expanded(
                           flex: 3,
                           child: Container(
@@ -648,7 +562,7 @@ class _AddHabitScreenState extends ConsumerState<AddHabitScreen> {
                                 borderRadius: BorderRadius.circular(12),
                               ),
                               child: DropdownButtonFormField<String>(
-                                value: _durationUnit,
+                                value: _selectedUnit,
                                 decoration: InputDecoration(
                                   border: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(12),
@@ -661,18 +575,26 @@ class _AddHabitScreenState extends ConsumerState<AddHabitScreen> {
                                   filled: true,
                                   fillColor: Colors.transparent,
                                 ),
-                                items: _durationUnits
+                                items: _unitOptions
                                     .map(
                                       (unit) => DropdownMenuItem(
                                         value: unit,
-                                        child: Text(unit),
+                                        child: Text(
+                                          unit == 'other' ? 'Other...' : unit,
+                                          style: TextStyle(
+                                            color: unit == 'other' ? Colors.blue : Colors.black,
+                                          ),
+                                        ),
                                       ),
                                     )
                                     .toList(),
                                 onChanged: (value) {
                                   setState(() {
-                                    _durationUnit = value!;
-                                    print('Duration unit selected: $value');
+                                    _selectedUnit = value!;
+                                    _showCustomUnit = value == 'other';
+                                    if (value != 'other') {
+                                      _customUnitController.clear();
+                                    }
                                   });
                                 },
                               ),
@@ -681,9 +603,64 @@ class _AddHabitScreenState extends ConsumerState<AddHabitScreen> {
                         ),
                       ],
                     ),
+                    
+                    // Custom Unit Input (muncul jika memilih "other")
+                    if (_showCustomUnit) ...[
+                      const SizedBox(height: 12),
+                      const Text(
+                        'Custom Unit',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.black87,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Container(
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(12),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.1),
+                              blurRadius: 10,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.95),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: TextFormField(
+                            controller: _customUnitController,
+                            decoration: InputDecoration(
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide.none,
+                              ),
+                              contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 12,
+                              ),
+                              hintText: 'e.g. cups, km, sets, etc.',
+                              filled: true,
+                              fillColor: Colors.transparent,
+                            ),
+                            validator: (value) {
+                              if (_selectedUnit == 'other' && (value == null || value.isEmpty)) {
+                                return 'Please enter custom unit';
+                              }
+                              return null;
+                            },
+                          ),
+                        ),
+                      ),
+                    ],
+                    
                     const SizedBox(height: 8),
                     Text(
-                      'Target: $_duration ${_durationUnit.toLowerCase()}',
+                      'Target: $_targetValue ${_showCustomUnit && _customUnitController.text.isNotEmpty ? _customUnitController.text : _selectedUnit != 'other' ? _selectedUnit : ''}',
                       style: TextStyle(
                         fontSize: 12,
                         color: Colors.grey[600],
@@ -785,17 +762,6 @@ class _AddHabitScreenState extends ConsumerState<AddHabitScreen> {
                                       ),
                                     ],
                                   ),
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                _reminderEnabled
-                                    ? 'Reminder: ${_reminderEnabled ? "Active" : "Non-active"}'
-                                    : 'Reminder: Non-active',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: Colors.grey[600],
-                                  fontStyle: FontStyle.italic,
                                 ),
                               ),
                             ],

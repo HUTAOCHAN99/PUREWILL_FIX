@@ -12,8 +12,8 @@ class CategoryRepository {
     try {
       print('=== FETCHING CATEGORIES FROM SUPABASE ===');
       print('Table: $_categoryTableName');
-      print('Supabase Client: ${_supabaseClient != null}');
-      
+      print('Supabase Client: ${_supabaseClient.hashCode}');
+
       final response = await _supabaseClient
           .from(_categoryTableName)
           .select('*')
@@ -58,7 +58,7 @@ class CategoryRepository {
       print('Error message: $e');
       print('Stack trace: $stackTrace');
       print('========================');
-      
+
       log(
         'FETCH CATEGORIES FAILURE: Failed to fetch categories.',
         error: e,

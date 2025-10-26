@@ -1,4 +1,3 @@
-// lib/domain/model/habit_model.dart
 import 'package:flutter/material.dart';
 
 class HabitModel {
@@ -12,10 +11,11 @@ class HabitModel {
   final String? notes;
   final DateTime? endDate;
   final int? targetValue;
+  final String? unit; // TAMBAHAN: Satuan untuk target value
   final String status;
   final bool reminderEnabled;
   final TimeOfDay? reminderTime;
-  final bool isDefault; // Tambahkan field untuk menandai habit default
+  final bool isDefault;
 
   HabitModel({
     required this.id,
@@ -28,14 +28,14 @@ class HabitModel {
     this.notes,
     this.endDate,
     this.targetValue,
+    this.unit, // TAMBAHAN
     this.status = 'neutral',
     this.reminderEnabled = false,
     this.reminderTime,
-    this.isDefault = false, // Default false
+    this.isDefault = false,
   });
 
   factory HabitModel.fromJson(Map<String, dynamic> json) {
-    // Parse reminder time jika ada
     TimeOfDay? parseReminderTime(dynamic time) {
       if (time is String) {
         final parts = time.split(':');
@@ -60,6 +60,7 @@ class HabitModel {
       notes: json['notes'],
       endDate: json['end_date'] != null ? DateTime.parse(json['end_date']) : null,
       targetValue: json['target_value'],
+      unit: json['unit'], // TAMBAHAN
       status: json['status'] ?? 'neutral',
       reminderEnabled: json['reminder_enabled'] ?? false,
       reminderTime: parseReminderTime(json['reminder_time']),
@@ -95,12 +96,15 @@ class HabitModel {
     if (targetValue != null) {
       json['target_value'] = targetValue!;
     }
+    if (unit != null) {
+      json['unit'] = unit!; // TAMBAHAN
+    }
     
     return json;
   }
 
   @override
   String toString() {
-    return 'HabitModel{id: $id, name: $name, isDefault: $isDefault}';
+    return 'HabitModel{id: $id, name: $name, targetValue: $targetValue, unit: $unit, isDefault: $isDefault}';
   }
 }
