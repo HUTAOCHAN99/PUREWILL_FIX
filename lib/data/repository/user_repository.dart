@@ -1,5 +1,5 @@
 import 'dart:developer';
-import 'package:purewill/domain/model/user_model.dart';
+import 'package:purewill/domain/model/profile_model.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class UserRepository {
@@ -8,16 +8,18 @@ class UserRepository {
 
   UserRepository(this._supabaseClient);
 
-  Future<UserModel?> fetchUserProfile(String userId) async {
+  Future<ProfileModel?> fetchUserProfile(String userId) async {
     try {
       final response = await _supabaseClient
           .from(_userTableName)
           .select('*')
-          .eq('id', userId)
+          .eq('user_id', userId.toString())
           .single();
-
-        return UserModel.fromJson(response);
+      print(response);
+        return ProfileModel.fromJson(response);
     } catch (e, stackTrace) {
+      print(e.toString());
+      print(stackTrace.toString());
       log(
         'FETCH USER PROFILE FAILURE: Failed to fetch profile for user $userId.',
         error: e,

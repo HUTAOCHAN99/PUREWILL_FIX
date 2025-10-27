@@ -70,6 +70,7 @@ class HabitRepository {
 
       return allHabits;
     } catch (e, stackTrace) {
+      print(e.toString());
       log(
         'FETCH HABITS FAILURE: Failed to fetch habits for user $userId.',
         error: e,

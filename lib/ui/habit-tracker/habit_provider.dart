@@ -5,8 +5,6 @@ import 'package:purewill/data/repository/daily_log_repository.dart';
 import 'package:purewill/data/repository/habit_repository.dart';
 import 'package:purewill/data/repository/target_unit_repository.dart';
 import 'package:purewill/data/repository/user_repository.dart';
-// import 'package:purewill/domain/model/category_model.dart';
-// import 'package:purewill/domain/model/daily_log_model.dart';
 import 'package:purewill/ui/habit-tracker/view_model/habit_view_model.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -45,7 +43,8 @@ final habitNotifierProvider =
       final dailyLogRepository = ref.watch(dailyLogRepositoryProvider);
       final targetUnitRepository = ref.watch(targetUnitRepositoryProvider);
       final categoryRepository = ref.watch(categoryRepositoryProvider);
-      final client = ref.watch(supabaseClientProvider);
+      final userRepository= ref.watch(userRepositoryProvider);
+      final client = ref.read(supabaseClientProvider);
       final userId = client.auth.currentUser?.id;
       if (userId != null) {
         return HabitsViewModel(
@@ -53,6 +52,7 @@ final habitNotifierProvider =
           dailyLogRepository,
           targetUnitRepository,
           categoryRepository,
+          userRepository,
           userId,
         );
       }
@@ -61,6 +61,7 @@ final habitNotifierProvider =
         dailyLogRepository,
         targetUnitRepository,
         categoryRepository,
+        userRepository,
         "",
       );
     });

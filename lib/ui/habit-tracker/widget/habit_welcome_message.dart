@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 class HabitWelcomeMessage extends StatelessWidget {
-  final String name;
+  final String? name;
   const HabitWelcomeMessage({
     super.key,
     required this.name
@@ -12,7 +12,7 @@ class HabitWelcomeMessage extends StatelessWidget {
    return Padding(
       padding: const EdgeInsets.only(bottom: 16),
       child: Text(
-        'Hello," $name"!',
+        'Hello, $name!',
         style: const TextStyle(
           fontSize: 18,
           fontWeight: FontWeight.w500,

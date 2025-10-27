@@ -8,12 +8,11 @@ class CategoryRepository {
 
   CategoryRepository(this._supabaseClient);
 
-  Future<List<CategoryModel>> fetchUserCategories(String userId) async {
+  Future<List<CategoryModel>> fetchCategories() async {
     try {
       final response = await _supabaseClient
           .from(_categoryTableName)
           .select('*')
-          .eq(userId, userId)
           .order('name', ascending: true);
 
       if (response.isEmpty) {

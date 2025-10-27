@@ -1,18 +1,16 @@
-// lib/ui/habit-tracker/screen/add_habit_screen.dart
-import 'dart:io';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:purewill/domain/model/category_model.dart';
 import 'package:purewill/ui/habit-tracker/habit_provider.dart';
 import 'package:purewill/domain/model/habit_model.dart';
+import 'package:purewill/ui/habit-tracker/widget/category_dropdown.dart';
+import 'package:purewill/ui/habit-tracker/widget/save_button.dart';
 
 class AddHabitScreen extends ConsumerStatefulWidget {
   const AddHabitScreen({super.key, this.defaultHabit});
-
   final HabitModel? defaultHabit;
-
-  // Constructor untuk membuat habit dari default
   factory AddHabitScreen.withDefault(HabitModel defaultHabit) {
     return AddHabitScreen(defaultHabit: defaultHabit);
   }
@@ -30,10 +28,8 @@ class _AddHabitScreenState extends ConsumerState<AddHabitScreen> {
   int? _selectedCategoryId;
   String _selectedFrequency = 'daily';
   int _targetValue = 30;
-  String _selectedUnit = 'glasses'; // Default unit
+  String _selectedUnit = 'glasses';
   bool _showCustomUnit = false;
-
-  // Tambahan untuk reminder
   bool _reminderEnabled = false;
   TimeOfDay? _reminderTime;
 
@@ -42,27 +38,24 @@ class _AddHabitScreenState extends ConsumerState<AddHabitScreen> {
     {'value': 'weekly', 'label': 'Weekly'},
   ];
 
-  // Opsi satuan yang tersedia
   final List<String> _unitOptions = [
     'glasses',
     'pages', 
     'minutes',
     'hours',
-    'other' // Opsi untuk custom unit
+    'other' 
   ];
 
   @override
   void initState() {
     super.initState();
 
-    // Jika ada default habit, pre-fill form
     if (widget.defaultHabit != null) {
       _nameController.text = widget.defaultHabit!.name;
       _targetValue = widget.defaultHabit!.targetValue ?? 30;
       _targetValueController.text = _targetValue.toString();
       _selectedFrequency = widget.defaultHabit!.frequency;
       
-      // Set unit dari default habit jika ada
       if (widget.defaultHabit!.unit != null) {
         _selectedUnit = widget.defaultHabit!.unit!;
       }
@@ -70,9 +63,8 @@ class _AddHabitScreenState extends ConsumerState<AddHabitScreen> {
       _targetValueController.text = _targetValue.toString();
     }
 
-    // Load categories when screen initializes
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(categoriesProvider.future);
+      ref.read(habitNotifierProvider.notifier).loadCategories();
     });
   }
 
@@ -98,9 +90,9 @@ class _AddHabitScreenState extends ConsumerState<AddHabitScreen> {
 
   void _saveHabit() {
     if (_formKey.currentState!.validate()) {
+      print("tombol save ditekan"); 
       final viewModel = ref.read(habitNotifierProvider.notifier);
 
-      // Tentukan unit yang akan digunakan
       String? finalUnit;
       if (_selectedUnit == 'other' && _customUnitController.text.isNotEmpty) {
         finalUnit = _customUnitController.text.trim();
@@ -108,7 +100,7 @@ class _AddHabitScreenState extends ConsumerState<AddHabitScreen> {
         finalUnit = _selectedUnit;
       }
 
-      // Debug print
+
       print('=== SAVING HABIT ===');
       print('Name: ${_nameController.text}');
       print('Category: $_selectedCategoryId');
@@ -177,9 +169,16 @@ class _AddHabitScreenState extends ConsumerState<AddHabitScreen> {
     }
   }
 
+  void _handleCategoryChange (int? categoryId) {
+    setState(() {
+      _selectedCategoryId = categoryId;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
-    final categoriesAsync = ref.watch(categoriesProvider);
+    final habitState = ref.watch(habitNotifierProvider);
+    final List<CategoryModel> userCategories = habitState.categories;
 
     return Scaffold(
       appBar: AppBar(
@@ -293,131 +292,10 @@ class _AddHabitScreenState extends ConsumerState<AddHabitScreen> {
                           color: Colors.white.withOpacity(0.95),
                           borderRadius: BorderRadius.circular(12),
                         ),
-                        child: categoriesAsync.when(
-                          data: (categories) {
-                            if (categories.isEmpty) {
-                              return Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 16,
-                                  vertical: 12,
-                                ),
-                                decoration: BoxDecoration(
-                                  border: Border.all(color: Colors.orange),
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: const Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      'No categories available',
-                                      style: TextStyle(color: Colors.orange),
-                                    ),
-                                    SizedBox(height: 4),
-                                    Text(
-                                      'You can still create a habit without category',
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        color: Colors.grey,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              );
-                            }
-
-                            return DropdownButtonFormField<int>(
-                              value: _selectedCategoryId,
-                              decoration: InputDecoration(
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide: BorderSide.none,
-                                ),
-                                contentPadding: const EdgeInsets.symmetric(
-                                  horizontal: 16,
-                                  vertical: 12,
-                                ),
-                                hintText: 'Select a category',
-                                filled: true,
-                                fillColor: Colors.transparent,
-                              ),
-                              items: [
-                                const DropdownMenuItem(
-                                  value: null,
-                                  child: Text(
-                                    'Select a category (Optional)',
-                                    style: TextStyle(color: Colors.grey),
-                                  ),
-                                ),
-                                ...categories.map((category) {
-                                  return DropdownMenuItem(
-                                    value: category.id,
-                                    child: Text(
-                                      category.name,
-                                      style: const TextStyle(fontSize: 14),
-                                    ),
-                                  );
-                                }).toList(),
-                              ],
-                              onChanged: (value) {
-                                setState(() {
-                                  _selectedCategoryId = value;
-                                });
-                              },
-                            );
-                          },
-                          loading: () {
-                            return Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                                vertical: 12,
-                              ),
-                              child: const Row(
-                                children: [
-                                  SizedBox(
-                                    width: 16,
-                                    height: 16,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                    ),
-                                  ),
-                                  SizedBox(width: 12),
-                                  Text('Loading categories...'),
-                                ],
-                              ),
-                            );
-                          },
-                          error: (error, stack) {
-                            return Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                                vertical: 12,
-                              ),
-                              decoration: BoxDecoration(
-                                border: Border.all(color: Colors.red),
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  const Text(
-                                    'Failed to load categories',
-                                    style: TextStyle(color: Colors.red),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  const Text(
-                                    'You can still create habits without categories',
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: Colors.grey,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            );
-                          },
+                        child: CategoryDropdown(userCategories: userCategories, selectedCategoryId: 1, onChanged: _handleCategoryChange),
+                        
                         ),
                       ),
-                    ),
                     const SizedBox(height: 24),
 
                     // Frequency Section
@@ -772,40 +650,7 @@ class _AddHabitScreenState extends ConsumerState<AddHabitScreen> {
                     const SizedBox(height: 24),
 
                     // Save Button
-                    Container(
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(12),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.purple.withOpacity(0.3),
-                            blurRadius: 15,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
-                      ),
-                      child: SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton(
-                          onPressed: _saveHabit,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.purple,
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            elevation: 0,
-                          ),
-                          child: const Text(
-                            'Save Habit',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
+                    SaveButton(onPressed: _saveHabit)
                   ],
                 ),
               ),

@@ -1,8 +1,10 @@
 import 'package:flutter_riverpod/legacy.dart';
 import 'package:purewill/data/repository/category_repository.dart';
 import 'package:purewill/data/repository/target_unit_repository.dart';
+import 'package:purewill/data/repository/user_repository.dart';
 import 'package:purewill/domain/model/category_model.dart';
 import 'package:purewill/domain/model/habit_model.dart';
+import 'package:purewill/domain/model/profile_model.dart';
 import 'package:purewill/domain/model/target_unit_model.dart';
 import '../../../data/repository/habit_repository.dart';
 import '../../../data/repository/daily_log_repository.dart';
@@ -15,6 +17,7 @@ class HabitsState {
   final List<HabitModel> habits;
   final List<TargetUnitModel> targetUnits;
   final List<CategoryModel> categories;
+  ProfileModel? currentUser;
 
   HabitsState({
     this.status = HabitStatus.initial,
@@ -22,6 +25,7 @@ class HabitsState {
     this.habits = const [],
     this.targetUnits = const [],
     this.categories = const [],
+    this.currentUser
   });
 
   HabitsState copyWith({
@@ -30,13 +34,15 @@ class HabitsState {
     List<HabitModel>? habits,
     List<TargetUnitModel>? targetUnits,
     List<CategoryModel>? caregories,
+    ProfileModel? currentUser
   }) {
     return HabitsState(
       status: status ?? this.status,
       errorMessage: errorMessage ?? this.errorMessage,
       habits: habits ?? this.habits,
       targetUnits: targetUnits ?? this.targetUnits,
-      categories: caregories ?? this.categories,
+      categories: caregories ?? categories,
+      currentUser: currentUser ?? this.currentUser
     );
   }
 }
@@ -46,6 +52,7 @@ class HabitsViewModel extends StateNotifier<HabitsState> {
   final DailyLogRepository _dailyLogRepository;
   final TargetUnitRepository _targetUnitRepository;
   final CategoryRepository _categoryRepository;
+  final UserRepository _userRepository;
   final String _currentUserId;
 
   HabitsViewModel(
@@ -53,8 +60,24 @@ class HabitsViewModel extends StateNotifier<HabitsState> {
     this._dailyLogRepository,
     this._targetUnitRepository,
     this._categoryRepository,
+    this._userRepository,
     this._currentUserId,
   ) : super(HabitsState());
+
+
+  Future<void> getCurrentUser() async {
+      state = state.copyWith(status: HabitStatus.loading, errorMessage: null);
+      try {
+        final currentUser = await _userRepository.fetchUserProfile(_currentUserId);
+        state = state.copyWith(status: HabitStatus.success, currentUser: currentUser);
+      } catch (e) {
+        state = state.copyWith(
+          status: HabitStatus.failure,
+          errorMessage: 'Failed to load user profile.',
+        );
+      }
+  }
+  
 
   Future<void> loadUserHabits() async {
     state = state.copyWith(status: HabitStatus.loading, errorMessage: null);
@@ -90,13 +113,13 @@ class HabitsViewModel extends StateNotifier<HabitsState> {
     }
   }
 
-  Future<void> loadaUserCategories() async {
+  Future<void> loadCategories() async {
     state = state.copyWith(status: HabitStatus.loading, errorMessage: null);
 
     try {
-      final categories = await _categoryRepository.fetchUserCategories(
-        _currentUserId,
-      );
+      final categories = await _categoryRepository.fetchCategories();
+       print("data categories");
+      print(categories);
 
       state = state.copyWith(
         status: HabitStatus.success,
@@ -133,9 +156,9 @@ class HabitsViewModel extends StateNotifier<HabitsState> {
         );
       }
 
-      final newStatus = existingLog?.isCompleted == true
-          ? 'neutral'
-          : 'completed';
+      // final newStatus = existingLog?.isCompleted == true
+      //     ? 'neutral'
+      //     : 'completed';
 
       /*       await _habitRepository.updateHabitStatus(
         habitId: habit.id,
