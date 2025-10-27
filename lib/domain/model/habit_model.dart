@@ -11,7 +11,7 @@ class HabitModel {
   final String? notes;
   final DateTime? endDate;
   final int? targetValue;
-  final String? unit; // TAMBAHAN: Satuan untuk target value
+  final String? unit;
   final String status;
   final bool reminderEnabled;
   final TimeOfDay? reminderTime;
@@ -28,7 +28,7 @@ class HabitModel {
     this.notes,
     this.endDate,
     this.targetValue,
-    this.unit, // TAMBAHAN
+    this.unit,
     this.status = 'neutral',
     this.reminderEnabled = false,
     this.reminderTime,
@@ -58,7 +58,9 @@ class HabitModel {
       isActive: json['is_active'] ?? true,
       categoryId: json['category_id'],
       notes: json['notes'],
-      endDate: json['end_date'] != null ? DateTime.parse(json['end_date']) : null,
+      endDate: json['end_date'] != null
+          ? DateTime.parse(json['end_date'])
+          : null,
       targetValue: json['target_value'],
       unit: json['unit'], // TAMBAHAN
       status: json['status'] ?? 'neutral',
@@ -79,11 +81,12 @@ class HabitModel {
       'reminder_enabled': reminderEnabled,
       'is_default': isDefault,
     };
-    
+
     if (reminderTime != null) {
-      json['reminder_time'] = '${reminderTime!.hour.toString().padLeft(2, '0')}:${reminderTime!.minute.toString().padLeft(2, '0')}';
+      json['reminder_time'] =
+          '${reminderTime!.hour.toString().padLeft(2, '0')}:${reminderTime!.minute.toString().padLeft(2, '0')}';
     }
-    
+
     if (categoryId != null) {
       json['category_id'] = categoryId!;
     }
@@ -99,7 +102,7 @@ class HabitModel {
     if (unit != null) {
       json['unit'] = unit!; // TAMBAHAN
     }
-    
+
     return json;
   }
 

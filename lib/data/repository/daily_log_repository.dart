@@ -13,7 +13,6 @@ class DailyLogRepository {
     required DateTime date,
     required bool isCompleted,
     double? actualValue,
-    String? notes,
   }) async {
     try {
       final logData = {
@@ -21,13 +20,12 @@ class DailyLogRepository {
         'log_date': date.toIso8601String().substring(0, 10),
         'is_completed': isCompleted,
         'actual_value': actualValue,
-        'notes': notes,
         'created_at': DateTime.now().toIso8601String(),
       };
 
       final response = await _supabaseClient
           .from(_logTableName)
-          .upsert(logData, onConflict: 'habit_id, log_date')
+          .upsert(logData)
           .select()
           .single();
 
@@ -127,6 +125,7 @@ class DailyLogRepository {
           .maybeSingle();
 
       if (response != null) {
+
         return DailyLogModel.fromJson(response);
       }
       return null;

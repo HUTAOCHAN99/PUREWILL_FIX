@@ -4,7 +4,6 @@ class DailyLogModel {
   final DateTime logDate;
   final bool isCompleted;
   final double? actualValue;
-  final String? notes;
   final DateTime? createdAt;
 
   DailyLogModel({
@@ -13,7 +12,6 @@ class DailyLogModel {
     required this.logDate,
     required this.isCompleted,
     this.actualValue,
-    this.notes,
     this.createdAt,
   });
 
@@ -24,7 +22,6 @@ class DailyLogModel {
       logDate: DateTime.parse(json['log_date']),
       isCompleted: json['is_completed'],
       actualValue: json['actual_value']?.toDouble(), 
-      notes: json['notes'],
       createdAt: json['created_at'] != null ? DateTime.parse(json['created_at']) : null,
     );
   }
@@ -35,7 +32,6 @@ class DailyLogModel {
       'log_date': logDate.toIso8601String().substring(0, 10),
       'is_completed': isCompleted,
       'actual_value': actualValue,
-      'notes': notes,
       'created_at': createdAt?.toIso8601String(),
     };
   }

@@ -6,7 +6,6 @@ import 'package:purewill/ui/habit-tracker/screen/home_screen.dart';
 
 class AuthGate extends ConsumerWidget {
   const AuthGate({super.key});
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final authState = ref.watch(authNotifierProvider);

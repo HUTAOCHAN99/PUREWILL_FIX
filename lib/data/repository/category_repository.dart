@@ -8,57 +8,30 @@ class CategoryRepository {
 
   CategoryRepository(this._supabaseClient);
 
-  Future<List<CategoryModel>> fetchCategories() async {
+  Future<List<CategoryModel>> fetchUserCategories(String userId) async {
     try {
-      print('=== FETCHING CATEGORIES FROM SUPABASE ===');
-      print('Table: $_categoryTableName');
-      print('Supabase Client: ${_supabaseClient.hashCode}');
-
       final response = await _supabaseClient
           .from(_categoryTableName)
           .select('*')
+          .eq(userId, userId)
           .order('name', ascending: true);
 
-      print('=== CATEGORIES RAW RESPONSE ===');
-      print('Type: ${response.runtimeType}');
-      print('Length: ${response.length}');
-      print('Data: $response');
-      print('========================');
-
       if (response.isEmpty) {
-        print('=== NO CATEGORIES FOUND IN RESPONSE ===');
         return [];
       }
 
-      // Debug each item before parsing
-      print('=== PARSING EACH CATEGORY ===');
       final categories = <CategoryModel>[];
       for (var i = 0; i < response.length; i++) {
         try {
-          print('Item $i: ${response[i]}');
           final category = CategoryModel.fromJson(response[i]);
           categories.add(category);
         } catch (e) {
-          print('Error parsing category $i: $e');
-          print('Problematic data: ${response[i]}');
+          rethrow;
         }
       }
 
-      print('=== FINAL CATEGORIES LIST ===');
-      print('Total parsed: ${categories.length}');
-      for (var category in categories) {
-        print(' - ${category.id}: ${category.name}');
-      }
-      print('========================');
-
       return categories;
     } catch (e, stackTrace) {
-      print('=== CATEGORIES FETCH ERROR ===');
-      print('Error type: ${e.runtimeType}');
-      print('Error message: $e');
-      print('Stack trace: $stackTrace');
-      print('========================');
-
       log(
         'FETCH CATEGORIES FAILURE: Failed to fetch categories.',
         error: e,

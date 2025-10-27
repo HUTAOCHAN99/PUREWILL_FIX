@@ -13,9 +13,6 @@ class HabitRepository {
     try {
       final habitData = habit.toJson();
 
-      print('=== HABIT DATA TO INSERT ===');
-      print(habitData);
-      print('===========================');
 
       final response = await _supabaseClient
           .from(_habitTableName)
@@ -23,16 +20,9 @@ class HabitRepository {
           .select()
           .single();
 
-      print('=== HABIT CREATED SUCCESS ===');
-      print(response);
-      print('===========================');
 
       return HabitModel.fromJson(response);
     } catch (e, stackTrace) {
-      print('=== HABIT CREATION ERROR ===');
-      print('Error: $e');
-      print('Stack: $stackTrace');
-      print('===========================');
 
       log(
         'CREATE HABIT FAILURE: Failed to create habit ${habit.name}.',
