@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/legacy.dart';
 import 'package:purewill/data/repository/category_repository.dart';
 import 'package:purewill/data/repository/daily_log_repository.dart';
 import 'package:purewill/data/repository/habit_repository.dart';
+import 'package:purewill/data/repository/reminder_setting_repository.dart';
 import 'package:purewill/data/repository/target_unit_repository.dart';
 import 'package:purewill/data/repository/user_repository.dart';
 import 'package:purewill/ui/habit-tracker/view_model/habit_view_model.dart';
@@ -37,19 +38,30 @@ final categoryRepositoryProvider = Provider<CategoryRepository>((ref) {
   return CategoryRepository(client);
 });
 
+final reminderSettingRepositoryProvider = Provider<ReminderSettingRepository>((
+  ref,
+) {
+  final client = ref.watch(supabaseClientProvider);
+  return ReminderSettingRepository(client);
+});
+
 final habitNotifierProvider =
     StateNotifierProvider<HabitsViewModel, HabitsState>((ref) {
       final habitRepository = ref.watch(habitRepositoryProvider);
       final dailyLogRepository = ref.watch(dailyLogRepositoryProvider);
+      final reminderSettingRepository = ref.watch(
+        reminderSettingRepositoryProvider,
+      );
       final targetUnitRepository = ref.watch(targetUnitRepositoryProvider);
       final categoryRepository = ref.watch(categoryRepositoryProvider);
-      final userRepository= ref.watch(userRepositoryProvider);
+      final userRepository = ref.watch(userRepositoryProvider);
       final client = ref.read(supabaseClientProvider);
       final userId = client.auth.currentUser?.id;
       if (userId != null) {
         return HabitsViewModel(
           habitRepository,
           dailyLogRepository,
+          reminderSettingRepository,
           targetUnitRepository,
           categoryRepository,
           userRepository,
@@ -59,6 +71,7 @@ final habitNotifierProvider =
       return HabitsViewModel(
         habitRepository,
         dailyLogRepository,
+        reminderSettingRepository,
         targetUnitRepository,
         categoryRepository,
         userRepository,
