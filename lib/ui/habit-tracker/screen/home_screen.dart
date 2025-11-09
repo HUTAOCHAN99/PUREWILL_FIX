@@ -51,13 +51,19 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     // final isLoading = habitsState.status == HabitStatus.loading;
     final List<HabitModel> userHabits = habitsState.habits;
     final ProfileModel? currentUser = habitsState.currentUser;
-    final userName = currentUser?.fullName;
-    final userEmail = currentUser?.email;
-    final completedToday = _todayCompletionStatus.values
-        .where((completed) => completed)
-        .length;
+    final String userName = currentUser?.fullName ??"user not found";
+    final String userEmail = currentUser?.email ??"email not found";    
+    final completedToday = userHabits.where((habit) {
+      return _todayCompletionStatus[habit.id] == true;
+    }).length;
+
     final totalHabits = userHabits.length;
+    print("taotal habits: $totalHabits");
+    print("completed today: $completedToday");
     final progress = totalHabits > 0 ? completedToday / totalHabits : 0.0;
+
+    print(progress);
+
 
     return Scaffold(
       body: Container(
@@ -118,6 +124,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   void _handleHabitTap(HabitModel habit) {
     if (habit.isDefault) {
+      print("habit is default, navigating to detail screen");
     } else {
       _toggleHabitCompletion(habit);
     }
@@ -129,6 +136,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     try {
       final viewModel = ref.read(habitNotifierProvider.notifier);
       await viewModel.toggleHabitCompletion(habit);
+      // await viewModel.loadUserHabits();
       await _loadTodayCompletionStatus();
 
       final isNowCompleted = _todayCompletionStatus[habit.id] ?? false;
@@ -155,22 +163,20 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   void _performLogout() async {
     try {
-      // Tampilkan loading indicator
       showDialog(
         context: context,
         barrierDismissible: false,
         builder: (context) => const Center(child: CircularProgressIndicator()),
       );
 
-      // Gunakan AuthViewModel untuk logout
+
       ref.read(authNotifierProvider.notifier).logout();
 
-      // Tutup dialog loading
+
       if (Navigator.of(context).canPop()) {
         Navigator.of(context).pop();
       }
 
-      // Navigate ke login screen dan clear semua stack
       Navigator.of(context).pushAndRemoveUntil(
         MaterialPageRoute(builder: (context) => LoginScreen()),
         (Route<dynamic> route) => false,
@@ -183,7 +189,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         ),
       );
     } catch (e) {
-      // Tutup dialog loading jika ada error
       if (Navigator.of(context).canPop()) {
         Navigator.of(context).pop();
       }

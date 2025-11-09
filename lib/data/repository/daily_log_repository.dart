@@ -15,6 +15,8 @@ class DailyLogRepository {
     double? actualValue,
   }) async {
     try {
+      print("akan diubah ke isCompleted: $isCompleted for habitId: $habitId on date: ${date.toIso8601String().substring(0, 10)}");
+
       final logData = {
         'habit_id': habitId,
         'log_date': date.toIso8601String().substring(0, 10),
@@ -28,6 +30,8 @@ class DailyLogRepository {
           .upsert(logData)
           .select()
           .single();
+
+      print("success record log response: $response");
 
       return DailyLogModel.fromJson(response);
     } catch (e, stackTrace) {
@@ -115,6 +119,7 @@ class DailyLogRepository {
 
   Future<DailyLogModel?> getTodayLogForHabit(int habitId) async {
     try {
+      print("fetching today log for habitId: $habitId");
       final today = DateTime.now().toIso8601String().substring(0, 10);
       
       final response = await _supabaseClient
@@ -123,13 +128,16 @@ class DailyLogRepository {
           .eq('habit_id', habitId)
           .eq('log_date', today)
           .maybeSingle();
+      print("anjing");
+      print("response for getTodayLogForHabit: $response");
 
       if (response != null) {
-
         return DailyLogModel.fromJson(response);
       }
       return null;
     } catch (e, stackTrace) {
+      print(e);
+      print(stackTrace);
       log(
         'GET TODAY LOG FAILURE: Failed to fetch today log for habit $habitId.',
         error: e,

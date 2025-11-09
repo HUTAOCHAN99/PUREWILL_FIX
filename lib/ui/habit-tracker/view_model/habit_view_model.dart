@@ -3,6 +3,7 @@ import 'package:purewill/data/repository/category_repository.dart';
 import 'package:purewill/data/repository/target_unit_repository.dart';
 import 'package:purewill/data/repository/user_repository.dart';
 import 'package:purewill/domain/model/category_model.dart';
+import 'package:purewill/domain/model/daily_log_model.dart';
 import 'package:purewill/domain/model/habit_model.dart';
 import 'package:purewill/domain/model/profile_model.dart';
 import 'package:purewill/domain/model/target_unit_model.dart';
@@ -15,6 +16,7 @@ class HabitsState {
   final HabitStatus status;
   final String? errorMessage;
   final List<HabitModel> habits;
+  final List<DailyLogModel> dailyLogs;
   final List<TargetUnitModel> targetUnits;
   final List<CategoryModel> categories;
   ProfileModel? currentUser;
@@ -23,26 +25,29 @@ class HabitsState {
     this.status = HabitStatus.initial,
     this.errorMessage,
     this.habits = const [],
+    this.dailyLogs = const [],
     this.targetUnits = const [],
     this.categories = const [],
-    this.currentUser
+    this.currentUser,
   });
 
   HabitsState copyWith({
     HabitStatus? status,
     String? errorMessage,
     List<HabitModel>? habits,
+    List<DailyLogModel>? dailyLogs,
     List<TargetUnitModel>? targetUnits,
     List<CategoryModel>? caregories,
-    ProfileModel? currentUser
+    ProfileModel? currentUser,
   }) {
     return HabitsState(
       status: status ?? this.status,
       errorMessage: errorMessage ?? this.errorMessage,
       habits: habits ?? this.habits,
+      dailyLogs: dailyLogs ?? this.dailyLogs,
       targetUnits: targetUnits ?? this.targetUnits,
       categories: caregories ?? categories,
-      currentUser: currentUser ?? this.currentUser
+      currentUser: currentUser ?? this.currentUser,
     );
   }
 }
@@ -64,20 +69,23 @@ class HabitsViewModel extends StateNotifier<HabitsState> {
     this._currentUserId,
   ) : super(HabitsState());
 
-
   Future<void> getCurrentUser() async {
-      state = state.copyWith(status: HabitStatus.loading, errorMessage: null);
-      try {
-        final currentUser = await _userRepository.fetchUserProfile(_currentUserId);
-        state = state.copyWith(status: HabitStatus.success, currentUser: currentUser);
-      } catch (e) {
-        state = state.copyWith(
-          status: HabitStatus.failure,
-          errorMessage: 'Failed to load user profile.',
-        );
-      }
+    state = state.copyWith(status: HabitStatus.loading, errorMessage: null);
+    try {
+      final currentUser = await _userRepository.fetchUserProfile(
+        _currentUserId,
+      );
+      state = state.copyWith(
+        status: HabitStatus.success,
+        currentUser: currentUser,
+      );
+    } catch (e) {
+      state = state.copyWith(
+        status: HabitStatus.failure,
+        errorMessage: 'Failed to load user profile.',
+      );
+    }
   }
-  
 
   Future<void> loadUserHabits() async {
     state = state.copyWith(status: HabitStatus.loading, errorMessage: null);
@@ -118,7 +126,7 @@ class HabitsViewModel extends StateNotifier<HabitsState> {
 
     try {
       final categories = await _categoryRepository.fetchCategories();
-       print("data categories");
+      print("data categories");
       print(categories);
 
       state = state.copyWith(
@@ -135,18 +143,26 @@ class HabitsViewModel extends StateNotifier<HabitsState> {
 
   Future<void> toggleHabitCompletion(HabitModel habit) async {
     try {
+      print("habit id to toggle: ${habit.id}");
       final today = DateTime.now();
       final existingLog = await _dailyLogRepository.getTodayLogForHabit(
         habit.id,
       );
 
+      print("exiting log complete status = ");
+      print(existingLog?.isCompleted);
+
       if (existingLog != null) {
+        print("existing log found, toggling completion");
+        print("existingLog.isCompleted: ${existingLog.isCompleted}");
         await _dailyLogRepository.recordLog(
           habitId: habit.id,
           date: today,
           isCompleted: !existingLog.isCompleted,
           actualValue: habit.targetValue?.toDouble(),
         );
+
+        print("objective after toggling: ${!existingLog.isCompleted}");
       } else {
         await _dailyLogRepository.recordLog(
           habitId: habit.id,
@@ -155,15 +171,6 @@ class HabitsViewModel extends StateNotifier<HabitsState> {
           actualValue: habit.targetValue?.toDouble(),
         );
       }
-
-      // final newStatus = existingLog?.isCompleted == true
-      //     ? 'neutral'
-      //     : 'completed';
-
-      /*       await _habitRepository.updateHabitStatus(
-        habitId: habit.id,
-        status: newStatus,
-      ); */
 
       await loadUserHabits();
     } catch (e) {
@@ -204,7 +211,7 @@ class HabitsViewModel extends StateNotifier<HabitsState> {
   Future<Map<int, bool>> getTodayCompletionStatus() async {
     try {
       final todayLogs = await _dailyLogRepository.fetchLogsByDate(
-        DateTime.now(),
+        DateTime.now()
       );
       final completionStatus = <int, bool>{};
 
@@ -257,6 +264,19 @@ class HabitsViewModel extends StateNotifier<HabitsState> {
       state = state.copyWith(
         status: HabitStatus.failure,
         errorMessage: 'Failed to create target unit.',
+      );
+      rethrow;
+    }
+  }
+
+
+  Future<void> deleteHabit({required int habitId}) async {
+    try {
+      await _habitRepository.deleteHabit(habitId);
+    } catch (e) {
+      state = state.copyWith(
+        status: HabitStatus.failure,
+        errorMessage: 'Failed to delete habit.',
       );
       rethrow;
     }
