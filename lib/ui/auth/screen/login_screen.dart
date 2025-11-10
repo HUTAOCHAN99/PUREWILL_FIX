@@ -59,10 +59,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     final isLoading = authState.status == AuthStatus.loading;
     
     return Scaffold(
-      // Tambahkan resizeToAvoidBottomInset untuk mencegah resize otomatis
       resizeToAvoidBottomInset: false,
       body: GestureDetector(
-        // Tambahkan GestureDetector untuk dismiss keyboard saat tap di luar
         onTap: () => FocusScope.of(context).unfocus(),
         child: Container(
           width: double.infinity,

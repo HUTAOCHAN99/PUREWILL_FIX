@@ -1,3 +1,4 @@
+// lib\ui\habit-tracker\screen\home_screen.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:purewill/domain/model/habit_model.dart';
@@ -11,6 +12,7 @@ import 'package:purewill/ui/habit-tracker/widget/habit_header.dart';
 import 'package:purewill/ui/habit-tracker/widget/habit_welcome_message.dart';
 import 'package:purewill/ui/habit-tracker/widget/progress_card.dart';
 import 'package:purewill/ui/habit-tracker/widget/sped_dial.dart';
+import 'package:purewill/ui/habit-tracker/screen/habit_detail_screen.dart'; // ADD THIS
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -48,22 +50,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final habitsState = ref.watch(habitNotifierProvider);
-    // final isLoading = habitsState.status == HabitStatus.loading;
     final List<HabitModel> userHabits = habitsState.habits;
     final ProfileModel? currentUser = habitsState.currentUser;
-    final String userName = currentUser?.fullName ??"user not found";
-    final String userEmail = currentUser?.email ??"email not found";    
+    final String userName = currentUser?.fullName ?? "user not found";
+    final String userEmail = currentUser?.email ?? "email not found";    
     final completedToday = userHabits.where((habit) {
       return _todayCompletionStatus[habit.id] == true;
     }).length;
 
     final totalHabits = userHabits.length;
-    print("taotal habits: $totalHabits");
-    print("completed today: $completedToday");
     final progress = totalHabits > 0 ? completedToday / totalHabits : 0.0;
-
-    print(progress);
-
 
     return Scaffold(
       body: Container(
@@ -106,7 +102,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         habitsState: habitsState,
                         todayCompletionStatus: _todayCompletionStatus,
                         habits: userHabits,
-                        onHabitTap: _handleHabitTap,
+                        onHabitTap: _handleHabitTap, // UPDATED: Simple tap handler
                       ),
                     ],
                   ),
@@ -121,44 +117,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
-
+  // UPDATED: Simple navigation to detail screen
   void _handleHabitTap(HabitModel habit) {
-    if (habit.isDefault) {
-      print("habit is default, navigating to detail screen");
-    } else {
-      _toggleHabitCompletion(habit);
-    }
-  }
-
-
-  Future<void> _toggleHabitCompletion(HabitModel habit) async {
-    print(habit);
-    try {
-      final viewModel = ref.read(habitNotifierProvider.notifier);
-      await viewModel.toggleHabitCompletion(habit);
-      // await viewModel.loadUserHabits();
-      await _loadTodayCompletionStatus();
-
-      final isNowCompleted = _todayCompletionStatus[habit.id] ?? false;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            isNowCompleted
-                ? '${habit.name} completed! ✅'
-                : '${habit.name} marked as not completed',
-          ),
-          duration: const Duration(seconds: 2),
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => HabitDetailScreen(
+          habit: habit,
+          completionStatus: _todayCompletionStatus,
         ),
-      );
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error updating habit: $e'),
-          backgroundColor: Colors.red,
-          duration: const Duration(seconds: 3),
-        ),
-      );
-    }
+      ),
+    );
   }
 
   void _performLogout() async {
@@ -169,9 +138,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         builder: (context) => const Center(child: CircularProgressIndicator()),
       );
 
-
       ref.read(authNotifierProvider.notifier).logout();
-
 
       if (Navigator.of(context).canPop()) {
         Navigator.of(context).pop();
@@ -202,9 +169,4 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       );
     }
   }
-
-
-  
-
-
 }

@@ -1,8 +1,9 @@
+// lib\ui\habit-tracker\widget\habit_cards_list.dart
 import 'package:flutter/material.dart';
-import 'package:purewill/data/services/default_habits_service.dart';
 import 'package:purewill/domain/model/habit_model.dart';
 import 'package:purewill/ui/habit-tracker/view_model/habit_view_model.dart';
 import 'package:purewill/ui/habit-tracker/widget/habit_card.dart';
+import 'package:purewill/utils/habit_icon_helper.dart'; // ADD THIS IMPORT
 
 class HabitCardsList extends StatelessWidget {
   final HabitsState habitsState;
@@ -51,12 +52,10 @@ class HabitCardsList extends StatelessWidget {
         return Column(
           children: sortedHabits.map((habit) {
             final isCompleted = todayCompletionStatus[habit.id] ?? false;
-            final iconData =
-                DefaultHabitsService.getDefaultHabitIcons()[habit.name] ??
-                Icons.assignment_outlined;
-            final color =
-                DefaultHabitsService.getDefaultHabitColors()[habit.name] ??
-                Colors.grey;
+            
+            // USE HABIT ICON HELPER INSTEAD OF DEFAULT HABITS SERVICE
+            final iconData = HabitIconHelper.getHabitIcon(habit.name);
+            final color = HabitIconHelper.getHabitColor(habit.name);
 
             return HabitCard(
               icon: iconData,
@@ -100,10 +99,6 @@ class HabitCardsList extends StatelessWidget {
             style: const TextStyle(color: Colors.grey),
           ),
           const SizedBox(height: 16),
-          // ElevatedButton(
-          //   onPressed: _loadInitialData,
-          //   child: const Text('Retry'),
-          // ),
         ],
       ),
     );
@@ -133,14 +128,6 @@ class HabitCardsList extends StatelessWidget {
             style: TextStyle(color: Colors.grey),
           ),
           const SizedBox(height: 16),
-          // ElevatedButton(
-          //   onPressed: () {
-          //     Navigator.of(context).push(
-          //       MaterialPageRoute(builder: (context) => const AddHabitScreen()),
-          //     );
-          //   },
-          //   child: const Text('Add Habit'),
-          // ),
         ],
       ),
     );
