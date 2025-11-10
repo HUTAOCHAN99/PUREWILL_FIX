@@ -15,7 +15,9 @@ class DailyLogRepository {
     double? actualValue,
   }) async {
     try {
-      print("akan diubah ke isCompleted: $isCompleted for habitId: $habitId on date: ${date.toIso8601String().substring(0, 10)}");
+      print(
+        "akan diubah ke isCompleted: $isCompleted for habitId: $habitId on date: ${date.toIso8601String().substring(0, 10)}",
+      );
 
       final logData = {
         'habit_id': habitId,
@@ -75,14 +77,8 @@ class DailyLogRepository {
           .from(_logTableName)
           .select('*')
           .eq('habit_id', habitId)
-          .gte(
-            'log_date',
-            startDate.toIso8601String().substring(0, 10),
-          )
-          .lte(
-            'log_date',
-            endDate.toIso8601String().substring(0, 10),
-          )
+          .gte('log_date', startDate.toIso8601String().substring(0, 10))
+          .lte('log_date', endDate.toIso8601String().substring(0, 10))
           .order('log_date', ascending: true);
 
       return response.map((data) => DailyLogModel.fromJson(data)).toList();
@@ -121,7 +117,7 @@ class DailyLogRepository {
     try {
       print("fetching today log for habitId: $habitId");
       final today = DateTime.now().toIso8601String().substring(0, 10);
-      
+
       final response = await _supabaseClient
           .from(_logTableName)
           .select('*')
@@ -163,6 +159,58 @@ class DailyLogRepository {
     } catch (e, stackTrace) {
       log(
         'DELETE LOG FAILURE: Failed to delete log for habit $habitId.',
+        error: e,
+        stackTrace: stackTrace,
+        name: 'DAILY_LOG_REPO',
+      );
+      rethrow;
+    }
+  }
+
+  Future<void> deleteLogsBeforeDate({
+    required int habitId,
+    required DateTime date,
+  }) async {
+    try {
+      await _supabaseClient
+          .from(_logTableName)
+          .delete()
+          .eq('habit_id', habitId)
+          .lt('log_date', date.toIso8601String().substring(0, 10));
+
+      log(
+        'DELETE LOGS BEFORE DATE SUCCESS: Logs deleted for habit $habitId before ${date.toIso8601String().substring(0, 10)}.',
+        name: 'DAILY_LOG_REPO',
+      );
+    } catch (e, stackTrace) {
+      log(
+        'DELETE LOGS BEFORE DATE FAILURE: Failed to delete logs for habit $habitId before date.',
+        error: e,
+        stackTrace: stackTrace,
+        name: 'DAILY_LOG_REPO',
+      );
+      rethrow;
+    }
+  }
+
+  Future<void> deleteLogsAfterDate({
+    required int habitId,
+    required DateTime date,
+  }) async {
+    try {
+      await _supabaseClient
+          .from(_logTableName)
+          .delete()
+          .eq('habit_id', habitId)
+          .gt('log_date', date.toIso8601String().substring(0, 10));
+
+      log(
+        'DELETE LOGS AFTER DATE SUCCESS: Logs deleted for habit $habitId after ${date.toIso8601String().substring(0, 10)}.',
+        name: 'DAILY_LOG_REPO',
+      );
+    } catch (e, stackTrace) {
+      log(
+        'DELETE LOGS AFTER DATE FAILURE: Failed to delete logs for habit $habitId after date.',
         error: e,
         stackTrace: stackTrace,
         name: 'DAILY_LOG_REPO',
