@@ -28,6 +28,46 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     );
   }
 
+  Future<void> _login() async {
+    try {
+          // 1. Coba login
+          await ref
+              .read(
+                authNotifierProvider.notifier,
+              )
+              .login(
+                _emailController.text.trim(),
+                _passwordController.text.trim(),
+              );
+          
+          // 2. JIKA SUKSES, cek 'mounted'
+          if (!mounted) return;
+
+          // 3. Tampilkan pesan sukses
+          _showSnackBar("Login Berhasil! Mengalihkan...");
+
+          // 4. Beri jeda 1-2 detik agar SnackBar terbaca
+          await Future.delayed(const Duration(seconds: 1));
+
+          // 5. Cek 'mounted' LAGI (sangat penting setelah 'await')
+          if (!mounted) return;
+
+          // 6. Baru navigasi
+          Navigator.pushNamedAndRemoveUntil(
+            context,
+            '/home',
+            (Route<dynamic> route) => false,
+          );
+
+        } catch (e) {
+          // 7. JIKA GAGAL, tangkap error
+          if (mounted) {
+            _showSnackBar(
+                "Login Gagal: ${e.toString().replaceFirst('Exception: ', '')}");
+          }
+        }
+  }
+
   @override
   void dispose() {
     _emailController.dispose();
@@ -43,21 +83,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
-    ref.listen<AuthState>(authNotifierProvider, (previous, next) {
-      if (next.status == AuthStatus.failure) {
-        _showSnackBar("Login Gagal: ${next.errorMessage}");
-      } else if (next.status == AuthStatus.success && next.user != null) {
-        _showSnackBar("Login Berhasil!");
-        Navigator.pushReplacementNamed(context, '/home');
-      }
-    });
-    
     final screenHeight = MediaQuery.of(context).size.height;
     final screenWidth = MediaQuery.of(context).size.width;
-
     final authState = ref.watch(authNotifierProvider);
     final isLoading = authState.status == AuthStatus.loading;
-    
+
     return Scaffold(
       resizeToAvoidBottomInset: false,
       body: GestureDetector(
@@ -187,7 +217,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                   // Teks di samping icon
                                   Column(
                                     mainAxisAlignment: MainAxisAlignment.center,
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       Text(
                                         "Welcome Back",
@@ -232,7 +263,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                               Container(
                                 height: 40,
                                 decoration: BoxDecoration(
-                                  color: const Color.fromARGB(255, 254, 254, 254),
+                                  color: const Color.fromARGB(
+                                    255,
+                                    254,
+                                    254,
+                                    254,
+                                  ),
                                   borderRadius: BorderRadius.circular(8),
                                   border: Border.all(
                                     color: const Color.fromARGB(
@@ -265,9 +301,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                           isCollapsed: true,
                                           contentPadding:
                                               const EdgeInsets.symmetric(
-                                            horizontal: 16,
-                                            vertical: 10,
-                                          ),
+                                                horizontal: 16,
+                                                vertical: 10,
+                                              ),
                                           hintText: "Enter your email address",
                                           hintStyle: TextStyle(
                                             color: Colors.grey[500],
@@ -284,8 +320,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                             const Duration(milliseconds: 300),
                                             () {
                                               _scrollController.animateTo(
-                                                _scrollController.position.maxScrollExtent,
-                                                duration: const Duration(milliseconds: 300),
+                                                _scrollController
+                                                    .position
+                                                    .maxScrollExtent,
+                                                duration: const Duration(
+                                                  milliseconds: 300,
+                                                ),
                                                 curve: Curves.easeOut,
                                               );
                                             },
@@ -312,7 +352,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                               Container(
                                 height: 40,
                                 decoration: BoxDecoration(
-                                  color: const Color.fromARGB(255, 254, 254, 254),
+                                  color: const Color.fromARGB(
+                                    255,
+                                    254,
+                                    254,
+                                    254,
+                                  ),
                                   borderRadius: BorderRadius.circular(8),
                                   border: Border.all(
                                     color: const Color.fromARGB(
@@ -346,9 +391,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                           isCollapsed: true,
                                           contentPadding:
                                               const EdgeInsets.symmetric(
-                                            horizontal: 16,
-                                            vertical: 10,
-                                          ),
+                                                horizontal: 16,
+                                                vertical: 10,
+                                              ),
                                           hintText: "Enter your password",
                                           hintStyle: TextStyle(
                                             color: Colors.grey[500],
@@ -365,8 +410,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                             const Duration(milliseconds: 300),
                                             () {
                                               _scrollController.animateTo(
-                                                _scrollController.position.maxScrollExtent,
-                                                duration: const Duration(milliseconds: 300),
+                                                _scrollController
+                                                    .position
+                                                    .maxScrollExtent,
+                                                duration: const Duration(
+                                                  milliseconds: 300,
+                                                ),
                                                 curve: Curves.easeOut,
                                               );
                                             },
@@ -405,7 +454,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                     Navigator.push(
                                       context,
                                       MaterialPageRoute(
-                                        builder: (context) => ResetPasswordScreen(),
+                                        builder: (context) =>
+                                            ResetPasswordScreen(),
                                       ),
                                     );
                                   },
@@ -434,14 +484,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                 child: ElevatedButton(
                                   onPressed: isLoading
                                       ? null
-                                      : () {
-                                          ref
-                                              .read(authNotifierProvider.notifier)
-                                              .login(
-                                                _emailController.text.trim(),
-                                                _passwordController.text.trim(),
-                                              );
-                                        },
+                                      : _login,
+
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: Colors.black,
                                     foregroundColor: Colors.white,
@@ -466,8 +510,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                             strokeWidth: 2,
                                             valueColor:
                                                 AlwaysStoppedAnimation<Color>(
-                                              Colors.white,
-                                            ),
+                                                  Colors.white,
+                                                ),
                                           ),
                                         )
                                       : const Text("Login"),

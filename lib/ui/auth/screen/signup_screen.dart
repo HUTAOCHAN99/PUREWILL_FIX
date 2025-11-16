@@ -27,6 +27,48 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
     );
   }
 
+  Future<void> _signUp() async {
+    try {
+          // 1. Coba login
+          await ref
+              .read(
+                authNotifierProvider.notifier,
+              )
+              .signup(
+                _fullNameController.text.trim(),
+                _emailController.text.trim(),
+                _passwordController.text.trim(),
+              );
+          if (!mounted) return;
+
+          // 3. Tampilkan pesan sukses
+          _showSnackBar("Registrasi Berhasil! Mengalihkan...");
+
+          // 4. Beri jeda 1-2 detik agar SnackBar terbaca
+          await Future.delayed(const Duration(seconds: 1));
+
+          // 5. Cek 'mounted' LAGI (sangat penting setelah 'await')
+          if (!mounted) return;
+
+          // 6. Baru navigasi
+          Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (context) => VerificationScreen(
+              email: _emailController.text.trim(),
+              type: VerificationType.registration,
+            ),
+          ),
+        );
+
+        } catch (e) {
+          // 7. JIKA GAGAL, tangkap error
+          if (mounted) {
+            _showSnackBar(
+                "Login Gagal: ${e.toString().replaceFirst('Exception: ', '')}");
+          }
+        }
+  }
+
   @override
   void dispose() {
     _fullNameController.dispose();
@@ -38,21 +80,12 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
 
   @override
   Widget build(BuildContext context) {
-    ref.listen<AuthState>(authNotifierProvider, (previous, next) {
-      if (next.status == AuthStatus.failure) {
-        _showSnackBar("Daftar Gagal: ${next.errorMessage}");
-      } else if (next.status == AuthStatus.success && next.user != null) {
-        _showSnackBar("Kode verifikasi telah dikirim !");
-        Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (context) => VerificationScreen(
-              email: _emailController.text.trim(),
-              type: VerificationType.registration,
-            ),
-          ),
-        );
-      }
-    });
+    // ref.listen<AuthState>(authNotifierProvider, (previous, next) {
+    //   if (next.status == AuthStatus.failure) {
+    //     throw Exception('Login Gagal: Email atau password salah.');
+    //   } else if (next.status == AuthStatus.success && next.user != null) {
+    //   }
+    // });
 
     final screenHeight = MediaQuery.of(context).size.height;
     final screenWidth = MediaQuery.of(context).size.width;
@@ -131,7 +164,6 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                   Expanded(
                     child: SingleChildScrollView(
                       controller: _scrollController,
-                      // Tambahkan physics untuk scroll yang lebih smooth
                       physics: const ClampingScrollPhysics(),
                       child: Form(
                         key: _formKey,
@@ -431,15 +463,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                                 child: ElevatedButton(
                                   onPressed: isLoading
                                       ? null
-                                      : () {
-                                          ref
-                                              .read(authNotifierProvider.notifier)
-                                              .signup(
-                                                _fullNameController.text.trim(),
-                                                _emailController.text.trim(),
-                                                _passwordController.text.trim(),
-                                              );
-                                        },
+                                      : _signUp,
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: Colors.black,
                                     foregroundColor: Colors.white,

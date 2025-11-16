@@ -176,8 +176,8 @@ class HabitHeader extends ConsumerWidget {
           ),
           ElevatedButton(
             onPressed: () {
-              Navigator.of(context).pop();
               onLogout();
+              Navigator.pushNamedAndRemoveUntil(context, '/logout', (route) => false,);
             },
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
             child: const Text('Logout'),

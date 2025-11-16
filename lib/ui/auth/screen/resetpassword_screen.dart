@@ -33,6 +33,32 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
     );
   }
 
+  Future<void> _resetPassword() async {
+    try {
+      await ref
+          .read(authNotifierProvider.notifier)
+          .sendPasswordResetOTP(_emailController.text.trim());
+      if (!mounted) return;
+      _showSnackBar("Verification code sent successfully!");
+      await Future.delayed(const Duration(seconds: 1));
+
+      if (!mounted) return;
+
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (context) => VerificationScreen(
+            email: _emailController.text.trim(),
+            type: VerificationType.resetPassword,
+          ),
+        ),
+      );
+    } catch (e) {
+      if (mounted) {
+        _showSnackBar("Failed to send verification code: $e");
+      }
+    }
+  }
+
   @override
   void dispose() {
     _emailController.dispose();
@@ -44,18 +70,8 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
   Widget build(BuildContext context) {
     ref.listen<AuthState>(authNotifierProvider, (previous, next) {
       if (next.status == AuthStatus.failure) {
-        _showSnackBar("reset password Gagal: ${next.errorMessage}");
-      } else if (next.status == AuthStatus.success) {
-        _showSnackBar("reset password Berhasil!");
-        Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (context) => VerificationScreen(
-              email: _emailController.text.trim(),
-              type: VerificationType.resetPassword,
-            ),
-          ),
-        );
-      }
+        
+      } else if (next.status == AuthStatus.success) {}
     });
 
     final screenHeight = MediaQuery.of(context).size.height;
@@ -64,10 +80,8 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
     final isLoading = authState.status == AuthStatus.loading;
 
     return Scaffold(
-      // Tambahkan resizeToAvoidBottomInset untuk mencegah resize otomatis
       resizeToAvoidBottomInset: false,
       body: GestureDetector(
-        // Tambahkan GestureDetector untuk dismiss keyboard saat tap di luar
         onTap: () => FocusScope.of(context).unfocus(),
         child: Container(
           width: double.infinity,
@@ -83,7 +97,6 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
               padding: EdgeInsets.all(screenWidth * 0.06),
               child: Column(
                 children: [
-                  // Logo section
                   Container(
                     height: screenHeight * 0.25,
                     child: Column(
@@ -131,17 +144,15 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
 
                   SizedBox(height: screenHeight * 0.02),
 
-                  // Form section
                   Expanded(
                     child: SingleChildScrollView(
                       controller: _scrollController,
-                      // Tambahkan physics untuk scroll yang lebih smooth
+
                       physics: const ClampingScrollPhysics(),
                       child: Form(
                         key: _formKey,
                         child: Column(
                           children: [
-                            // Container form
                             Container(
                               width: double.infinity,
                               padding: EdgeInsets.all(screenWidth * 0.05),
@@ -159,12 +170,11 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  // Title section dengan icon message.png dan container kotak
                                   Row(
                                     mainAxisAlignment: MainAxisAlignment.center,
-                                    crossAxisAlignment: CrossAxisAlignment.center,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.center,
                                     children: [
-                                      // Icon container
                                       Container(
                                         width: screenWidth * 0.15,
                                         height: screenWidth * 0.12,
@@ -175,7 +185,9 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
                                             207,
                                             1,
                                           ),
-                                          borderRadius: BorderRadius.circular(16),
+                                          borderRadius: BorderRadius.circular(
+                                            16,
+                                          ),
                                           border: Border.all(
                                             color: Colors.grey[300]!,
                                             width: 1,
@@ -206,7 +218,7 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
                                         ),
                                       ),
                                       SizedBox(width: 4),
-                                      // Teks di samping icon
+
                                       Column(
                                         mainAxisAlignment:
                                             MainAxisAlignment.center,
@@ -243,7 +255,6 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
 
                                   SizedBox(height: screenHeight * 0.02),
 
-                                  // Description text
                                   Center(
                                     child: Text(
                                       "Enter your email to receive a reset code",
@@ -258,9 +269,9 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
 
                                   SizedBox(height: screenHeight * 0.02),
 
-                                  // Email TextField
                                   Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       const Text(
                                         "Email",
@@ -280,7 +291,9 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
                                             254,
                                             254,
                                           ),
-                                          borderRadius: BorderRadius.circular(8),
+                                          borderRadius: BorderRadius.circular(
+                                            8,
+                                          ),
                                           border: Border.all(
                                             color: const Color.fromARGB(
                                               217,
@@ -304,9 +317,9 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
                                                   border: InputBorder.none,
                                                   contentPadding:
                                                       const EdgeInsets.symmetric(
-                                                    horizontal: 16,
-                                                    vertical: 12,
-                                                  ),
+                                                        horizontal: 16,
+                                                        vertical: 12,
+                                                      ),
                                                   hintText:
                                                       "Enter your email address",
                                                   hintStyle: TextStyle(
@@ -318,23 +331,35 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
                                                     height: 0,
                                                   ),
                                                 ),
-                                                // Auto scroll ketika keyboard muncul
+
                                                 onTap: () {
                                                   Future.delayed(
-                                                    const Duration(milliseconds: 300),
+                                                    const Duration(
+                                                      milliseconds: 300,
+                                                    ),
                                                     () {
-                                                      _scrollController.animateTo(
-                                                        _scrollController.position.maxScrollExtent,
-                                                        duration: const Duration(milliseconds: 300),
-                                                        curve: Curves.easeOut,
-                                                      );
+                                                      _scrollController
+                                                          .animateTo(
+                                                            _scrollController
+                                                                .position
+                                                                .maxScrollExtent,
+                                                            duration:
+                                                                const Duration(
+                                                                  milliseconds:
+                                                                      300,
+                                                                ),
+                                                            curve:
+                                                                Curves.easeOut,
+                                                          );
                                                     },
                                                   );
                                                 },
                                               ),
                                             ),
                                             Padding(
-                                              padding: const EdgeInsets.all(8.0),
+                                              padding: const EdgeInsets.all(
+                                                8.0,
+                                              ),
                                               child: Image.asset(
                                                 "assets/images/auth/mail.png",
                                                 width: 20,
@@ -350,21 +375,12 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
 
                                   SizedBox(height: screenHeight * 0.02),
 
-                                  // Send Reset Code button
                                   SizedBox(
                                     width: double.infinity,
                                     child: ElevatedButton(
                                       onPressed: isLoading
                                           ? null
-                                          : () async {
-                                              await ref
-                                                  .read(
-                                                    authNotifierProvider.notifier,
-                                                  )
-                                                  .sendPasswordResetOTP(
-                                                    _emailController.text.trim(),
-                                                  );
-                                            },
+                                          : _resetPassword,
                                       style: ElevatedButton.styleFrom(
                                         backgroundColor: Colors.black,
                                         foregroundColor: Colors.white,
@@ -372,7 +388,9 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
                                           vertical: 14,
                                         ),
                                         shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(8),
+                                          borderRadius: BorderRadius.circular(
+                                            8,
+                                          ),
                                         ),
                                         textStyle: const TextStyle(
                                           fontSize: 16,
@@ -386,9 +404,9 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
                                               child: CircularProgressIndicator(
                                                 strokeWidth: 2,
                                                 valueColor:
-                                                    AlwaysStoppedAnimation<Color>(
-                                                      Colors.white,
-                                                    ),
+                                                    AlwaysStoppedAnimation<
+                                                      Color
+                                                    >(Colors.white),
                                               ),
                                             )
                                           : const Text("Send Reset Code"),
@@ -397,7 +415,6 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
 
                                   SizedBox(height: screenHeight * 0.02),
 
-                                  // Back to Login text
                                   Container(
                                     width: double.infinity,
                                     child: GestureDetector(
@@ -438,7 +455,6 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
 
                             SizedBox(height: screenHeight * 0.03),
 
-                            // Teks dengan icon hint
                             Container(
                               width: double.infinity,
                               padding: EdgeInsets.symmetric(
@@ -449,7 +465,8 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
                                 children: [
                                   Row(
                                     mainAxisAlignment: MainAxisAlignment.center,
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       Icon(
                                         Icons.error,
@@ -482,7 +499,6 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
                     ),
                   ),
 
-                  // Help section
                   Container(
                     width: double.infinity,
                     child: Column(
@@ -498,9 +514,7 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
                         ),
                         SizedBox(height: 4),
                         GestureDetector(
-                          onTap: () {
-                            // Contact support logic
-                          },
+                          onTap: () {},
                           child: Text(
                             "Contact support",
                             style: TextStyle(

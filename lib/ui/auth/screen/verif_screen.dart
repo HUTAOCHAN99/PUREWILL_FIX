@@ -84,9 +84,9 @@ class _VerificationScreenState extends ConsumerState<VerificationScreen> {
       _startCountdown();
       try {
         if (widget.type == VerificationType.registration) {
-          ref.read(authNotifierProvider.notifier).resendSignupOTP(widget.email);
+          await ref.read(authNotifierProvider.notifier).resendSignupOTP(widget.email);
         } else {
-          ref
+          await ref
               .read(authNotifierProvider.notifier)
               .resendPasswordResetOtp(widget.email);
         }
@@ -100,7 +100,7 @@ class _VerificationScreenState extends ConsumerState<VerificationScreen> {
     final otp = getCode();
     if (otp != null) {
       if (widget.type == VerificationType.registration) {
-        ref
+        await ref
             .read(authNotifierProvider.notifier)
             .verifySignupOtp(widget.email, otp);
       } else {
@@ -108,6 +108,27 @@ class _VerificationScreenState extends ConsumerState<VerificationScreen> {
             .read(authNotifierProvider.notifier)
             .verifyPasswordResetOtp(widget.email, otp);
       }
+
+      if (!mounted) return;
+      _showSnackBar("Verification Code Correct! ");
+
+      await Future.delayed(const Duration(seconds: 1));
+
+      if (!mounted) return;
+
+      if (widget.type == VerificationType.registration) {
+        Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false,); 
+      } else {
+        Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (context) =>
+                  NewPasswordScreen(key: widget.key, email: widget.email),
+            ),
+          );
+      }
+
+
+
     }
   }
 
@@ -122,24 +143,17 @@ class _VerificationScreenState extends ConsumerState<VerificationScreen> {
 
   @override
   Widget build(BuildContext context) {
-    ref.listen<AuthState>(authNotifierProvider, (previous, next) {
-      if (next.status == AuthStatus.failure) {
-        _showSnackBar("verifikasi Gagal: ${next.errorMessage}");
-        // Navigator.pushReplacementNamed(context, '/login');
-      } else if (next.status == AuthStatus.success && next.user != null) {
-        if (widget.type == VerificationType.registration) {
-          _showSnackBar("signup password Berhasil!");
-        } else {
-          _showSnackBar("reset password Berhasil!");
-        }
-        Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (context) =>
-                NewPasswordScreen(key: widget.key, email: widget.email),
-          ),
-        );
-      }
-    });
+    // ref.listen<AuthState>(authNotifierProvider, (previous, next) {
+    //   if (next.status == AuthStatus.failure) {
+    //     throw Exception('Verification code was sent not successfully.');
+    //   } else if (next.status == AuthStatus.success && next.user != null) {
+    //     if (widget.type == VerificationType.registration) {
+          
+    //     } else {
+          
+    //     }
+    //   }
+    // });
     final screenHeight = MediaQuery.of(context).size.height;
     final screenWidth = MediaQuery.of(context).size.width;
     final authState = ref.watch(authNotifierProvider);
@@ -429,7 +443,12 @@ class _VerificationScreenState extends ConsumerState<VerificationScreen> {
                                     onPressed: isLoading
                                         ? null
                                         : () async {
+                                          try {
                                             await verifCode();
+                                          } catch (e) {
+                                            _showSnackBar("verifikasi Gagal: $e");
+                                          }
+
                                           },
                                     style: ElevatedButton.styleFrom(
                                       backgroundColor: Colors.black,

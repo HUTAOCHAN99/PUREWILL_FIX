@@ -39,9 +39,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       final completionStatus = await ref
           .read(habitNotifierProvider.notifier)
           .getTodayCompletionStatus();
-      setState(() {
-        _todayCompletionStatus = completionStatus;
-      });
+      if (mounted) {
+        setState(() {
+          _todayCompletionStatus = completionStatus;
+        });
+      }
     } catch (e) {
       print('Error loading completion status: $e');
     }

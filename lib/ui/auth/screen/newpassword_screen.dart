@@ -1,18 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:purewill/ui/auth/auth_provider.dart';
-// import 'package:purewill/ui/auth/screen/login_screen.dart';
 import 'package:purewill/ui/auth/view_model/auth_view_model.dart';
 
 class NewPasswordScreen extends ConsumerStatefulWidget {
   final String email;
-  // final String verificationCode;
 
-  const NewPasswordScreen({
-    super.key,
-    required this.email,
-    // required this.verificationCode,
-  });
+  const NewPasswordScreen({super.key, required this.email});
 
   @override
   ConsumerState<NewPasswordScreen> createState() => _NewPasswordScreenState();
@@ -38,6 +32,25 @@ class _NewPasswordScreenState extends ConsumerState<NewPasswordScreen> {
     );
   }
 
+  Future<void> _saveNewPassword() async {
+    try {
+      await ref
+          .read(authNotifierProvider.notifier)
+          .updatePassword(_newPasswordController.text.trim());
+      if (!mounted) return;
+      _showSnackBar("Password changed successfully!");
+      await Future.delayed(const Duration(seconds: 1));
+      if (!mounted) return;
+      Navigator.pushNamedAndRemoveUntil(
+        context,
+        '/login',
+        (Route<dynamic> route) => false,
+      );
+    } catch (e) {
+      _showSnackBar(": $e");
+    }
+  }
+
   @override
   void dispose() {
     _newPasswordController.dispose();
@@ -48,14 +61,6 @@ class _NewPasswordScreenState extends ConsumerState<NewPasswordScreen> {
 
   @override
   Widget build(BuildContext context) {
-    ref.listen<AuthState>(authNotifierProvider, (previous, next) {
-      if (next.status == AuthStatus.failure) {
-        _showSnackBar("Ganti password Gagal: ${next.errorMessage}");
-      } else if (next.status == AuthStatus.success && next.user != null) {
-        _showSnackBar("Ganti password Berhasil!");
-        Navigator.pushReplacementNamed(context, '/login');
-      }
-    });
 
     final screenHeight = MediaQuery.of(context).size.height;
     final screenWidth = MediaQuery.of(context).size.width;
@@ -162,7 +167,8 @@ class _NewPasswordScreenState extends ConsumerState<NewPasswordScreen> {
                                   // Title section
                                   Row(
                                     mainAxisAlignment: MainAxisAlignment.center,
-                                    crossAxisAlignment: CrossAxisAlignment.center,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.center,
                                     children: [
                                       // Icon container
                                       Container(
@@ -175,7 +181,9 @@ class _NewPasswordScreenState extends ConsumerState<NewPasswordScreen> {
                                             207,
                                             1,
                                           ),
-                                          borderRadius: BorderRadius.circular(16),
+                                          borderRadius: BorderRadius.circular(
+                                            16,
+                                          ),
                                           border: Border.all(
                                             color: Colors.grey[300]!,
                                             width: 1,
@@ -251,7 +259,8 @@ class _NewPasswordScreenState extends ConsumerState<NewPasswordScreen> {
 
                                   // New Password TextField
                                   Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       const Text(
                                         "New Password",
@@ -271,7 +280,9 @@ class _NewPasswordScreenState extends ConsumerState<NewPasswordScreen> {
                                             254,
                                             254,
                                           ),
-                                          borderRadius: BorderRadius.circular(8),
+                                          borderRadius: BorderRadius.circular(
+                                            8,
+                                          ),
                                           border: Border.all(
                                             color: const Color.fromARGB(
                                               217,
@@ -288,7 +299,8 @@ class _NewPasswordScreenState extends ConsumerState<NewPasswordScreen> {
                                               child: TextFormField(
                                                 controller:
                                                     _newPasswordController,
-                                                obscureText: _obscureNewPassword,
+                                                obscureText:
+                                                    _obscureNewPassword,
                                                 style: const TextStyle(
                                                   color: Colors.black,
                                                   fontSize: 16,
@@ -300,7 +312,8 @@ class _NewPasswordScreenState extends ConsumerState<NewPasswordScreen> {
                                                         horizontal: 16,
                                                         vertical: 12,
                                                       ),
-                                                  hintText: "Enter new password",
+                                                  hintText:
+                                                      "Enter new password",
                                                   hintStyle: TextStyle(
                                                     color: Colors.grey[500],
                                                     fontSize: 16,
@@ -313,13 +326,23 @@ class _NewPasswordScreenState extends ConsumerState<NewPasswordScreen> {
                                                 // Auto scroll ketika keyboard muncul
                                                 onTap: () {
                                                   Future.delayed(
-                                                    const Duration(milliseconds: 300),
+                                                    const Duration(
+                                                      milliseconds: 300,
+                                                    ),
                                                     () {
-                                                      _scrollController.animateTo(
-                                                        _scrollController.position.maxScrollExtent,
-                                                        duration: const Duration(milliseconds: 300),
-                                                        curve: Curves.easeOut,
-                                                      );
+                                                      _scrollController
+                                                          .animateTo(
+                                                            _scrollController
+                                                                .position
+                                                                .maxScrollExtent,
+                                                            duration:
+                                                                const Duration(
+                                                                  milliseconds:
+                                                                      300,
+                                                                ),
+                                                            curve:
+                                                                Curves.easeOut,
+                                                          );
                                                     },
                                                   );
                                                 },
@@ -349,7 +372,8 @@ class _NewPasswordScreenState extends ConsumerState<NewPasswordScreen> {
 
                                   // Confirm Password TextField
                                   Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       const Text(
                                         "Confirm Password",
@@ -369,7 +393,9 @@ class _NewPasswordScreenState extends ConsumerState<NewPasswordScreen> {
                                             254,
                                             254,
                                           ),
-                                          borderRadius: BorderRadius.circular(8),
+                                          borderRadius: BorderRadius.circular(
+                                            8,
+                                          ),
                                           border: Border.all(
                                             color: const Color.fromARGB(
                                               217,
@@ -418,13 +444,23 @@ class _NewPasswordScreenState extends ConsumerState<NewPasswordScreen> {
                                                 // Auto scroll ketika keyboard muncul
                                                 onTap: () {
                                                   Future.delayed(
-                                                    const Duration(milliseconds: 300),
+                                                    const Duration(
+                                                      milliseconds: 300,
+                                                    ),
                                                     () {
-                                                      _scrollController.animateTo(
-                                                        _scrollController.position.maxScrollExtent,
-                                                        duration: const Duration(milliseconds: 300),
-                                                        curve: Curves.easeOut,
-                                                      );
+                                                      _scrollController
+                                                          .animateTo(
+                                                            _scrollController
+                                                                .position
+                                                                .maxScrollExtent,
+                                                            duration:
+                                                                const Duration(
+                                                                  milliseconds:
+                                                                      300,
+                                                                ),
+                                                            curve:
+                                                                Curves.easeOut,
+                                                          );
                                                     },
                                                   );
                                                 },
@@ -456,18 +492,7 @@ class _NewPasswordScreenState extends ConsumerState<NewPasswordScreen> {
                                   SizedBox(
                                     width: double.infinity,
                                     child: ElevatedButton(
-                                      onPressed: isLoading
-                                          ? null
-                                          : () {
-                                              ref
-                                                  .read(
-                                                    authNotifierProvider.notifier,
-                                                  )
-                                                  .updatePassword(
-                                                    _newPasswordController.text
-                                                        .trim(),
-                                                  );
-                                            },
+                                      onPressed: isLoading ? null : _saveNewPassword,
                                       style: ElevatedButton.styleFrom(
                                         backgroundColor: Colors.black,
                                         foregroundColor: Colors.white,
@@ -475,7 +500,9 @@ class _NewPasswordScreenState extends ConsumerState<NewPasswordScreen> {
                                           vertical: 14,
                                         ),
                                         shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(8),
+                                          borderRadius: BorderRadius.circular(
+                                            8,
+                                          ),
                                         ),
                                         textStyle: const TextStyle(
                                           fontSize: 16,
@@ -489,9 +516,9 @@ class _NewPasswordScreenState extends ConsumerState<NewPasswordScreen> {
                                               child: CircularProgressIndicator(
                                                 strokeWidth: 2,
                                                 valueColor:
-                                                    AlwaysStoppedAnimation<Color>(
-                                                      Colors.white,
-                                                    ),
+                                                    AlwaysStoppedAnimation<
+                                                      Color
+                                                    >(Colors.white),
                                               ),
                                             )
                                           : const Text("Reset Password"),
@@ -513,40 +540,4 @@ class _NewPasswordScreenState extends ConsumerState<NewPasswordScreen> {
       ),
     );
   }
-
-  /*   Future<void> _resetPassword() async {
-    if (!_formKey.currentState!.validate()) {
-      return;
-    }
-
-    setState(() {
-      _isLoading = true;
-    });
-
-    try {
-      // Langsung update password karena OTP sudah diverifikasi di screen sebelumnya
-      final response = await _authService.updatePassword(
-        _newPasswordController.text,
-      );
-
-      if (response.user != null) {
-        _showSnackBar("Password has been reset successfully");
-
-        // Navigate back to login screen
-        Navigator.pushAndRemoveUntil(
-          context,
-          MaterialPageRoute(builder: (context) => LoginScreen()),
-          (route) => false,
-        );
-      }
-    } on AuthException catch (error) {
-      _showSnackBar("Failed to reset password: ${error.message}");
-    } catch (error) {
-      _showSnackBar("An error occurred while resetting password");
-    } finally {
-      setState(() {
-        _isLoading = false;
-      });
-    }
-  } */
 }

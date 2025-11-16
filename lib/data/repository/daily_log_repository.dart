@@ -11,18 +11,18 @@ class DailyLogRepository {
   Future<DailyLogModel> recordLog({
     required int habitId,
     required DateTime date,
-    required bool isCompleted,
+    required LogStatus status,
     double? actualValue,
   }) async {
     try {
       print(
-        "akan diubah ke isCompleted: $isCompleted for habitId: $habitId on date: ${date.toIso8601String().substring(0, 10)}",
+        "akan diubah statusnya ke : $status for habitId: $habitId on date: ${date.toIso8601String().substring(0, 10)}",
       );
 
       final logData = {
         'habit_id': habitId,
         'log_date': date.toIso8601String().substring(0, 10),
-        'is_completed': isCompleted,
+        'status': status,
         'actual_value': actualValue,
         'created_at': DateTime.now().toIso8601String(),
       };

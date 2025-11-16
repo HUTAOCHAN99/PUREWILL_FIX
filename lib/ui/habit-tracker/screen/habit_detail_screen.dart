@@ -1,6 +1,6 @@
-// lib\ui\habit-tracker\screen\habit_detail_screen.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:purewill/domain/model/daily_log_model.dart';
 import 'package:purewill/domain/model/habit_model.dart';
 import 'package:purewill/ui/habit-tracker/habit_provider.dart';
 import 'package:purewill/ui/habit-tracker/widget/habit_detail/calendar_tracker_widget.dart';
@@ -25,27 +25,84 @@ class HabitDetailScreen extends ConsumerStatefulWidget {
 
 class _HabitDetailScreenState extends ConsumerState<HabitDetailScreen> {
   late bool _isCompleted;
-  final List<bool> _weeklyStreak = [
-    true,
-    false,
-    true,
-    true,
-    false,
-    true,
-    false,
-  ];
-  final List<double> _weeklyPerformance = [80, 60, 90, 70, 50, 85, 40];
-  final List<DateTime> _completionDates = [
-    DateTime.now().subtract(const Duration(days: 2)),
-    DateTime.now().subtract(const Duration(days: 4)),
-    DateTime.now().subtract(const Duration(days: 5)),
-    DateTime.now().subtract(const Duration(days: 7)),
-  ];
+  int? _completedDays;
 
-  @override
+  List<bool>? _weeklyStreak;
+  List<double>? _weeklyPerformance;
+  List<DateTime>? _completionDates; 
+   @override
   void initState() {
     super.initState();
-    _isCompleted = widget.completionStatus[widget.habit.id] ?? false;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      int habitId = widget.habit.id;
+      _isCompleted = widget.completionStatus[widget.habit.id] ?? false;
+      _loadHabitLogForThisMonth(habitId);
+    });
+  }
+
+   Future<void> _loadHabitLogForThisMonth(int habitId) async {
+    try {
+      DateTime now = DateTime.now();
+      DateTime startDate = DateTime(now.year, now.month, 1);
+      DateTime endDate = DateTime(now.year, now.month + 1, 0);
+
+      // 1. Ambil data log DARI DATABASE
+      final habitLogForThisMonth = await ref
+          .read(habitNotifierProvider.notifier)
+          .fetchLogsForCalendar(startDate: startDate, endDate: endDate, habitId: habitId);
+
+      // 2. HITUNG LOGIKA MINGGUAN (SEBELUM SETSTATE)
+
+      // Hitung tanggal awal & akhir minggu ini (Asumsi: Senin=1, Minggu=7)
+      DateTime today = DateUtils.dateOnly(now);
+      int currentWeekday = today.weekday; // Mon=1, Sun=7
+      DateTime startDateWeek = today.subtract(Duration(days: currentWeekday - 1));
+      DateTime endDateWeek = startDateWeek.add(const Duration(days: 6));
+
+      // 3. KALKULASI SEMUA DATA LOKAL DULU
+
+      // Filter log hanya untuk minggu ini
+      final List<DailyLogModel> logsForThisWeek = habitLogForThisMonth.where((dailyLog) {
+        DateTime logDateOnly = DateUtils.dateOnly(dailyLog.logDate);
+        
+        // Cek: logDate >= startDateWeek && logDate <= endDateWeek
+        return !logDateOnly.isBefore(startDateWeek) && 
+               !logDateOnly.isAfter(endDateWeek);
+      }).toList();
+      final completedDays = logsForThisWeek
+    .where((log) => log.status == LogStatus.success)
+    .length;
+
+      // Hitung weeklyStreak dari log minggu ini
+      final List<bool> localWeeklyStreak = logsForThisWeek.map((dailyLog) {
+        return dailyLog.status == LogStatus.success;
+      }).toList();
+
+      final List<double> localWeeklyPerformance = localWeeklyStreak.map((isLogComplete) {
+        return isLogComplete ? 100.0 : 0.0;
+      }).toList();
+
+      final List<DateTime> localCompletionDates = habitLogForThisMonth.map((dailyLog) {
+        return dailyLog.logDate;
+      }).toList();
+
+      print(localWeeklyStreak);
+      print(localWeeklyPerformance);
+      print(localCompletionDates);
+
+      if (mounted) {
+        setState(() {
+          _weeklyStreak = localWeeklyStreak;
+          _weeklyPerformance = localWeeklyPerformance;
+          _completionDates = localCompletionDates;
+          _completedDays = completedDays;
+        });
+      }
+
+    } catch (e) {
+      print('Error loading completion status: $e');
+      // Anda bisa menambahkan 'if (mounted)' di sini juga jika menampilkan error
+    }
   }
 
   @override
@@ -53,6 +110,15 @@ class _HabitDetailScreenState extends ConsumerState<HabitDetailScreen> {
     final iconData = HabitIconHelper.getHabitIcon(widget.habit.name);
     final iconColor = HabitIconHelper.getHabitColor(widget.habit.name);
     final category = HabitIconHelper.getHabitCategory(widget.habit.name);
+
+    if (_weeklyPerformance == null || _weeklyStreak == null || _completionDates == null || _completedDays == null) {
+      // JIKA BELUM SIAP: Tampilkan layar loading sederhana
+      return const Scaffold(
+        body: Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -83,31 +149,49 @@ class _HabitDetailScreenState extends ConsumerState<HabitDetailScreen> {
             centerTitle: true,
           ),
 
-          SliverToBoxAdapter(
+         SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.all(20),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   ProgressWidget(
-                    isCompleted: false,
-                    habitColor: Colors.blue,
-                    habitName: "Exercise",
-                    completedDays: 5,
+                    isCompleted: _isCompleted,
+                    habitColor: iconColor,
+                    habitName: widget.habit.name,
+                    completedDays: _completedDays!, // Ini akan 0 jika kosong (sudah benar)
+                    
+                    // JIKA totalDays 0, tampilkan 7 sebagai default minggu
                     totalDays: 7,
                   ),
                   const SizedBox(height: 24),
 
-                  WeeklyStreakWidget(weeklyStreak: _weeklyStreak),
+                  WeeklyStreakWidget(
+                    // JIKA list-nya kosong, buat list baru 
+                    // berisi 7 buah 'false'
+                    weeklyStreak: _weeklyStreak!.isEmpty
+                        ? List.generate(7, (_) => false)
+                        : _weeklyStreak!,
+                  ),
                   const SizedBox(height: 24),
 
-                  PerformanceChartWidget(weeklyPerformance: _weeklyPerformance),
+                  PerformanceChartWidget(
+                    // JIKA list-nya kosong, buat list baru
+                    // berisi 7 buah '0.0'
+                    weeklyPerformance: _weeklyPerformance!.isEmpty
+                        ? List.generate(7, (_) => 0.0)
+                        : _weeklyPerformance!,
+                  ),
                   const SizedBox(height: 24),
 
-                  CalendarTrackerWidget(completionDates: _completionDates),
+                  CalendarTrackerWidget(
+                    // Widget ini sudah benar. Mengirim '[]' 
+                    // akan menampilkan kalender kosong,
+                    // dan itulah yang Anda inginkan.
+                    completionDates: _completionDates!,
+                  ),
                   const SizedBox(height: 16),
                   
-                  // Tambahkan Motivational Quotes Widget di sini
                   MotivationalQuotesWidget(),
                   const SizedBox(height: 20),
                 ],
@@ -197,33 +281,33 @@ class _HabitDetailScreenState extends ConsumerState<HabitDetailScreen> {
     );
   }
 
-  void _toggleCompletion() async {
-    try {
-      final viewModel = ref.read(habitNotifierProvider.notifier);
-      await viewModel.toggleHabitCompletion(widget.habit);
+  // void _toggleCompletion() async {
+  //   try {
+  //     final viewModel = ref.read(habitNotifierProvider.notifier);
+  //     await viewModel.toggleHabitCompletion(widget.habit);
 
-      setState(() {
-        _isCompleted = !_isCompleted;
-      });
+  //     setState(() {
+  //       _isCompleted = !_isCompleted;
+  //     });
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            _isCompleted
-                ? '${widget.habit.name} completed! ✅'
-                : '${widget.habit.name} marked as not completed',
-          ),
-          duration: const Duration(seconds: 2),
-        ),
-      );
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error updating habit: $e'),
-          backgroundColor: Colors.red,
-          duration: const Duration(seconds: 3),
-        ),
-      );
-    }
-  }
+  //     ScaffoldMessenger.of(context).showSnackBar(
+  //       SnackBar(
+  //         content: Text(
+  //           _isCompleted
+  //               ? '${widget.habit.name} completed! ✅'
+  //               : '${widget.habit.name} marked as not completed',
+  //         ),
+  //         duration: const Duration(seconds: 2),
+  //       ),
+  //     );
+  //   } catch (e) {
+  //     ScaffoldMessenger.of(context).showSnackBar(
+  //       SnackBar(
+  //         content: Text('Error updating habit: $e'),
+  //         backgroundColor: Colors.red,
+  //         duration: const Duration(seconds: 3),
+  //       ),
+  //     );
+  //   }
+  // }
 }

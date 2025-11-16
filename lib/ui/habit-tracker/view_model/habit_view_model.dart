@@ -22,6 +22,7 @@ class HabitsState {
   final List<TargetUnitModel> targetUnits;
   final List<CategoryModel> categories;
   final List<ReminderSettingModel> reminderSettings;
+  final HabitModel? currentHabitDetail;
   ProfileModel? currentUser;
 
   HabitsState({
@@ -33,6 +34,8 @@ class HabitsState {
     this.categories = const [],
     this.reminderSettings = const [],
     this.currentUser,
+    this.currentHabitDetail 
+
   });
 
   HabitsState copyWith({
@@ -44,6 +47,7 @@ class HabitsState {
     List<CategoryModel>? caregories,
     List<ReminderSettingModel>? reminderSettings,
     ProfileModel? currentUser,
+    HabitModel? currentHabitDetail
   }) {
     return HabitsState(
       status: status ?? this.status,
@@ -109,6 +113,27 @@ class HabitsViewModel extends StateNotifier<HabitsState> {
     }
   }
 
+  Future<void> loadHabitDetail({
+    required int habitId
+  }) async {
+    state = state.copyWith(status: HabitStatus.loading, errorMessage: null);
+
+    try {
+      final habitDetail = await _habitRepository.getHabitById(habitId);
+      print("Habit Detail");
+      print(habitDetail);
+      state = state.copyWith(
+        status: HabitStatus.success,
+        currentHabitDetail: habitDetail,
+      );
+    } catch (e) {
+      state = state.copyWith(
+        status: HabitStatus.failure,
+        errorMessage: 'Failed to load habit detail.',
+      );
+    }
+  }
+
   Future<void> loadUserTargetUnits() async {
     state = state.copyWith(status: HabitStatus.loading, errorMessage: null);
 
@@ -158,24 +183,24 @@ class HabitsViewModel extends StateNotifier<HabitsState> {
       );
 
       print("exiting log complete status = ");
-      print(existingLog?.isCompleted);
+      print(existingLog?.status == LogStatus.success);
 
       if (existingLog != null) {
         print("existing log found, toggling completion");
-        print("existingLog.isCompleted: ${existingLog.isCompleted}");
+        print("existingLog.isCompleted: ${existingLog.status}");
         await _dailyLogRepository.recordLog(
           habitId: habit.id,
           date: today,
-          isCompleted: !existingLog.isCompleted,
+          status: (existingLog.status == LogStatus.success) ? LogStatus.failed : existingLog.status == LogStatus.failed ? LogStatus.neutral : LogStatus.neutral, 
           actualValue: habit.targetValue?.toDouble(),
         );
 
-        print("objective after toggling: ${!existingLog.isCompleted}");
+        print("objective after toggling: ${existingLog.status}");
       } else {
         await _dailyLogRepository.recordLog(
           habitId: habit.id,
           date: today,
-          isCompleted: true,
+          status: LogStatus.success,
           actualValue: habit.targetValue?.toDouble(),
         );
       }
@@ -198,7 +223,7 @@ class HabitsViewModel extends StateNotifier<HabitsState> {
       await _dailyLogRepository.recordLog(
         habitId: habitId,
         date: DateTime.now(),
-        isCompleted: true,
+        status: LogStatus.success,
         actualValue: actualValue,
       );
 
@@ -224,7 +249,7 @@ class HabitsViewModel extends StateNotifier<HabitsState> {
       final completionStatus = <int, bool>{};
 
       for (final log in todayLogs) {
-        completionStatus[log.habitId] = log.isCompleted;
+        completionStatus[log.habitId] = log.status == LogStatus.success;
       }
 
       return completionStatus;
@@ -292,7 +317,6 @@ class HabitsViewModel extends StateNotifier<HabitsState> {
   }
 
   Future<List<DailyLogModel>> fetchLogsForCalendar({
-    required String userId,
     required int habitId,
     required DateTime startDate,
     required DateTime endDate,
