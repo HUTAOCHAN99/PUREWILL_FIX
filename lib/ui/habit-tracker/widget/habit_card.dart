@@ -49,12 +49,12 @@ class HabitCard extends StatelessWidget {
               children: [
                 CircleAvatar(
                   radius: 20,
-                  backgroundColor: isCompleted
+                  backgroundColor: status == LogStatus.success
                       ? color.withOpacity(0.2)
                       : color.withOpacity(0.1),
                   child: Icon(
                     icon,
-                    color: isCompleted ? color : color.withOpacity(0.7),
+                    color: status == LogStatus.success ? color : color.withOpacity(0.7),
                     size: 22,
                   ),
                 ),
@@ -75,7 +75,7 @@ class HabitCard extends StatelessWidget {
                       ),
                     ),
                   ),
-                if (isCompleted)
+                if (status == LogStatus.success)
                   Positioned(
                     right: -2,
                     top: -2,
@@ -108,8 +108,8 @@ class HabitCard extends StatelessWidget {
                           style: TextStyle(
                             fontWeight: FontWeight.w600,
                             fontSize: 16,
-                            color: isCompleted ? Colors.grey : Colors.black,
-                            decoration: isCompleted
+                            color: status == LogStatus.success ? Colors.grey : Colors.black,
+                            decoration: status == LogStatus.success
                                 ? TextDecoration.lineThrough
                                 : null,
                           ),
@@ -127,8 +127,8 @@ class HabitCard extends StatelessWidget {
                   Text(
                     subtitle,
                     style: TextStyle(
-                      color: isCompleted ? Colors.green : Colors.grey,
-                      fontWeight: isCompleted
+                      color: status == LogStatus.success ? Colors.green : Colors.grey,
+                      fontWeight: status == LogStatus.success
                           ? FontWeight.w500
                           : FontWeight.normal,
                     ),
@@ -137,7 +137,7 @@ class HabitCard extends StatelessWidget {
                   LinearPercentIndicator(
                     lineHeight: 6,
                     percent: progress,
-                    progressColor: isCompleted ? Colors.green : color,
+                    progressColor: status == LogStatus.success ? Colors.green : color,
                     backgroundColor: Colors.grey[200]!,
                     barRadius: const Radius.circular(8),
                   ),
@@ -148,16 +148,16 @@ class HabitCard extends StatelessWidget {
             AnimatedContainer(
               duration: const Duration(milliseconds: 300),
               decoration: BoxDecoration(
-                color: isCompleted ? Colors.green : Colors.transparent,
+                color: status == LogStatus.success ? Colors.green : Colors.transparent,
                 shape: BoxShape.circle,
                 border: Border.all(
-                  color: isCompleted ? Colors.green : Colors.grey,
+                  color: status == LogStatus.success ? Colors.green : Colors.grey,
                   width: 2,
                 ),
               ),
               child: Icon(
-                isCompleted ? Icons.check : Icons.circle_outlined,
-                color: isCompleted ? Colors.white : Colors.grey,
+                status == LogStatus.success ? Icons.check : Icons.circle_outlined,
+                color: status == LogStatus.success ? Colors.white : Colors.grey,
                 size: 24,
               ),
             ),
