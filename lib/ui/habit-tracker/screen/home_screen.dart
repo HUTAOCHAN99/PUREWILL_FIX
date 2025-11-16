@@ -52,19 +52,19 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   void _onNavBarTap(int index) {
     print('NavBar tapped: index $index'); // Debug print
-    
+
     if (index == 2) {
       print('Navigating to AddHabitScreen...');
-      Navigator.of(context).push(
-        MaterialPageRoute(builder: (context) => const AddHabitScreen()),
-      ).then((_) {
-        print('Returned from AddHabitScreen');
-        if (mounted) {
-          setState(() {
-            _currentIndex = 0; // Kembali ke Home setelah add habit
+      Navigator.of(context)
+          .push(MaterialPageRoute(builder: (context) => const AddHabitScreen()))
+          .then((_) {
+            print('Returned from AddHabitScreen');
+            if (mounted) {
+              setState(() {
+                _currentIndex = 0; // Kembali ke Home setelah add habit
+              });
+            }
           });
-        }
-      });
     } else {
       print('Switching to tab: $index');
       setState(() {
@@ -79,9 +79,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final List<HabitModel> userHabits = habitsState.habits;
     final ProfileModel? currentUser = habitsState.currentUser;
     final String userName = currentUser?.fullName ?? "user not found";
-    final String userEmail = currentUser?.email ?? "email not found";    
+    final String userEmail = currentUser?.email ?? "email not found";
+
+    // Hitung habits yang completed today
     final completedToday = userHabits.where((habit) {
-      return _todayCompletionStatus[habit.id] == true;
+      return _todayCompletionStatus[habit.id] == LogStatus.success;
     }).length;
 
     final totalHabits = userHabits.length;
@@ -98,7 +100,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         child: SafeArea(
           child: Column(
             children: [
-              HabitHeader(userEmail: userEmail, userName: userName, onLogout: _performLogout),
+              HabitHeader(
+                userEmail: userEmail,
+                userName: userName,
+                onLogout: _performLogout,
+              ),
               Expanded(
                 child: SingleChildScrollView(
                   padding: const EdgeInsets.symmetric(
@@ -129,6 +135,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         todayCompletionStatus: _todayCompletionStatus,
                         habits: userHabits,
                         onHabitTap: _handleHabitTap,
+                        onCheckboxTap: _handleCheckboxTap, // TAMBAH INI
                       ),
                     ],
                   ),
@@ -155,6 +162,45 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         ),
       ),
     );
+  }
+
+  void _handleCheckboxTap(HabitModel habit) async {
+    try {
+      final currentStatus =
+          _todayCompletionStatus[habit.id] == LogStatus.success;
+      final newStatus = !currentStatus;
+
+      // Update status lokal terlebih dahulu untuk feedback instan
+      setState(() {
+        _todayCompletionStatus[habit.id] = newStatus
+            ? LogStatus.success
+            : LogStatus.neutral;
+      });
+
+      // Update ke backend menggunakan method yang sudah ada
+      await ref
+          .read(habitNotifierProvider.notifier)
+          .toggleHabitCompletion(habit);
+
+      // Refresh data untuk sinkronisasi
+      _loadTodayCompletionStatus();
+    } catch (e) {
+      // Jika error, kembalikan status sebelumnya
+      final previousStatus =
+          _todayCompletionStatus[habit.id] == LogStatus.success;
+      setState(() {
+        _todayCompletionStatus[habit.id] = previousStatus
+            ? LogStatus.neutral
+            : LogStatus.success;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to update habit: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
   void _performLogout() async {

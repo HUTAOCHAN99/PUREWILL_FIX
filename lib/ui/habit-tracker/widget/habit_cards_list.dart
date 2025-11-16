@@ -4,13 +4,14 @@ import 'package:purewill/domain/model/daily_log_model.dart';
 import 'package:purewill/domain/model/habit_model.dart';
 import 'package:purewill/ui/habit-tracker/view_model/habit_view_model.dart';
 import 'package:purewill/ui/habit-tracker/widget/habit_card.dart';
-import 'package:purewill/utils/habit_icon_helper.dart'; // ADD THIS IMPORT
+import 'package:purewill/utils/habit_icon_helper.dart';
 
 class HabitCardsList extends StatelessWidget {
   final HabitsState habitsState;
   final Map<int, LogStatus> todayCompletionStatus;
   final List<HabitModel> habits;
   final void Function(HabitModel habit) onHabitTap;
+  final void Function(HabitModel habit) onCheckboxTap; // TAMBAH INI
   final Widget Function(String errorMessage)? buildErrorState;
   final Widget Function()? buildEmptyState;
 
@@ -20,23 +21,23 @@ class HabitCardsList extends StatelessWidget {
     required this.todayCompletionStatus,
     required this.habits,
     required this.onHabitTap,
+    required this.onCheckboxTap, // TAMBAH INI
     this.buildErrorState,
     this.buildEmptyState,
   });
 
   LogStatus parseLogStatus(String statusString) {
-  // Gunakan .toLowerCase() agar aman dari "Completed" atau "completed"
-  switch (statusString.toLowerCase()) {
-    case "success":
-      return LogStatus.success;
-    case "neutral":
-      return LogStatus.neutral;
-    case "failed":
-      return LogStatus.failed;
-    default:
-      return LogStatus.neutral; // Atau LogStatus.unknown jika Anda punya
+    switch (statusString.toLowerCase()) {
+      case "success":
+        return LogStatus.success;
+      case "neutral":
+        return LogStatus.neutral;
+      case "failed":
+        return LogStatus.failed;
+      default:
+        return LogStatus.neutral;
+    }
   }
-}
 
   @override
   Widget build(BuildContext context) {
@@ -61,14 +62,13 @@ class HabitCardsList extends StatelessWidget {
         }
 
         final defaultHabits = habits.where((h) => h.isDefault).toList();
-        final userHabits = habits.where((h)=> !h.isDefault).toList();
+        final userHabits = habits.where((h) => !h.isDefault).toList();
         final sortedHabits = [...defaultHabits, ...userHabits];
 
         return Column(
           children: sortedHabits.map((habit) {
             final isCompleted = todayCompletionStatus[habit.id] ?? false;
             
-            // USE HABIT ICON HELPER INSTEAD OF DEFAULT HABITS SERVICE
             final iconData = HabitIconHelper.getHabitIcon(habit.name);
             final color = HabitIconHelper.getHabitColor(habit.name);
 
@@ -81,6 +81,7 @@ class HabitCardsList extends StatelessWidget {
               status: parseLogStatus(habit.status),
               isDefault: habit.isDefault,
               onTap: () => onHabitTap(habit),
+              onCheckboxTap: () => onCheckboxTap(habit), // TERUSKAN KE HABIT CARD
             );
           }).toList(),
         );
@@ -90,62 +91,62 @@ class HabitCardsList extends StatelessWidget {
   }
 
   Widget _defaultErrorState(String message) => Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.9),
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Column(
-        children: [
-          const Icon(Icons.error_outline, color: Colors.red, size: 48),
-          const SizedBox(height: 8),
-          const Text(
-            'Failed to load habits',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-              color: Colors.red,
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(0.9),
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Column(
+          children: [
+            const Icon(Icons.error_outline, color: Colors.red, size: 48),
+            const SizedBox(height: 8),
+            const Text(
+              'Failed to load habits',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: Colors.red,
+              ),
             ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            message,
-            textAlign: TextAlign.center,
-            style: const TextStyle(color: Colors.grey),
-          ),
-          const SizedBox(height: 16),
-        ],
-      ),
-    );
+            const SizedBox(height: 8),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: const TextStyle(color: Colors.grey),
+            ),
+            const SizedBox(height: 16),
+          ],
+        ),
+      );
 
   Widget _defaultEmptyState() => Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.9),
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Column(
-        children: [
-          const Icon(Icons.inbox_outlined, color: Colors.grey, size: 48),
-          const SizedBox(height: 8),
-          const Text(
-            'No habits yet',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-              color: Colors.grey,
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(0.9),
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Column(
+          children: [
+            const Icon(Icons.inbox_outlined, color: Colors.grey, size: 48),
+            const SizedBox(height: 8),
+            const Text(
+              'No habits yet',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: Colors.grey,
+              ),
             ),
-          ),
-          const SizedBox(height: 8),
-          const Text(
-            'Add your first habit to get started!',
-            textAlign: TextAlign.center,
-            style: TextStyle(color: Colors.grey),
-          ),
-          const SizedBox(height: 16),
-        ],
-      ),
-    );
+            const SizedBox(height: 8),
+            const Text(
+              'Add your first habit to get started!',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.grey),
+            ),
+            const SizedBox(height: 16),
+          ],
+        ),
+      );
 
   String _buildHabitSubtitle(HabitModel habit) {
     if (habit.targetValue != null && habit.unit != null) {

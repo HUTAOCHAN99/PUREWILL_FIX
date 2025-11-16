@@ -11,6 +11,7 @@ class HabitCard extends StatelessWidget {
   final LogStatus status;
   final bool isDefault;
   final VoidCallback? onTap;
+  final VoidCallback? onCheckboxTap;
 
   const HabitCard({
     super.key,
@@ -22,6 +23,7 @@ class HabitCard extends StatelessWidget {
     required this.status,
     this.isDefault = false,
     this.onTap,
+    this.onCheckboxTap,
   });
 
   @override
@@ -145,20 +147,27 @@ class HabitCard extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 12),
-            AnimatedContainer(
-              duration: const Duration(milliseconds: 300),
-              decoration: BoxDecoration(
-                color: status == LogStatus.success ? Colors.green : Colors.transparent,
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: status == LogStatus.success ? Colors.green : Colors.grey,
-                  width: 2,
+            // Area checkbox yang tidak terpengaruh GestureDetector parent
+            IgnorePointer(
+              ignoring: false,
+              child: GestureDetector(
+                onTap: onCheckboxTap,
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 300),
+                  decoration: BoxDecoration(
+                    color: status == LogStatus.success ? Colors.green : Colors.transparent,
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: status == LogStatus.success ? Colors.green : Colors.grey,
+                      width: 2,
+                    ),
+                  ),
+                  child: Icon(
+                    status == LogStatus.success ? Icons.check : Icons.circle_outlined,
+                    color: status == LogStatus.success ? Colors.white : Colors.grey,
+                    size: 24,
+                  ),
                 ),
-              ),
-              child: Icon(
-                status == LogStatus.success ? Icons.check : Icons.circle_outlined,
-                color: status == LogStatus.success ? Colors.white : Colors.grey,
-                size: 24,
               ),
             ),
           ],
