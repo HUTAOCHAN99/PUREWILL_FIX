@@ -43,28 +43,32 @@ class HabitRepository {
           .eq('user_id', userId)
           .order('start_date', ascending: true);
 
+
       final userHabits = response.map((data) => HabitModel.fromJson(data)).toList();
 
+
+      print(response);
       // Gabungkan dengan default habits
-      final defaultHabits = DefaultHabitsService.getDefaultHabits();
+      // final defaultHabits = DefaultHabitsService.getDefaultHabits();
       
       // Filter default habits yang belum dibuat oleh user
       final userHabitNames = userHabits.map((h) => h.name).toSet();
-      final availableDefaultHabits = defaultHabits
-          .where((defaultHabit) => !userHabitNames.contains(defaultHabit.name))
-          .toList();
+      // final availableDefaultHabits = defaultHabits
+          // .where((defaultHabit) => !userHabitNames.contains(defaultHabit.name))
+          // .toList();
 
       // Gabungkan user habits dengan available default habits
-      final allHabits = [...userHabits, ...availableDefaultHabits];
+      // final allHabits = [...userHabits, ...availableDefaultHabits];
+      final allHabits = [...userHabits];
 
       print('=== COMBINED HABITS ===');
       print('User habits: ${userHabits.length}');
-      print('Available default habits: ${availableDefaultHabits.length}');
+      // print('Available default habits: ${availableDefaultHabits.length}');
       print('Total habits: ${allHabits.length}');
       
       // Debug print untuk melihat data habit
       for (var habit in allHabits) {
-        print('Habit: ${habit.name}, Target: ${habit.targetValue}, Unit: ${habit.unit}, IsDefault: ${habit.isDefault}');
+        print('Habit: ${habit.name}, Target: ${habit.targetValue}, Unit: ${habit.unit}, IsDefault: ${habit.isDefault}, Habit id: ${habit.id}, Status: ${habit.status}');
       }
       print('========================');
 

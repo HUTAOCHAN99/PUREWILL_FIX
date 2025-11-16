@@ -77,7 +77,7 @@ class HabitCard extends StatelessWidget {
                       ),
                     ),
                   ),
-                if (status == LogStatus.success)
+                if ("success" == LogStatus.success)
                   Positioned(
                     right: -2,
                     top: -2,
