@@ -1,6 +1,7 @@
 // lib\ui\habit-tracker\screen\home_screen.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:purewill/domain/model/daily_log_model.dart';
 import 'package:purewill/domain/model/habit_model.dart';
 import 'package:purewill/domain/model/profile_model.dart';
 import 'package:purewill/ui/auth/auth_provider.dart';
@@ -22,7 +23,7 @@ class HomeScreen extends ConsumerStatefulWidget {
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
   int _currentIndex = 0;
-  Map<int, bool> _todayCompletionStatus = {};
+  Map<int, LogStatus> _todayCompletionStatus = {};
 
   @override
   void initState() {

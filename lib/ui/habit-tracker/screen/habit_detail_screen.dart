@@ -13,7 +13,7 @@ import 'package:purewill/utils/habit_icon_helper.dart';
 
 class HabitDetailScreen extends ConsumerStatefulWidget {
   final HabitModel habit;
-  final Map<int, bool> completionStatus;
+  final Map<int, LogStatus> completionStatus;
   const HabitDetailScreen({
     super.key,
     required this.habit,
@@ -36,7 +36,7 @@ class _HabitDetailScreenState extends ConsumerState<HabitDetailScreen> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       int habitId = widget.habit.id;
-      _isCompleted = widget.completionStatus[widget.habit.id] ?? false;
+      _isCompleted = widget.completionStatus[widget.habit.id] == LogStatus.success;
       _loadHabitLogForThisMonth(habitId);
     });
   }

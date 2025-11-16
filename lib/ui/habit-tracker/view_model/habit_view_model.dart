@@ -241,15 +241,15 @@ class HabitsViewModel extends StateNotifier<HabitsState> {
     }
   }
 
-  Future<Map<int, bool>> getTodayCompletionStatus() async {
+  Future<Map<int, LogStatus>> getTodayCompletionStatus() async {
     try {
       final todayLogs = await _dailyLogRepository.fetchLogsByDate(
         DateTime.now(),
       );
-      final completionStatus = <int, bool>{};
+      final completionStatus = <int, LogStatus>{};
 
       for (final log in todayLogs) {
-        completionStatus[log.habitId] = log.status == LogStatus.success;
+        completionStatus[log.habitId] = log.status;
       }
 
       return completionStatus;
