@@ -191,7 +191,7 @@ class HabitsViewModel extends StateNotifier<HabitsState> {
         await _dailyLogRepository.recordLog(
           habitId: habit.id,
           date: today,
-          status: (existingLog.status == LogStatus.success) ? LogStatus.failed : existingLog.status == LogStatus.failed ? LogStatus.neutral : LogStatus.neutral, 
+          status: (existingLog.status == LogStatus.success) ? LogStatus.failed : existingLog.status == LogStatus.failed ? LogStatus.neutral : LogStatus.success, 
           actualValue: habit.targetValue?.toDouble(),
         );
 
@@ -206,7 +206,9 @@ class HabitsViewModel extends StateNotifier<HabitsState> {
       }
 
       await loadUserHabits();
-    } catch (e) {
+    } catch (e, stackTrace) {
+      print(e);
+      print(stackTrace);
       state = state.copyWith(
         status: HabitStatus.failure,
         errorMessage: 'Failed to update habit status.' + e.toString(),
@@ -249,8 +251,11 @@ class HabitsViewModel extends StateNotifier<HabitsState> {
       final completionStatus = <int, LogStatus>{};
 
       for (final log in todayLogs) {
-        completionStatus[log.habitId] = log.status;
+        completionStatus[log.habitId] = log.status;      
       }
+
+      print("completion status");
+      print(completionStatus);
 
       return completionStatus;
     } catch (e) {

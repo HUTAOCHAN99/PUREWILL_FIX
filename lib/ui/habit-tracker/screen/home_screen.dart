@@ -170,7 +170,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           _todayCompletionStatus[habit.id] == LogStatus.success;
       final newStatus = !currentStatus;
 
-      // Update status lokal terlebih dahulu untuk feedback instan
+  
       setState(() {
         _todayCompletionStatus[habit.id] = newStatus
             ? LogStatus.success
@@ -183,7 +183,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           .toggleHabitCompletion(habit);
 
       // Refresh data untuk sinkronisasi
-      _loadTodayCompletionStatus();
+      // _loadTodayCompletionStatus();
     } catch (e) {
       // Jika error, kembalikan status sebelumnya
       final previousStatus =

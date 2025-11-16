@@ -22,14 +22,14 @@ class DailyLogRepository {
       final logData = {
         'habit_id': habitId,
         'log_date': date.toIso8601String().substring(0, 10),
-        'status': status,
+        'status': status.name,
         'actual_value': actualValue,
         'created_at': DateTime.now().toIso8601String(),
       };
 
       final response = await _supabaseClient
           .from(_logTableName)
-          .upsert(logData)
+          .upsert(logData, onConflict: 'habit_id, log_date')
           .select()
           .single();
 
@@ -124,6 +124,7 @@ class DailyLogRepository {
           .eq('habit_id', habitId)
           .eq('log_date', today)
           .maybeSingle();
+
       print("anjing");
       print("response for getTodayLogForHabit: $response");
 
