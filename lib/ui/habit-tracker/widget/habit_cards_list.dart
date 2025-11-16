@@ -1,5 +1,6 @@
 // lib\ui\habit-tracker\widget\habit_cards_list.dart
 import 'package:flutter/material.dart';
+import 'package:purewill/domain/model/daily_log_model.dart';
 import 'package:purewill/domain/model/habit_model.dart';
 import 'package:purewill/ui/habit-tracker/view_model/habit_view_model.dart';
 import 'package:purewill/ui/habit-tracker/widget/habit_card.dart';
@@ -7,7 +8,7 @@ import 'package:purewill/utils/habit_icon_helper.dart'; // ADD THIS IMPORT
 
 class HabitCardsList extends StatelessWidget {
   final HabitsState habitsState;
-  final Map<int, bool> todayCompletionStatus;
+  final Map<int, LogStatus> todayCompletionStatus;
   final List<HabitModel> habits;
   final void Function(HabitModel habit) onHabitTap;
   final Widget Function(String errorMessage)? buildErrorState;
@@ -22,6 +23,20 @@ class HabitCardsList extends StatelessWidget {
     this.buildErrorState,
     this.buildEmptyState,
   });
+
+  LogStatus parseLogStatus(String statusString) {
+  // Gunakan .toLowerCase() agar aman dari "Completed" atau "completed"
+  switch (statusString.toLowerCase()) {
+    case "success":
+      return LogStatus.success;
+    case "neutral":
+      return LogStatus.neutral;
+    case "failed":
+      return LogStatus.failed;
+    default:
+      return LogStatus.neutral; // Atau LogStatus.unknown jika Anda punya
+  }
+}
 
   @override
   Widget build(BuildContext context) {
@@ -62,8 +77,8 @@ class HabitCardsList extends StatelessWidget {
               title: habit.name,
               subtitle: _buildHabitSubtitle(habit),
               color: color,
-              progress: isCompleted ? 1.0 : 0.0,
-              isCompleted: isCompleted,
+              progress: isCompleted == LogStatus.success ? 1.0 : 0.0,
+              status: parseLogStatus(habit.status),
               isDefault: habit.isDefault,
               onTap: () => onHabitTap(habit),
             );

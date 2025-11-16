@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:percent_indicator/linear_percent_indicator.dart';
+import 'package:purewill/domain/model/daily_log_model.dart';
 
 class HabitCard extends StatelessWidget {
   final IconData icon;
@@ -7,7 +8,7 @@ class HabitCard extends StatelessWidget {
   final String subtitle;
   final double progress;
   final Color color;
-  final bool isCompleted;
+  final LogStatus status;
   final bool isDefault;
   final VoidCallback? onTap;
 
@@ -18,7 +19,7 @@ class HabitCard extends StatelessWidget {
     required this.subtitle,
     required this.color,
     required this.progress,
-    required this.isCompleted,
+    required this.status,
     this.isDefault = false,
     this.onTap,
   });
