@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:purewill/ui/habit-tracker/screen/badge_xp_screen.dart';
 import 'package:purewill/ui/habit-tracker/widget/menu_button.dart';
 
 class HabitHeader extends ConsumerWidget {
@@ -117,6 +118,17 @@ class HabitHeader extends ConsumerWidget {
                     style: const TextStyle(color: Colors.grey, fontSize: 14),
                   ),
                   const SizedBox(height: 20),
+                  
+                  // TAMBAHAN: Menu Badge & XP
+                  MenuButton(
+                    icon: Icons.emoji_events_outlined,
+                    title: 'Badge & XP',
+                    onTap: () {
+                      Navigator.pop(context);
+                      _navigateToBadgeXpScreen(context);
+                    },
+                  ),
+                  
                   MenuButton(
                     icon: Icons.settings_outlined,
                     title: 'Settings',
@@ -162,7 +174,15 @@ class HabitHeader extends ConsumerWidget {
     );
   }
 
-  // void _showLogoutConfirmation(BuildContext context, WidgetRef ref) {
+  // TAMBAHAN: Method untuk navigasi ke halaman Badge & XP
+  void _navigateToBadgeXpScreen(BuildContext context) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => const BadgeXpScreen(),
+      ),
+    );
+  }
+
   void _showLogoutConfirmation(BuildContext context) {
     showDialog(
       context: context,

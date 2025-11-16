@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:purewill/domain/model/habit_model.dart';
 import 'package:purewill/ui/habit-tracker/habit_provider.dart';
 import 'package:purewill/ui/habit-tracker/widget/habit_detail/calendar_tracker_widget.dart';
+import 'package:purewill/ui/habit-tracker/widget/habit_detail/habit_actions_dropdown.dart';
 import 'package:purewill/ui/habit-tracker/widget/habit_detail/motivational_quote_widget.dart';
 import 'package:purewill/ui/habit-tracker/widget/habit_detail/performance_chart_widget.dart';
 import 'package:purewill/ui/habit-tracker/widget/habit_detail/progress_widget.dart';
@@ -81,6 +82,13 @@ class _HabitDetailScreenState extends ConsumerState<HabitDetailScreen> {
               ),
             ),
             centerTitle: true,
+            // UPDATED: Gunakan component
+            actions: [
+              HabitActionsDropdown(
+                onActionSelected: _handleMenuAction,
+                habitName: widget.habit.name,
+              ),
+            ],
           ),
 
           SliverToBoxAdapter(
@@ -107,7 +115,6 @@ class _HabitDetailScreenState extends ConsumerState<HabitDetailScreen> {
                   CalendarTrackerWidget(completionDates: _completionDates),
                   const SizedBox(height: 16),
                   
-                  // Tambahkan Motivational Quotes Widget di sini
                   MotivationalQuotesWidget(),
                   const SizedBox(height: 20),
                 ],
@@ -119,7 +126,47 @@ class _HabitDetailScreenState extends ConsumerState<HabitDetailScreen> {
     );
   }
 
-  // ... (sisanya tetap sama)
+  // UPDATED: Handler untuk dropdown menu actions
+  void _handleMenuAction(String value) {
+    HabitActionsDropdown.handleMenuAction(
+      value: value,
+      context: context,
+      habitName: widget.habit.name,
+      onEdit: _editHabit,
+      onReminder: _setReminder,
+      onDelete: _deleteHabit,
+    );
+  }
+
+  // Opsional: Custom handlers jika perlu logic khusus
+  void _editHabit() {
+    // Custom edit logic bisa ditambahkan di sini
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Edit Habit - Custom Logic')),
+    );
+  }
+
+  void _setReminder() {
+    // Custom reminder logic bisa ditambahkan di sini
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Reminder Settings - Custom Logic')),
+    );
+  }
+
+  void _deleteHabit() {
+    // Custom delete logic bisa ditambahkan di sini
+    HabitActionsDropdown.showDeleteConfirmationDialog(
+      context: context,
+      habitName: widget.habit.name,
+      onConfirm: () {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('"${widget.habit.name}" deleted with custom logic')),
+        );
+        Navigator.pop(context); // Kembali ke home
+      },
+    );
+  }
+
   Widget _buildHeaderBackground(
     IconData iconData,
     Color iconColor,

@@ -1,17 +1,18 @@
+// lib\ui\habit-tracker\widget\clean_bottom_navigation_bar.dart
 import 'package:flutter/material.dart';
 
-class CleanBottomNavigationBar extends StatelessWidget{
+class CleanBottomNavigationBar extends StatelessWidget {
   final int currentIndex;
-  final Function onTap;
+  final Function(int) onTap;
   const CleanBottomNavigationBar({
     super.key,
     required this.currentIndex,
-    required this.onTap
+    required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-   return Container(
+    return Container(
       decoration: const BoxDecoration(
         color: Colors.white,
         border: Border(top: BorderSide(color: Color(0xFFF0F0F0), width: 1.0)),
@@ -32,23 +33,7 @@ class CleanBottomNavigationBar extends StatelessWidget{
         ),
         showUnselectedLabels: true,
         elevation: 0,
-        // onTap: (index) {
-        //   setState(() {
-        //     _currentIndex = index;
-        //   });
-        //   if (index == 2) {
-        //     Navigator.of(context).push(
-        //       MaterialPageRoute(builder: (context) => const AddHabitScreen()),
-        //     );
-        //     Future.delayed(const Duration(milliseconds: 300), () {
-        //       if (mounted) {
-        //         setState(() {
-        //           _currentIndex = 0;
-        //         });
-        //       }
-        //     });
-        //   }
-        // },
+        onTap: onTap,
         items: const [
           BottomNavigationBarItem(
             icon: Icon(Icons.home_outlined, size: 24),
@@ -63,7 +48,7 @@ class CleanBottomNavigationBar extends StatelessWidget{
           BottomNavigationBarItem(
             icon: Icon(Icons.add_circle_outline, size: 24),
             activeIcon: Icon(Icons.add_circle, size: 24),
-            label: 'Habits',
+            label: 'Add Habit',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.chat_outlined, size: 24),
@@ -74,5 +59,4 @@ class CleanBottomNavigationBar extends StatelessWidget{
       ),
     );
   }
-
 }

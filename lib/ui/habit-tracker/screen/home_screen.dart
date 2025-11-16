@@ -11,8 +11,8 @@ import 'package:purewill/ui/habit-tracker/widget/habit_cards_list.dart';
 import 'package:purewill/ui/habit-tracker/widget/habit_header.dart';
 import 'package:purewill/ui/habit-tracker/widget/habit_welcome_message.dart';
 import 'package:purewill/ui/habit-tracker/widget/progress_card.dart';
-import 'package:purewill/ui/habit-tracker/widget/sped_dial.dart';
-import 'package:purewill/ui/habit-tracker/screen/habit_detail_screen.dart'; // ADD THIS
+import 'package:purewill/ui/habit-tracker/screen/habit_detail_screen.dart';
+import 'package:purewill/ui/habit-tracker/screen/add_habit_screen.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -21,7 +21,7 @@ class HomeScreen extends ConsumerStatefulWidget {
 }
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
-  final int _currentIndex = 0;
+  int _currentIndex = 0;
   Map<int, bool> _todayCompletionStatus = {};
 
   @override
@@ -44,6 +44,30 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       });
     } catch (e) {
       print('Error loading completion status: $e');
+    }
+  }
+
+  void _onNavBarTap(int index) {
+    print('NavBar tapped: index $index'); // Debug print
+    
+    // PERBAIKAN: Cek berdasarkan urutan item di BottomNavigationBar
+    if (index == 2) { // Index 2 seharusnya Add Habit
+      print('Navigating to AddHabitScreen...');
+      Navigator.of(context).push(
+        MaterialPageRoute(builder: (context) => const AddHabitScreen()),
+      ).then((_) {
+        print('Returned from AddHabitScreen');
+        if (mounted) {
+          setState(() {
+            _currentIndex = 0; // Kembali ke Home setelah add habit
+          });
+        }
+      });
+    } else {
+      print('Switching to tab: $index');
+      setState(() {
+        _currentIndex = index;
+      });
     }
   }
 
@@ -102,7 +126,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         habitsState: habitsState,
                         todayCompletionStatus: _todayCompletionStatus,
                         habits: userHabits,
-                        onHabitTap: _handleHabitTap, // UPDATED: Simple tap handler
+                        onHabitTap: _handleHabitTap,
                       ),
                     ],
                   ),
@@ -112,12 +136,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           ),
         ),
       ),
-      bottomNavigationBar: CleanBottomNavigationBar(currentIndex: _currentIndex, onTap: () => {}),
-      floatingActionButton: SpeedDialButton(),
+      bottomNavigationBar: CleanBottomNavigationBar(
+        currentIndex: _currentIndex,
+        onTap: _onNavBarTap,
+      ),
     );
   }
 
-  // UPDATED: Simple navigation to detail screen
   void _handleHabitTap(HabitModel habit) {
     Navigator.push(
       context,
