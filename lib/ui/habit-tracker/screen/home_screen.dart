@@ -53,8 +53,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   void _onNavBarTap(int index) {
     print('NavBar tapped: index $index'); // Debug print
     
-    // PERBAIKAN: Cek berdasarkan urutan item di BottomNavigationBar
-    if (index == 2) { // Index 2 seharusnya Add Habit
+    if (index == 2) {
       print('Navigating to AddHabitScreen...');
       Navigator.of(context).push(
         MaterialPageRoute(builder: (context) => const AddHabitScreen()),
