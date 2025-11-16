@@ -1,15 +1,19 @@
+// lib\ui\habit-tracker\widget\save_button.dart
 import 'package:flutter/material.dart';
 
-class SaveButton extends StatelessWidget{
+class SaveButton extends StatelessWidget {
   final VoidCallback onPressed;
-  SaveButton({
+  final String buttonText;
+
+  const SaveButton({
     super.key,
-    required this.onPressed
+    required this.onPressed,
+    this.buttonText = 'Save Habit',
   });
 
- @override
+  @override
   Widget build(BuildContext context) {
-  return Container(
+    return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
@@ -33,9 +37,9 @@ class SaveButton extends StatelessWidget{
             ),
             elevation: 0,
           ),
-          child: const Text(
-            'Save Habit',
-            style: TextStyle(
+          child: Text(
+            buttonText,
+            style: const TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w600,
             ),
@@ -43,6 +47,5 @@ class SaveButton extends StatelessWidget{
         ),
       ),
     );
-}
-
+  }
 }

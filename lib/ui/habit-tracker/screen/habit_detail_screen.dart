@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:purewill/domain/model/daily_log_model.dart';
 import 'package:purewill/domain/model/habit_model.dart';
 import 'package:purewill/ui/habit-tracker/habit_provider.dart';
+import 'package:purewill/ui/habit-tracker/screen/edit_habit_screen.dart';
+import 'package:purewill/ui/habit-tracker/screen/reminder_setting_screen.dart'; // IMPORT INI
 import 'package:purewill/ui/habit-tracker/widget/habit_detail/calendar_tracker_widget.dart';
 import 'package:purewill/ui/habit-tracker/widget/habit_detail/habit_actions_dropdown.dart';
 import 'package:purewill/ui/habit-tracker/widget/habit_detail/motivational_quote_widget.dart';
@@ -31,7 +33,8 @@ class _HabitDetailScreenState extends ConsumerState<HabitDetailScreen> {
   List<bool>? _weeklyStreak;
   List<double>? _weeklyPerformance;
   List<DateTime>? _completionDates; 
-   @override
+  
+  @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -41,7 +44,7 @@ class _HabitDetailScreenState extends ConsumerState<HabitDetailScreen> {
     });
   }
 
-   Future<void> _loadHabitLogForThisMonth(int habitId) async {
+  Future<void> _loadHabitLogForThisMonth(int habitId) async {
     try {
       DateTime now = DateTime.now();
       DateTime startDate = DateTime(now.year, now.month, 1);
@@ -148,11 +151,12 @@ class _HabitDetailScreenState extends ConsumerState<HabitDetailScreen> {
               ),
             ),
             centerTitle: true,
-            // UPDATED: Gunakan component
+            // PERBAIKAN: Tambahkan parameter habit yang diperlukan
             actions: [
               HabitActionsDropdown(
                 onActionSelected: _handleMenuAction,
                 habitName: widget.habit.name,
+                habit: widget.habit, // TAMBAHAN: parameter yang wajib
               ),
             ],
           ),
@@ -211,30 +215,36 @@ class _HabitDetailScreenState extends ConsumerState<HabitDetailScreen> {
     );
   }
 
-  // UPDATED: Handler untuk dropdown menu actions
+  // PERBAIKAN: Handler untuk dropdown menu actions dengan parameter habit
   void _handleMenuAction(String value) {
     HabitActionsDropdown.handleMenuAction(
       value: value,
       context: context,
       habitName: widget.habit.name,
+      habit: widget.habit, // TAMBAHAN: parameter yang wajib
       onEdit: _editHabit,
-      onReminder: _setReminder,
+      onReminder: _setReminder, // PERUBAHAN: Gunakan custom handler yang benar
       onDelete: _deleteHabit,
     );
   }
 
-  // Opsional: Custom handlers jika perlu logic khusus
+  // PERBAIKAN: Edit habit dengan navigasi ke EditHabitScreen
   void _editHabit() {
-    // Custom edit logic bisa ditambahkan di sini
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Edit Habit - Custom Logic')),
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => EditHabitScreen(habit: widget.habit),
+      ),
     );
   }
 
+  // PERBAIKAN: Ganti dengan navigasi ke ReminderSettingScreen
   void _setReminder() {
-    // Custom reminder logic bisa ditambahkan di sini
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Reminder Settings - Custom Logic')),
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ReminderSettingScreen(habit: widget.habit),
+      ),
     );
   }
 
@@ -244,12 +254,41 @@ class _HabitDetailScreenState extends ConsumerState<HabitDetailScreen> {
       context: context,
       habitName: widget.habit.name,
       onConfirm: () {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('"${widget.habit.name}" deleted with custom logic')),
-        );
-        Navigator.pop(context); // Kembali ke home
+        // Panggil method delete dari view model
+        _performDeleteHabit();
       },
     );
+  }
+
+  // PERBAIKAN: Method untuk menghapus habit
+  Future<void> _performDeleteHabit() async {
+    try {
+      final viewModel = ref.read(habitNotifierProvider.notifier);
+      
+      // Jika habit adalah default habit, tidak perlu hapus dari database
+      if (widget.habit.isDefault) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('"${widget.habit.name}" adalah habit default dan tidak dapat dihapus')),
+        );
+        return;
+      }
+      
+      // Hapus habit dari database
+      await viewModel.deleteHabit(habitId: widget.habit.id);
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('"${widget.habit.name}" berhasil dihapus')),
+      );
+      
+      // Kembali ke screen sebelumnya
+      if (mounted) {
+        Navigator.pop(context);
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Gagal menghapus habit: $e')),
+      );
+    }
   }
 
   Widget _buildHeaderBackground(
@@ -328,34 +367,4 @@ class _HabitDetailScreenState extends ConsumerState<HabitDetailScreen> {
       ),
     );
   }
-
-  // void _toggleCompletion() async {
-  //   try {
-  //     final viewModel = ref.read(habitNotifierProvider.notifier);
-  //     await viewModel.toggleHabitCompletion(widget.habit);
-
-  //     setState(() {
-  //       _isCompleted = !_isCompleted;
-  //     });
-
-  //     ScaffoldMessenger.of(context).showSnackBar(
-  //       SnackBar(
-  //         content: Text(
-  //           _isCompleted
-  //               ? '${widget.habit.name} completed! ✅'
-  //               : '${widget.habit.name} marked as not completed',
-  //         ),
-  //         duration: const Duration(seconds: 2),
-  //       ),
-  //     );
-  //   } catch (e) {
-  //     ScaffoldMessenger.of(context).showSnackBar(
-  //       SnackBar(
-  //         content: Text('Error updating habit: $e'),
-  //         backgroundColor: Colors.red,
-  //         duration: const Duration(seconds: 3),
-  //       ),
-  //     );
-  //   }
-  // }
 }

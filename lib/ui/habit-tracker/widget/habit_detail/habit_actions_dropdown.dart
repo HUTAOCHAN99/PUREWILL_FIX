@@ -1,14 +1,19 @@
-// lib\ui\habit-tracker\widget\habit_actions_dropdown.dart
+// lib\ui\habit-tracker\widget\habit_detail\habit_actions_dropdown.dart
 import 'package:flutter/material.dart';
+import 'package:purewill/domain/model/habit_model.dart';
+import 'package:purewill/ui/habit-tracker/screen/edit_habit_screen.dart';
+import 'package:purewill/ui/habit-tracker/screen/reminder_setting_screen.dart';
 
 class HabitActionsDropdown extends StatelessWidget {
   final Function(String) onActionSelected;
   final String habitName;
+  final HabitModel habit;
 
   const HabitActionsDropdown({
     super.key,
     required this.onActionSelected,
     required this.habitName,
+    required this.habit,
   });
 
   @override
@@ -85,6 +90,7 @@ class HabitActionsDropdown extends StatelessWidget {
     required String value,
     required BuildContext context,
     required String habitName,
+    required HabitModel habit,
     VoidCallback? onEdit,
     VoidCallback? onReminder,
     VoidCallback? onDelete,
@@ -94,14 +100,16 @@ class HabitActionsDropdown extends StatelessWidget {
         if (onEdit != null) {
           onEdit();
         } else {
-          _showComingSoonSnackBar(context, 'Edit Habit');
+          // Default behavior: navigate to EditHabitScreen
+          _navigateToEditScreen(context, habit);
         }
         break;
       case 'reminder':
         if (onReminder != null) {
           onReminder();
         } else {
-          _showComingSoonSnackBar(context, 'Reminder Settings');
+          // Default behavior: navigate to ReminderSettingScreen
+          _navigateToReminderSettings(context, habit);
         }
         break;
       case 'delete':
@@ -121,6 +129,26 @@ class HabitActionsDropdown extends StatelessWidget {
         }
         break;
     }
+  }
+
+  // Method untuk navigasi ke edit screen
+  static void _navigateToEditScreen(BuildContext context, HabitModel habit) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => EditHabitScreen(habit: habit),
+      ),
+    );
+  }
+
+  // Method untuk navigasi ke reminder settings screen
+  static void _navigateToReminderSettings(BuildContext context, HabitModel habit) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ReminderSettingScreen(habit: habit),
+      ),
+    );
   }
 
   static void _showComingSoonSnackBar(BuildContext context, String feature) {
