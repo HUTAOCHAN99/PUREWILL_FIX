@@ -42,20 +42,39 @@ class _ReminderSettingScreenState extends State<ReminderSettingScreen> {
   @override
   void initState() {
     super.initState();
+    
+    // 🎯 DEBUG: CEK HABIT DATA DARI PARAMETER
+    _debugHabitData();
+    
     _repository = ReminderSettingRepository(Supabase.instance.client);
     _notificationService = LocalNotificationService();
     _loadReminderSettings();
   }
 
+  void _debugHabitData() {
+    debugPrint('🎯 === DEBUG HABIT DATA START ===');
+    debugPrint('🚀 Habit ID: ${widget.habit.id}');
+    debugPrint('📝 Habit Name: "${widget.habit.name}"');
+    debugPrint('🔍 Habit Type: ${widget.habit.runtimeType}');
+    debugPrint('📊 Habit toString: ${widget.habit.toString()}');
+    debugPrint('🎯 === DEBUG HABIT DATA END ===');
+  }
+
   Future<void> _loadReminderSettings() async {
+    debugPrint('🔄 === LOADING REMINDER SETTINGS START ===');
+    debugPrint('📋 Habit ID untuk fetch: ${widget.habit.id}');
+    
     try {
       final settings = await _repository.fetchReminderSettingsByHabit(widget.habit.id);
+      debugPrint('✅ Fetch settings success, count: ${settings.length}');
       
       if (settings.isNotEmpty) {
         _reminderSetting = settings.first;
+        debugPrint('📝 Existing reminder found: ID ${_reminderSetting.id}');
         _initializeFormFromModel(_reminderSetting);
       } else {
         // Create default reminder setting
+        debugPrint('📝 No existing reminder, creating default');
         _reminderSetting = ReminderSettingModel(
           id: '',
           habitId: widget.habit.id,
@@ -68,8 +87,12 @@ class _ReminderSettingScreenState extends State<ReminderSettingScreen> {
         );
         _initializeFormFromModel(_reminderSetting);
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
+      debugPrint('❌ ERROR loading settings: $e');
+      debugPrint('📋 StackTrace: $stackTrace');
+      
       // If error, create default setting
+      debugPrint('🔄 Creating fallback default settings');
       _reminderSetting = ReminderSettingModel(
         id: '',
         habitId: widget.habit.id,
@@ -82,87 +105,155 @@ class _ReminderSettingScreenState extends State<ReminderSettingScreen> {
       );
       _initializeFormFromModel(_reminderSetting);
     } finally {
-      setState(() {
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+      debugPrint('🔄 === LOADING REMINDER SETTINGS COMPLETE ===');
     }
   }
 
   void _initializeFormFromModel(ReminderSettingModel model) {
+    debugPrint('🎛️ === INITIALIZING FORM FROM MODEL ===');
+    debugPrint('⏰ Model time: ${model.time}');
+    debugPrint('🔔 Model snooze: ${model.snoozeDuration}');
+    
     final snoozeIndex = _snoozeOptions.indexOf(model.snoozeDuration);
     if (snoozeIndex != -1) {
       _selectedSnoozeIndex = snoozeIndex;
       _useCustomSnooze = false;
+      debugPrint('🔔 Using predefined snooze: ${_snoozeOptions[_selectedSnoozeIndex]}min');
     } else {
       _useCustomSnooze = true;
       _customSnoozeMinutes = model.snoozeDuration;
+      debugPrint('🔔 Using custom snooze: ${_customSnoozeMinutes}min');
     }
     
     _selectedTime = TimeOfDay.fromDateTime(model.time);
     _repeatDaily = model.repeatDaily;
     _soundEnabled = model.isSoundEnabled;
     _vibrationEnabled = model.isVibrationEnabled;
+    
+    debugPrint('🎛️ === FORM INITIALIZATION COMPLETE ===');
   }
 
   Future<void> _saveSettings() async {
+    debugPrint('💾 === SAVE SETTINGS START ===');
+    debugPrint('🔍 Habit ID sebelum save: ${widget.habit.id}');
+    debugPrint('🔍 ReminderSetting ID: ${_reminderSetting.id}');
+    
+    // 🚨 VALIDASI KRITIS
+    if (widget.habit.id <= 0) {
+      debugPrint('❌ CRITICAL ERROR: Invalid habit ID: ${widget.habit.id}');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('❌ ERROR: Invalid habit data. Please save habit first.')),
+        );
+      }
+      return;
+    }
+
     setState(() {
       _isLoading = true;
     });
 
     try {
+      final snoozeDuration = _useCustomSnooze 
+          ? _customSnoozeMinutes 
+          : _snoozeOptions[_selectedSnoozeIndex];
+
+      // Create DateTime with selected time
+      final now = DateTime.now();
+      final scheduledDateTime = DateTime(
+        now.year,
+        now.month,
+        now.day,
+        _selectedTime.hour,
+        _selectedTime.minute,
+      );
+
       final updatedSetting = ReminderSettingModel(
         id: _reminderSetting.id,
         habitId: widget.habit.id,
         isEnabled: true,
-        time: DateTime.now(), // Waktu tidak terlalu penting untuk notification
-        snoozeDuration: _useCustomSnooze 
-            ? _customSnoozeMinutes 
-            : _snoozeOptions[_selectedSnoozeIndex],
+        time: scheduledDateTime,
+        snoozeDuration: snoozeDuration,
         repeatDaily: _repeatDaily,
         isSoundEnabled: _soundEnabled,
         isVibrationEnabled: _vibrationEnabled,
       );
 
+      debugPrint('📦 ReminderSetting to save:');
+      debugPrint('   - Habit ID: ${updatedSetting.habitId}');
+      debugPrint('   - Time: ${updatedSetting.time}');
+      debugPrint('   - Snooze: ${updatedSetting.snoozeDuration}min');
+      debugPrint('   - Repeat Daily: ${updatedSetting.repeatDaily}');
+
       // Save to database
       if (_reminderSetting.id.isEmpty) {
+        debugPrint('🆕 Creating NEW reminder setting...');
         final created = await _repository.createReminderSetting(updatedSetting);
         _reminderSetting = created;
+        debugPrint('✅ New reminder created with ID: ${_reminderSetting.id}');
       } else {
+        debugPrint('📝 UPDATING existing reminder: ${_reminderSetting.id}');
         await _repository.updateReminderSetting(
           reminderSettingId: _reminderSetting.id,
           updates: updatedSetting.toJson(),
         );
         _reminderSetting = updatedSetting;
+        debugPrint('✅ Reminder updated successfully');
       }
 
       // Schedule notification jika push notification diaktifkan
       if (_pushNotification) {
+        debugPrint('🔔 Scheduling notification...');
         await _scheduleNotification();
       } else {
         // Cancel existing notifications jika push notification dimatikan
+        debugPrint('🔕 Cancelling notifications...');
         await _notificationService.cancelNotification(widget.habit.id);
       }
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Settings saved successfully')),
-      );
+      // Check pending notifications for debugging
+      await _checkPendingNotifications();
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('✅ Settings saved successfully!')),
+        );
+      }
 
       setState(() {
         _hasChanges = false;
       });
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to save settings: $e')),
-      );
+      
+      debugPrint('💾 === SAVE SETTINGS SUCCESS ===');
+    } catch (e, stackTrace) {
+      debugPrint('❌ SAVE SETTINGS ERROR: $e');
+      debugPrint('📋 StackTrace: $stackTrace');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('❌ Failed to save settings: $e')),
+        );
+      }
     } finally {
-      setState(() {
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 
   Future<void> _scheduleNotification() async {
     try {
+      debugPrint('⏰ === SCHEDULING NOTIFICATION ===');
+      debugPrint('   - Habit: ${widget.habit.name}');
+      debugPrint('   - Time: ${_selectedTime.format(context)}');
+      debugPrint('   - Repeat: $_repeatDaily');
+      
       if (_repeatDaily) {
         // Schedule daily repeating notification
         await _notificationService.scheduleDailyReminder(
@@ -172,16 +263,23 @@ class _ReminderSettingScreenState extends State<ReminderSettingScreen> {
           time: _selectedTime,
           habitId: widget.habit.id.toString(),
         );
+        debugPrint('🔁 Daily notification scheduled');
       } else {
         // Schedule one-time notification
         final now = DateTime.now();
-        final scheduledDateTime = DateTime(
+        DateTime scheduledDateTime = DateTime(
           now.year,
           now.month,
           now.day,
           _selectedTime.hour,
           _selectedTime.minute,
         );
+
+        // Jika waktu sudah lewat hari ini, jadwalkan untuk besok
+        if (scheduledDateTime.isBefore(now)) {
+          scheduledDateTime = scheduledDateTime.add(const Duration(days: 1));
+          debugPrint('⏩ Time passed, scheduling for tomorrow');
+        }
 
         await _notificationService.scheduleOneTimeReminder(
           id: widget.habit.id,
@@ -190,47 +288,76 @@ class _ReminderSettingScreenState extends State<ReminderSettingScreen> {
           scheduledTime: scheduledDateTime,
           habitId: widget.habit.id.toString(),
         );
+        debugPrint('⏰ One-time notification scheduled');
       }
       
-      debugPrint('Notification scheduled successfully');
-    } catch (e) {
-      debugPrint('Error scheduling notification: $e');
-      // Jangan throw error di sini, biarkan user tetap bisa save settings
+      debugPrint('✅ Notification scheduled successfully for ${_selectedTime.format(context)}');
+    } catch (e, stackTrace) {
+      debugPrint('❌ ERROR scheduling notification: $e');
+      debugPrint('📋 StackTrace: $stackTrace');
     }
   }
 
   // Method untuk memilih waktu
   Future<void> _selectTime() async {
+    debugPrint('🕒 Opening time picker...');
     final TimeOfDay? pickedTime = await showTimePicker(
       context: context,
       initialTime: _selectedTime,
     );
     
     if (pickedTime != null && pickedTime != _selectedTime) {
+      debugPrint('🕒 Time selected: ${pickedTime.format(context)}');
       setState(() {
         _selectedTime = pickedTime;
         _hasChanges = true;
       });
+    } else {
+      debugPrint('🕒 Time picker cancelled');
     }
   }
 
   // Test notification
   Future<void> _testNotification() async {
+    debugPrint('🧪 Testing notification...');
     try {
       await _notificationService.showTestNotification(widget.habit.name);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Test notification sent!')),
-      );
+      debugPrint('✅ Test notification sent');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('✅ Test notification sent!')),
+        );
+      }
+    } catch (e, stackTrace) {
+      debugPrint('❌ Test notification failed: $e');
+      debugPrint('📋 StackTrace: $stackTrace');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('❌ Failed to send test notification: $e')),
+        );
+      }
+    }
+  }
+
+  // Check pending notifications for debugging
+  Future<void> _checkPendingNotifications() async {
+    try {
+      debugPrint('📋 === CHECKING PENDING NOTIFICATIONS ===');
+      final pending = await _notificationService.getPendingNotifications();
+      debugPrint('   Total pending: ${pending.length}');
+      for (var notif in pending) {
+        debugPrint('   - ID: ${notif.id}, Title: ${notif.title}');
+      }
+      debugPrint('📋 === PENDING NOTIFICATIONS CHECK COMPLETE ===');
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to send test notification: $e')),
-      );
+      debugPrint('❌ Error checking pending notifications: $e');
     }
   }
 
   void _onSnoozeOptionChanged(int? index) {
     if (index == null) return;
     
+    debugPrint('🔔 Snooze option changed to index: $index');
     setState(() {
       _selectedSnoozeIndex = index;
       _useCustomSnooze = false;
@@ -240,11 +367,24 @@ class _ReminderSettingScreenState extends State<ReminderSettingScreen> {
 
   void _onCustomSnoozeChanged(String value) {
     final minutes = int.tryParse(value) ?? 5;
+    debugPrint('🔔 Custom snooze changed to: $minutes minutes');
     setState(() {
       _customSnoozeMinutes = minutes.clamp(1, 60);
       _useCustomSnooze = true;
       _hasChanges = true;
     });
+  }
+
+  // 🎯 DEBUG METHOD: Print semua state
+  void _debugCurrentState() {
+    debugPrint('🎯 === CURRENT STATE DEBUG ===');
+    debugPrint('   Habit ID: ${widget.habit.id}');
+    debugPrint('   Selected Time: ${_selectedTime.format(context)}');
+    debugPrint('   Push Notification: $_pushNotification');
+    debugPrint('   Repeat Daily: $_repeatDaily');
+    debugPrint('   Snooze: ${_useCustomSnooze ? _customSnoozeMinutes : _snoozeOptions[_selectedSnoozeIndex]}min');
+    debugPrint('   Sound: $_soundEnabled, Vibration: $_vibrationEnabled');
+    debugPrint('🎯 === STATE DEBUG COMPLETE ===');
   }
 
   @override
@@ -253,6 +393,12 @@ class _ReminderSettingScreenState extends State<ReminderSettingScreen> {
       appBar: AppBar(
         title: const Text('Reminder Settings'),
         actions: [
+          // 🎯 DEBUG BUTTON
+          IconButton(
+            icon: const Icon(Icons.bug_report),
+            onPressed: _debugCurrentState,
+            tooltip: 'Debug State',
+          ),
           if (_hasChanges)
             TextButton(
               onPressed: _isLoading ? null : _saveSettings,
@@ -270,6 +416,30 @@ class _ReminderSettingScreenState extends State<ReminderSettingScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // 🎯 HABIT INFO DEBUG CARD (SIMPLE VERSION)
+                  Card(
+                    color: Colors.blue[50],
+                    child: Padding(
+                      padding: const EdgeInsets.all(12),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            '🔍 Current Habit:',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: Colors.blue,
+                            ),
+                          ),
+                          Text('ID: ${widget.habit.id}'),
+                          Text('Name: "${widget.habit.name}"'),
+                        ],
+                      ),
+                    ),
+                  ),
+                  
+                  const SizedBox(height: 16),
+                  
                   // Reminders Section
                   _buildRemindersSection(),
                   
@@ -292,6 +462,9 @@ class _ReminderSettingScreenState extends State<ReminderSettingScreen> {
                   
                   // Test Button
                   _buildTestButton(),
+
+                  // Debug Button
+                  _buildDebugButton(),
                   
                   const SizedBox(height: 16),
                   
@@ -316,7 +489,7 @@ class _ReminderSettingScreenState extends State<ReminderSettingScreen> {
         ),
         SizedBox(height: 8),
         Text(
-          'Get unified about important updates',
+          'Get notified about important updates',
           style: TextStyle(
             color: Colors.grey,
             fontSize: 14,
@@ -362,15 +535,11 @@ class _ReminderSettingScreenState extends State<ReminderSettingScreen> {
         
         Column(
           children: [
-            // Predefined options
             for (int i = 0; i < _snoozeOptions.length; i++)
               _buildSnoozeOption(
                 '${_snoozeOptions[i]} minutes',
                 i,
-                _selectedSnoozeIndex == i && !_useCustomSnooze,
               ),
-            
-            // Custom option
             _buildCustomSnoozeOption(),
           ],
         ),
@@ -378,13 +547,15 @@ class _ReminderSettingScreenState extends State<ReminderSettingScreen> {
     );
   }
 
-  Widget _buildSnoozeOption(String text, int index, bool isSelected) {
+  Widget _buildSnoozeOption(String text, int index) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Container(
         decoration: BoxDecoration(
           border: Border.all(
-            color: isSelected ? Colors.blue : Colors.grey.shade300,
+            color: (_selectedSnoozeIndex == index && !_useCustomSnooze) 
+                ? Colors.blue 
+                : Colors.grey.shade300,
           ),
           borderRadius: BorderRadius.circular(8),
         ),
@@ -392,8 +563,7 @@ class _ReminderSettingScreenState extends State<ReminderSettingScreen> {
           title: Text(text),
           value: index,
           groupValue: _useCustomSnooze ? null : _selectedSnoozeIndex,
-          onChanged: _onSnoozeOptionChanged,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 4),
+          onChanged: (value) => _onSnoozeOptionChanged(value),
         ),
       ),
     );
@@ -437,7 +607,6 @@ class _ReminderSettingScreenState extends State<ReminderSettingScreen> {
             _hasChanges = true;
           });
         },
-        contentPadding: const EdgeInsets.symmetric(horizontal: 4),
       ),
     );
   }
@@ -558,6 +727,38 @@ class _ReminderSettingScreenState extends State<ReminderSettingScreen> {
           padding: const EdgeInsets.symmetric(vertical: 12),
         ),
       ),
+    );
+  }
+
+  Widget _buildDebugButton() {
+    return Column(
+      children: [
+        SizedBox(
+          width: double.infinity,
+          child: OutlinedButton.icon(
+            onPressed: _checkPendingNotifications,
+            icon: const Icon(Icons.bug_report),
+            label: const Text('Check Pending Notifications'),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: Colors.orange,
+              padding: const EdgeInsets.symmetric(vertical: 12),
+            ),
+          ),
+        ),
+        const SizedBox(height: 8),
+        SizedBox(
+          width: double.infinity,
+          child: OutlinedButton.icon(
+            onPressed: _debugCurrentState,
+            icon: const Icon(Icons.info),
+            label: const Text('Debug Current State'),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: Colors.green,
+              padding: const EdgeInsets.symmetric(vertical: 12),
+            ),
+          ),
+        ),
+      ],
     );
   }
 
