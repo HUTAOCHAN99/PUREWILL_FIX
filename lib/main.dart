@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:purewill/data/services/local_notification_service.dart';
+import 'package:purewill/data/services/reminder_sync_service.dart'; // TAMBAHAN
 import 'package:purewill/ui/habit-tracker/screen/auth_wrapper.dart';
 import 'package:purewill/ui/habit-tracker/screen/home_screen.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -19,7 +20,10 @@ Future<void> main() async {
     anonKey: dotenv.env['SUPABASE_ANON_KEY']!,
   );
 
+  // Inisialisasi services
   await LocalNotificationService().initialize();
+  await ReminderSyncService().initialize(); // TAMBAHAN
+  
   runApp(const ProviderScope(child: MyApp()));
 }
 

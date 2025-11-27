@@ -34,8 +34,7 @@ class HabitsState {
     this.categories = const [],
     this.reminderSettings = const [],
     this.currentUser,
-    this.currentHabitDetail 
-
+    this.currentHabitDetail,
   });
 
   HabitsState copyWith({
@@ -47,7 +46,7 @@ class HabitsState {
     List<CategoryModel>? caregories,
     List<ReminderSettingModel>? reminderSettings,
     ProfileModel? currentUser,
-    HabitModel? currentHabitDetail
+    HabitModel? currentHabitDetail,
   }) {
     return HabitsState(
       status: status ?? this.status,
@@ -113,9 +112,7 @@ class HabitsViewModel extends StateNotifier<HabitsState> {
     }
   }
 
-  Future<void> loadHabitDetail({
-    required int habitId
-  }) async {
+  Future<void> loadHabitDetail({required int habitId}) async {
     state = state.copyWith(status: HabitStatus.loading, errorMessage: null);
 
     try {
@@ -191,7 +188,11 @@ class HabitsViewModel extends StateNotifier<HabitsState> {
         await _dailyLogRepository.recordLog(
           habitId: habit.id,
           date: today,
-          status: (existingLog.status == LogStatus.success) ? LogStatus.failed : existingLog.status == LogStatus.failed ? LogStatus.neutral : LogStatus.success, 
+          status: (existingLog.status == LogStatus.success)
+              ? LogStatus.failed
+              : existingLog.status == LogStatus.failed
+              ? LogStatus.neutral
+              : LogStatus.success,
           actualValue: habit.targetValue?.toDouble(),
         );
 
@@ -251,7 +252,7 @@ class HabitsViewModel extends StateNotifier<HabitsState> {
       final completionStatus = <int, LogStatus>{};
 
       for (final log in todayLogs) {
-        completionStatus[log.habitId] = log.status;      
+        completionStatus[log.habitId] = log.status;
       }
 
       print("completion status");
@@ -448,6 +449,7 @@ class HabitsViewModel extends StateNotifier<HabitsState> {
         repeatDaily: repeatDaily,
         isSoundEnabled: isSoundEnabled,
         isVibrationEnabled: isVibrationEnabled,
+        createdAt: DateTime.now(), // TAMBAHKAN INI
       );
 
       await _reminderSettingRepository.createReminderSetting(reminderSetting);
