@@ -179,7 +179,7 @@ class HabitsViewModel extends StateNotifier<HabitsState> {
         habit.id,
       );
 
-      print("exiting log complete status = ");
+      print("existing log complete status = ");
       print(existingLog?.status == LogStatus.success);
 
       if (existingLog != null) {

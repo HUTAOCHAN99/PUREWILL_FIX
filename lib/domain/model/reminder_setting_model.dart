@@ -25,41 +25,36 @@ class ReminderSettingModel {
 
   factory ReminderSettingModel.fromJson(Map<String, dynamic> json) {
     debugPrint('🎯 REMINDER SETTING FROM JSON:');
-    debugPrint('   - id: ${json['id']} (type: ${json['id']?.runtimeType})');
-    debugPrint('   - habit_id: ${json['habit_id']} (type: ${json['habit_id']?.runtimeType})');
-    debugPrint('   - is_enabled: ${json['is_enabled']} (type: ${json['is_enabled']?.runtimeType})');
-    debugPrint('   - time: ${json['time']} (type: ${json['time']?.runtimeType})');
-    debugPrint('   - snooze_duration: ${json['snooze_duration']} (type: ${json['snooze_duration']?.runtimeType})');
-    debugPrint('   - repeat_daily: ${json['repeat_daily']} (type: ${json['repeat_daily']?.runtimeType})');
-    debugPrint('   - is_sound_enabled: ${json['is_sound_enabled']} (type: ${json['is_sound_enabled']?.runtimeType})');
-    debugPrint('   - is_vibration_enabled: ${json['is_vibration_enabled']} (type: ${json['is_vibration_enabled']?.runtimeType})');
-    debugPrint('   - created_at: ${json['created_at']} (type: ${json['created_at']?.runtimeType})');
+    debugPrint('   - Raw time from DB: ${json['time']}');
 
-    // Parse time - handle both DateTime string and TimeOfDay format
+    // Parse the timestamp as-is
     DateTime parsedTime;
     try {
       if (json['time'] is String) {
         parsedTime = DateTime.parse(json['time'] as String);
+        debugPrint('   ✅ Parsed time as-is: $parsedTime');
       } else {
         parsedTime = DateTime.now();
+        debugPrint('   ⚠️  Time is not string, using current time');
       }
     } catch (e) {
-      debugPrint('❌ Error parsing time: $e, using current time');
+      debugPrint('❌ Error parsing time: $e');
       parsedTime = DateTime.now();
     }
+
+    debugPrint('   - Final time: $parsedTime');
+    debugPrint('   - Hour: ${parsedTime.hour}, Minute: ${parsedTime.minute}');
 
     return ReminderSettingModel(
       id: json['id']?.toString() ?? '',
       habitId: json['habit_id'] as int? ?? 0,
-      isEnabled: json['is_enabled'] as bool? ?? false, // Default false sesuai database
+      isEnabled: json['is_enabled'] as bool? ?? false,
       time: parsedTime,
       snoozeDuration: json['snooze_duration'] as int? ?? 10,
-      repeatDaily: json['repeat_daily'] as bool? ?? true, // Default true sesuai database
-      isSoundEnabled: json['is_sound_enabled'] as bool? ?? true, // Default true sesuai database
-      isVibrationEnabled: json['is_vibration_enabled'] as bool? ?? false, // Default false sesuai database
-      createdAt: json['created_at'] != null 
-          ? DateTime.parse(json['created_at'] as String)
-          : DateTime.now(),
+      repeatDaily: json['repeat_daily'] as bool? ?? true,
+      isSoundEnabled: json['is_sound_enabled'] as bool? ?? true,
+      isVibrationEnabled: json['is_vibration_enabled'] as bool? ?? false,
+      createdAt: DateTime.now(),
     );
   }
 
@@ -74,13 +69,15 @@ class ReminderSettingModel {
       'is_vibration_enabled': isVibrationEnabled,
     };
 
-    // Hanya tambahkan id jika tidak kosong (untuk update)
+    // Only add id if not empty (for update)
     if (id.isNotEmpty) {
       json['id'] = int.tryParse(id) as Object;
     }
 
-    // created_at biasanya dihandle oleh database
-    debugPrint('🎯 REMINDER SETTING TO JSON: $json');
+    debugPrint('🎯 REMINDER SETTING TO JSON:');
+    debugPrint('   - Exact time to store: ${time.toIso8601String()}');
+    debugPrint('   - Hour: ${time.hour}, Minute: ${time.minute}');
+
     return json;
   }
 
@@ -129,6 +126,65 @@ class ReminderSettingModel {
     return 'ReminderSettingModel{id: $id, habitId: $habitId, isEnabled: $isEnabled, time: $time, snoozeDuration: $snoozeDuration, repeatDaily: $repeatDaily, isSoundEnabled: $isSoundEnabled, isVibrationEnabled: $isVibrationEnabled, createdAt: $createdAt}';
   }
 
-  // Helper method untuk check jika ini instance kosong
+  // Helper methods
   bool get isEmpty => id.isEmpty;
+  TimeOfDay get timeOfDay => TimeOfDay.fromDateTime(time);
+
+  String get formattedTime {
+    final hour = time.hour;
+    final minute = time.minute.toString().padLeft(2, '0');
+    final period = hour >= 12 ? 'PM' : 'AM';
+    final displayHour = hour > 12 ? hour - 12 : (hour == 0 ? 12 : hour);
+    return '$displayHour:$minute $period';
+  }
+
+  bool get isPastForToday {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final reminderToday = DateTime(
+      today.year,
+      today.month,
+      today.day,
+      time.hour,
+      time.minute,
+    );
+    return reminderToday.isBefore(now);
+  }
+
+  DateTime get nextScheduledTime {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    var scheduled = DateTime(
+      today.year,
+      today.month,
+      today.day,
+      time.hour,
+      time.minute,
+    );
+
+    if (scheduled.isBefore(now)) {
+      scheduled = scheduled.add(const Duration(days: 1));
+    }
+
+    return scheduled;
+  }
+
+  String get dynamicTimeDisplay {
+    final nextTime = nextScheduledTime;
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final tomorrow = today.add(const Duration(days: 1));
+
+    if (nextTime.year == today.year &&
+        nextTime.month == today.month &&
+        nextTime.day == today.day) {
+      return 'Today at $formattedTime';
+    } else if (nextTime.year == tomorrow.year &&
+        nextTime.month == tomorrow.month &&
+        nextTime.day == tomorrow.day) {
+      return 'Tomorrow at $formattedTime';
+    } else {
+      return '${nextTime.day}/${nextTime.month} at $formattedTime';
+    }
+  }
 }

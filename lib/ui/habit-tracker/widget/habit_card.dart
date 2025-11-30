@@ -1,3 +1,4 @@
+// lib\ui\habit-tracker\widget\habit_card.dart
 import 'package:flutter/material.dart';
 import 'package:percent_indicator/linear_percent_indicator.dart';
 import 'package:purewill/domain/model/daily_log_model.dart';
@@ -28,6 +29,8 @@ class HabitCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isCompleted = status == LogStatus.success;
+    
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -51,12 +54,12 @@ class HabitCard extends StatelessWidget {
               children: [
                 CircleAvatar(
                   radius: 20,
-                  backgroundColor: status == LogStatus.success
+                  backgroundColor: isCompleted
                       ? color.withOpacity(0.2)
                       : color.withOpacity(0.1),
                   child: Icon(
                     icon,
-                    color: status == LogStatus.success ? color : color.withOpacity(0.7),
+                    color: isCompleted ? color : color.withOpacity(0.7),
                     size: 22,
                   ),
                 ),
@@ -77,7 +80,7 @@ class HabitCard extends StatelessWidget {
                       ),
                     ),
                   ),
-                if ("success" == LogStatus.success)
+                if (isCompleted)
                   Positioned(
                     right: -2,
                     top: -2,
@@ -110,8 +113,8 @@ class HabitCard extends StatelessWidget {
                           style: TextStyle(
                             fontWeight: FontWeight.w600,
                             fontSize: 16,
-                            color: status == LogStatus.success ? Colors.grey : Colors.black,
-                            decoration: status == LogStatus.success
+                            color: isCompleted ? Colors.grey : Colors.black,
+                            decoration: isCompleted
                                 ? TextDecoration.lineThrough
                                 : null,
                           ),
@@ -129,8 +132,8 @@ class HabitCard extends StatelessWidget {
                   Text(
                     subtitle,
                     style: TextStyle(
-                      color: status == LogStatus.success ? Colors.green : Colors.grey,
-                      fontWeight: status == LogStatus.success
+                      color: isCompleted ? Colors.green : Colors.grey,
+                      fontWeight: isCompleted
                           ? FontWeight.w500
                           : FontWeight.normal,
                     ),
@@ -139,7 +142,7 @@ class HabitCard extends StatelessWidget {
                   LinearPercentIndicator(
                     lineHeight: 6,
                     percent: progress,
-                    progressColor: status == LogStatus.success ? Colors.green : color,
+                    progressColor: isCompleted ? Colors.green : color,
                     backgroundColor: Colors.grey[200]!,
                     barRadius: const Radius.circular(8),
                   ),
@@ -154,18 +157,20 @@ class HabitCard extends StatelessWidget {
                 onTap: onCheckboxTap,
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 300),
+                  width: 28,
+                  height: 28,
                   decoration: BoxDecoration(
-                    color: status == LogStatus.success ? Colors.green : Colors.transparent,
+                    color: isCompleted ? Colors.green : Colors.transparent,
                     shape: BoxShape.circle,
                     border: Border.all(
-                      color: status == LogStatus.success ? Colors.green : Colors.grey,
+                      color: isCompleted ? Colors.green : Colors.grey,
                       width: 2,
                     ),
                   ),
                   child: Icon(
-                    status == LogStatus.success ? Icons.check : Icons.circle_outlined,
-                    color: status == LogStatus.success ? Colors.white : Colors.grey,
-                    size: 24,
+                    isCompleted ? Icons.check : Icons.circle_outlined,
+                    color: isCompleted ? Colors.white : Colors.grey,
+                    size: 20,
                   ),
                 ),
               ),

@@ -187,13 +187,7 @@ class _HabitDetailScreenState extends ConsumerState<HabitDetailScreen> {
                   ),
                   const SizedBox(height: 24),
 
-                  PerformanceChartWidget(
-                    // JIKA list-nya kosong, buat list baru
-                    // berisi 7 buah '0.0'
-                    weeklyPerformance: _weeklyPerformance!.isEmpty
-                        ? List.generate(7, (_) => 0.0)
-                        : _weeklyPerformance!,
-                  ),
+                 
                   const SizedBox(height: 24),
 
                   CalendarTrackerWidget(

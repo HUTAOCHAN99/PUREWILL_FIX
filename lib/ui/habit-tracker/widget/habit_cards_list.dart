@@ -11,7 +11,7 @@ class HabitCardsList extends StatelessWidget {
   final Map<int, LogStatus> todayCompletionStatus;
   final List<HabitModel> habits;
   final void Function(HabitModel habit) onHabitTap;
-  final void Function(HabitModel habit) onCheckboxTap; // TAMBAH INI
+  final void Function(HabitModel habit) onCheckboxTap;
   final Widget Function(String errorMessage)? buildErrorState;
   final Widget Function()? buildEmptyState;
 
@@ -21,23 +21,10 @@ class HabitCardsList extends StatelessWidget {
     required this.todayCompletionStatus,
     required this.habits,
     required this.onHabitTap,
-    required this.onCheckboxTap, // TAMBAH INI
+    required this.onCheckboxTap,
     this.buildErrorState,
     this.buildEmptyState,
   });
-
-  LogStatus parseLogStatus(String statusString) {
-    switch (statusString.toLowerCase()) {
-      case "success":
-        return LogStatus.success;
-      case "neutral":
-        return LogStatus.neutral;
-      case "failed":
-        return LogStatus.failed;
-      default:
-        return LogStatus.neutral;
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -67,7 +54,8 @@ class HabitCardsList extends StatelessWidget {
 
         return Column(
           children: sortedHabits.map((habit) {
-            final isCompleted = todayCompletionStatus[habit.id] ?? false;
+            // GUNAKAN todayCompletionStatus untuk mendapatkan status checkbox
+            final todayStatus = todayCompletionStatus[habit.id] ?? LogStatus.neutral;
             
             final iconData = HabitIconHelper.getHabitIcon(habit.name);
             final color = HabitIconHelper.getHabitColor(habit.name);
@@ -77,11 +65,11 @@ class HabitCardsList extends StatelessWidget {
               title: habit.name,
               subtitle: _buildHabitSubtitle(habit),
               color: color,
-              progress: isCompleted == LogStatus.success ? 1.0 : 0.0,
-              status: parseLogStatus(habit.status),
+              progress: todayStatus == LogStatus.success ? 1.0 : 0.0,
+              status: todayStatus, // GUNAKAN todayStatus, bukan dari habit.status
               isDefault: habit.isDefault,
               onTap: () => onHabitTap(habit),
-              onCheckboxTap: () => onCheckboxTap(habit), // TERUSKAN KE HABIT CARD
+              onCheckboxTap: () => onCheckboxTap(habit),
             );
           }).toList(),
         );

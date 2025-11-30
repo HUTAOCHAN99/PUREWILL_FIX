@@ -1,6 +1,9 @@
 import 'dart:developer';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:purewill/data/services/default_habits_service.dart';
+import 'package:purewill/data/services/performance_service.dart';
 import 'package:purewill/domain/model/habit_model.dart';
+import 'package:purewill/ui/habit-tracker/habit_provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class HabitRepository {
@@ -13,17 +16,14 @@ class HabitRepository {
     try {
       final habitData = habit.toJson();
 
-
       final response = await _supabaseClient
           .from(_habitTableName)
           .insert(habitData)
           .select()
           .single();
 
-
       return HabitModel.fromJson(response);
     } catch (e, stackTrace) {
-
       log(
         'CREATE HABIT FAILURE: Failed to create habit ${habit.name}.',
         error: e,
@@ -43,19 +43,19 @@ class HabitRepository {
           .eq('user_id', userId)
           .order('start_date', ascending: true);
 
-
-      final userHabits = response.map((data) => HabitModel.fromJson(data)).toList();
-
+      final userHabits = response
+          .map((data) => HabitModel.fromJson(data))
+          .toList();
 
       print(response);
       // Gabungkan dengan default habits
       // final defaultHabits = DefaultHabitsService.getDefaultHabits();
-      
+
       // Filter default habits yang belum dibuat oleh user
       final userHabitNames = userHabits.map((h) => h.name).toSet();
       // final availableDefaultHabits = defaultHabits
-          // .where((defaultHabit) => !userHabitNames.contains(defaultHabit.name))
-          // .toList();
+      // .where((defaultHabit) => !userHabitNames.contains(defaultHabit.name))
+      // .toList();
 
       // Gabungkan user habits dengan available default habits
       // final allHabits = [...userHabits, ...availableDefaultHabits];
@@ -65,10 +65,12 @@ class HabitRepository {
       print('User habits: ${userHabits.length}');
       // print('Available default habits: ${availableDefaultHabits.length}');
       print('Total habits: ${allHabits.length}');
-      
+
       // Debug print untuk melihat data habit
       for (var habit in allHabits) {
-        print('Habit: ${habit.name}, Target: ${habit.targetValue}, Unit: ${habit.unit}, IsDefault: ${habit.isDefault}, Habit id: ${habit.id}, Status: ${habit.status}');
+        print(
+          'Habit: ${habit.name}, Target: ${habit.targetValue}, Unit: ${habit.unit}, IsDefault: ${habit.isDefault}, Habit id: ${habit.id}, Status: ${habit.status}',
+        );
       }
       print('========================');
 
@@ -81,16 +83,18 @@ class HabitRepository {
         stackTrace: stackTrace,
         name: 'HABIT_REPO',
       );
-      
+
       // Fallback: return default habits jika error
       print('=== USING DEFAULT HABITS AS FALLBACK ===');
       final defaultHabits = DefaultHabitsService.getDefaultHabits();
-      
+
       // Debug print untuk default habits
       for (var habit in defaultHabits) {
-        print('Default Habit: ${habit.name}, Target: ${habit.targetValue}, Unit: ${habit.unit}');
+        print(
+          'Default Habit: ${habit.name}, Target: ${habit.targetValue}, Unit: ${habit.unit}',
+        );
       }
-      
+
       return defaultHabits;
     }
   }
@@ -284,4 +288,10 @@ class HabitRepository {
       return [];
     }
   }
+  
+
+  final performanceServiceProvider = Provider<PerformanceService>((ref) {
+    final habitRepository = ref.read(habitRepositoryProvider);
+    return PerformanceService(habitRepository);
+  });
 }
