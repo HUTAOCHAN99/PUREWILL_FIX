@@ -30,8 +30,13 @@ Future<void> main() async {
 
   debugPrint('✅ Supabase initialized');
 
-  // Initialize Badge Notification Service dengan approach yang lebih baik
-  await _initializeBadgeNotificationService();
+  // Initialize Badge Notification Service
+  await badgeNotificationService.initialize(
+    onBadgeNotificationTap: (payload) {
+      debugPrint('🎯 Badge notification tapped with payload: $payload');
+      _handleBadgeNotification(payload);
+    },
+  );
 
   // Initialize Badge Service
   badgeService = BadgeService(
@@ -55,98 +60,12 @@ Future<void> main() async {
   // Handle notification pada app startup
   await LocalNotificationService.handleNotificationOnStartup();
 
-  // Initialize Reminder Sync Service dengan retry logic
+  // Initialize Reminder Sync Service
   await _initializeReminderSyncService();
 
   debugPrint('🚀 All services initialized successfully');
 
-  // TEST: Force test notifications immediately
-  await _testNotificationsImmediately();
-
   runApp(const ProviderScope(child: MyApp()));
-}
-
-// Improved initialization untuk badge notification service
-Future<void> _initializeBadgeNotificationService() async {
-  try {
-    debugPrint('🔄 Initializing Badge Notification Service...');
-    
-    await badgeNotificationService.initialize(
-      onBadgeNotificationTap: (payload) {
-        debugPrint('🎯 Badge notification tapped with payload: $payload');
-        _handleBadgeNotification(payload);
-      },
-    );
-
-    // Verify initialization
-    if (badgeNotificationService.isInitialized) {
-      debugPrint('✅ Badge Notification Service initialized successfully');
-      
-      // Test immediately setelah initialize
-      await _testBadgeNotificationImmediately();
-    } else {
-      debugPrint('❌ Badge Notification Service failed to initialize');
-    }
-  } catch (e, stack) {
-    debugPrint('❌ Error initializing Badge Notification Service: $e');
-    debugPrint('Stack trace: $stack');
-  }
-}
-
-// Test notifications immediately setelah initialize
-Future<void> _testBadgeNotificationImmediately() async {
-  try {
-    debugPrint('🎯 TESTING NOTIFICATIONS IMMEDIATELY AFTER INIT...');
-    
-    // Test 1: Basic notification
-    await badgeNotificationService.showFloatingBadge(
-      badgeName: 'SYSTEM TEST',
-      badgeDescription: 'Notification service is working! 🎉',
-      badgeId: 9999,
-    );
-
-    await Future.delayed(Duration(seconds: 2));
-
-    // Test 2: Progress notification
-    await badgeNotificationService.showProgressNotification(
-      badgeName: 'Test Achievement',
-      currentProgress: 5,
-      targetProgress: 10,
-      progressType: 'test',
-    );
-
-    debugPrint('✅ Immediate notification test completed');
-  } catch (e, stack) {
-    debugPrint('❌ Immediate notification test failed: $e');
-    debugPrint('Stack trace: $stack');
-  }
-}
-
-// Test semua notifications
-Future<void> _testNotificationsImmediately() async {
-  try {
-    debugPrint('🧪 RUNNING COMPREHENSIVE NOTIFICATION TESTS...');
-    
-    // Test 1: Badge Notification Service
-    debugPrint('📱 Test 1: Badge Notification Service...');
-    await badgeNotificationService.showTestBadge();
-    
-    await Future.delayed(Duration(seconds: 3));
-    
-    // Test 2: Badge Service dengan force notification
-    debugPrint('🏆 Test 2: Badge Service Force Notification...');
-    final user = Supabase.instance.client.auth.currentUser;
-    if (user != null) {
-      await badgeService.testNotificationsOnly();
-    } else {
-      debugPrint('ℹ️ No user logged in, skipping badge service test');
-    }
-    
-    debugPrint('✅ All notification tests completed');
-  } catch (e, stack) {
-    debugPrint('❌ Comprehensive notification test failed: $e');
-    debugPrint('Stack trace: $stack');
-  }
 }
 
 // Handle badge notification payload
@@ -238,50 +157,9 @@ Future<void> checkUserBadges(String userId) async {
   }
 }
 
-// Test function untuk development - DIPERBAIKI
-Future<void> testBadgeSystem(String userId) async {
-  try {
-    debugPrint('🧪 ===== COMPREHENSIVE BADGE SYSTEM TEST =====');
-    
-    // Test 1: Notifications dulu
-    debugPrint('📱 Step 1: Testing notifications...');
-    await badgeService.testNotificationsOnly();
-    
-    await Future.delayed(Duration(seconds: 3));
-    
-    // Test 2: Badge system
-    debugPrint('🏆 Step 2: Testing badge system...');
-    await badgeService.testBadgeSystem(userId);
-    
-    debugPrint('✅ ===== COMPREHENSIVE TEST COMPLETED =====');
-  } catch (e, stack) {
-    debugPrint('❌ Comprehensive test failed: $e');
-    debugPrint('Stack trace: $stack');
-  }
-}
-
 // Global function untuk trigger badge check dari mana saja
 Future<void> triggerBadgeCheck(String userId) async {
   await badgeService.checkAllBadges(userId);
-}
-
-// Simple test function untuk notifications saja
-Future<void> testSimpleNotification() async {
-  try {
-    debugPrint('🎯 SIMPLE NOTIFICATION TEST...');
-    
-    // Paling basic test
-    await badgeNotificationService.showFloatingBadge(
-      badgeName: 'Simple Test',
-      badgeDescription: 'This should appear immediately!',
-      badgeId: 12345,
-    );
-    
-    debugPrint('✅ Simple notification test completed');
-  } catch (e, stack) {
-    debugPrint('❌ Simple notification test failed: $e');
-    debugPrint('Stack trace: $stack');
-  }
 }
 
 // Provider untuk badge service

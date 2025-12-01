@@ -13,21 +13,11 @@ class BadgeService {
     await _badgeNotificationService.initialize(onBadgeNotificationTap: onBadgeTap);
   }
 
-  // Check all badges periodically atau manual trigger - DENGAN FORCE NOTIFICATION
+  // Main method untuk check semua badges - VERSI PRODUKSI
   Future<void> checkAllBadges(String userId) async {
     try {
       debugPrint('🎯 === BADGE CHECK STARTED ===');
       debugPrint('👤 User ID: $userId');
-
-      // FORCE TEST NOTIFICATION - selalu muncul untuk testing
-      debugPrint('🎯 FORCING TEST NOTIFICATION...');
-      await _badgeNotificationService.showFloatingBadge(
-        badgeName: 'SYSTEM TEST',
-        badgeDescription: 'Badge system is working! Now checking your achievements...',
-        badgeId: 888,
-      );
-
-      await Future.delayed(Duration(seconds: 1));
 
       // Get user's profile ID
       final profileResponse = await _supabase
@@ -38,15 +28,6 @@ class BadgeService {
       
       final profileId = profileResponse['id'] as int;
       debugPrint('📋 Profile ID: $profileId');
-
-      // Check jika ada daily logs success
-      final successLogs = await _supabase
-          .from('daily_logs')
-          .select('id')
-          .eq('status', 'success')
-          .limit(1);
-      
-      debugPrint('📊 Success logs found: ${successLogs.isNotEmpty}');
 
       List<Map<String, dynamic>> newlyEarnedBadges = [];
 
@@ -111,14 +92,7 @@ class BadgeService {
         
         await _updateUserXP(userId, newlyEarnedBadges.length * 10);
       } else {
-        debugPrint('ℹ️ No new badges earned');
-        
-        // Show "no badges" notification
-        await _badgeNotificationService.showFloatingBadge(
-          badgeName: 'Keep Going!',
-          badgeDescription: 'No new badges yet. Complete more habits to earn achievements!',
-          badgeId: 777,
-        );
+        debugPrint('ℹ️ No new badges earned this time');
       }
 
       debugPrint('✅ === BADGE CHECK COMPLETED ===');
@@ -126,13 +100,6 @@ class BadgeService {
     } catch (e, stack) {
       debugPrint('❌ Error checking badges: $e');
       debugPrint('Stack trace: $stack');
-      
-      // Show error notification
-      await _badgeNotificationService.showFloatingBadge(
-        badgeName: 'System Error',
-        badgeDescription: 'There was an issue checking your badges. Please try again.',
-        badgeId: 666,
-      );
     }
   }
 
@@ -144,7 +111,7 @@ class BadgeService {
           .from('user_badges')
           .select('id')
           .eq('profile_id', profileId)
-          .eq('badge_id', 21) // ID untuk "First Step" badge
+          .eq('badge_id', 1) // ID untuk "First Step" badge
           .maybeSingle();
 
       if (existingBadge != null) {
@@ -155,17 +122,17 @@ class BadgeService {
       // Check if user has any completed habits (status = 'success')
       final completedHabits = await _supabase
           .from('daily_logs')
-          .select('id')
+          .select('id, created_at')
           .eq('status', 'success')
           .limit(1);
 
       if (completedHabits.isNotEmpty) {
-        await _awardBadge(profileId, 21);
+        await _awardBadge(profileId, 1);
         
         final badgeDetails = await _supabase
             .from('badges')
             .select('*')
-            .eq('id', 21)
+            .eq('id', 1)
             .single();
         
         debugPrint('🎯 First habit completion badge earned!');
@@ -297,8 +264,12 @@ class BadgeService {
       // Get completed habits dengan creation time
       final completions = await _supabase
           .from('daily_logs')
-          .select('created_at')
-          .eq('status', 'success');
+          .select('''
+            *,
+            habits!inner(user_id)
+          ''')
+          .eq('status', 'success')
+          .eq('habits.user_id', userId);
 
       int morningCount = 0;
       for (final completion in completions) {
@@ -316,6 +287,11 @@ class BadgeService {
           .select('id, trigger_value, name, description, image_url')
           .eq('trigger_type', 'morning_completion')
           .order('trigger_value', ascending: true);
+
+      if (morningBadges.isEmpty) {
+        debugPrint('ℹ️ No morning completion badges found in database');
+        return earnedBadges;
+      }
 
       debugPrint('📋 Found ${morningBadges.length} morning completion badges to check');
 
@@ -466,8 +442,12 @@ class BadgeService {
     try {
       final totalCompletions = await _supabase
           .from('daily_logs')
-          .select('id')
-          .eq('status', 'success');
+          .select('''
+            *,
+            habits!inner(user_id)
+          ''')
+          .eq('status', 'success')
+          .eq('habits.user_id', userId);
 
       final completionCount = totalCompletions.length;
       debugPrint('📈 Total habit completions: $completionCount');
@@ -477,6 +457,11 @@ class BadgeService {
           .select('id, trigger_value, name, description, image_url')
           .eq('trigger_type', 'TOTAL')
           .order('trigger_value', ascending: true);
+
+      if (consistencyBadges.isEmpty) {
+        debugPrint('ℹ️ No consistency badges found in database');
+        return earnedBadges;
+      }
 
       debugPrint('📋 Found ${consistencyBadges.length} consistency badges to check');
 
@@ -514,11 +499,15 @@ class BadgeService {
     final List<Map<String, dynamic>> earnedBadges = [];
     
     try {
-      // Check for early bird badge (before 8 AM) dan night owl (after 9 PM)
+      // Get completed habits
       final completions = await _supabase
           .from('daily_logs')
-          .select('created_at')
-          .eq('status', 'success');
+          .select('''
+            *,
+            habits!inner(user_id)
+          ''')
+          .eq('status', 'success')
+          .eq('habits.user_id', userId);
 
       int earlyBirdCount = 0;
       int nightOwlCount = 0;
@@ -533,8 +522,8 @@ class BadgeService {
         }
       }
 
-      debugPrint('🐦 Early bird completions: $earlyBirdCount');
-      debugPrint('🦉 Night owl completions: $nightOwlCount');
+      debugPrint('🐦 Early bird completions (before 8 AM): $earlyBirdCount');
+      debugPrint('🦉 Night owl completions (after 9 PM): $nightOwlCount');
 
       // Early Bird badge (ID 13)
       final hasEarlyBird = await _supabase
@@ -589,9 +578,11 @@ class BadgeService {
     return earnedBadges;
   }
 
-  // Update user XP when earning badges
+  // Update user XP ketika mendapatkan badges
   Future<void> _updateUserXP(String userId, int xpEarned) async {
     try {
+      if (xpEarned <= 0) return;
+
       // Get current user profile
       final profileResponse = await _supabase
           .from('profiles')
@@ -632,56 +623,6 @@ class BadgeService {
     }
   }
 
-  // Manual trigger untuk badge tertentu
-  Future<void> manuallyAwardBadge(String userId, int badgeId) async {
-    try {
-      debugPrint('🎯 Manually awarding badge $badgeId to user $userId');
-      
-      final profileResponse = await _supabase
-          .from('profiles')
-          .select('id')
-          .eq('user_id', userId)
-          .single();
-      
-      final profileId = profileResponse['id'] as int;
-
-      // Check if badge exists
-      final badgeExists = await _supabase
-          .from('badges')
-          .select('id')
-          .eq('id', badgeId)
-          .maybeSingle();
-
-      if (badgeExists == null) {
-        debugPrint('❌ Badge $badgeId does not exist');
-        return;
-      }
-
-      await _awardBadge(profileId, badgeId);
-      
-      // Get badge details for notification
-      final badgeDetails = await _supabase
-          .from('badges')
-          .select('*')
-          .eq('id', badgeId)
-          .single();
-      
-      await _badgeNotificationService.showFloatingBadge(
-        badgeName: badgeDetails['name'] as String,
-        badgeDescription: badgeDetails['description'] as String,
-        badgeId: badgeId,
-      );
-      
-      // Update XP
-      await _updateUserXP(userId, 10);
-      
-      debugPrint('✅ Badge $badgeId manually awarded!');
-    } catch (e, stack) {
-      debugPrint('❌ Error manually awarding badge: $e');
-      debugPrint('Stack trace: $stack');
-    }
-  }
-
   // Award badge to user - DENGAN LOGGING DETAIL
   Future<void> _awardBadge(int profileId, int badgeId) async {
     try {
@@ -701,17 +642,15 @@ class BadgeService {
       debugPrint('🏆 Awarding badge $badgeId to profile $profileId...');
 
       // Insert new badge
-      final response = await _supabase
+      await _supabase
           .from('user_badges')
           .insert({
             'profile_id': profileId,
             'badge_id': badgeId,
             'earned_at': DateTime.now().toUtc().toIso8601String(),
-          })
-          .select();
+          });
       
       debugPrint('✅ Badge $badgeId awarded to profile $profileId');
-      debugPrint('📝 Insert response: $response');
     } catch (e, stack) {
       debugPrint('❌ Error awarding badge: $e');
       debugPrint('Stack trace: $stack');
@@ -836,34 +775,6 @@ class BadgeService {
     return (diff / 7).ceil();
   }
 
-  // Test notification
-  Future<void> testBadgeNotification() async {
-    await _badgeNotificationService.showTestBadge();
-  }
-
-  // Show progress notification untuk badge yang hampir didapat
-  Future<void> showBadgeProgress(String userId, int badgeId) async {
-    try {
-      final badgeDetails = await _supabase
-          .from('badges')
-          .select('*')
-          .eq('id', badgeId)
-          .single();
-
-      final progress = await _getBadgeProgress(userId, badgeDetails);
-      
-      await _badgeNotificationService.showProgressNotification(
-        badgeName: badgeDetails['name'] as String,
-        currentProgress: progress['current'] ?? 0,
-        targetProgress: progress['target'] ?? 1,
-        progressType: badgeDetails['trigger_type'] as String,
-      );
-    } catch (e, stack) {
-      debugPrint('❌ Error showing badge progress: $e');
-      debugPrint('Stack trace: $stack');
-    }
-  }
-
   // Helper method untuk parse dynamic ke int
   int _parseToInt(dynamic value) {
     if (value == null) return 0;
@@ -875,7 +786,7 @@ class BadgeService {
   }
 
   // Helper method untuk progress calculation
-  Future<Map<String, int>> _getBadgeProgress(String userId, Map<String, dynamic> badge) async {
+  Future<Map<String, int>> getBadgeProgress(String userId, Map<String, dynamic> badge) async {
     final triggerType = badge['trigger_type'] as String;
     final int triggerValue = _parseToInt(badge['trigger_value']);
     
@@ -948,7 +859,7 @@ class BadgeService {
     };
   }
 
-  // Get user profile with XP and level
+  // Get user profile dengan XP dan level
   Future<Map<String, dynamic>?> getUserProfile(String userId) async {
     try {
       final profile = await _supabase
@@ -965,7 +876,7 @@ class BadgeService {
     }
   }
 
-  // Get all user badges with details
+  // Get all user badges dengan details
   Future<List<Map<String, dynamic>>> getUserBadges(String userId) async {
     try {
       final profileResponse = await _supabase
@@ -993,6 +904,22 @@ class BadgeService {
     }
   }
 
+  // Get all available badges
+  Future<List<Map<String, dynamic>>> getAllBadges() async {
+    try {
+      final badges = await _supabase
+          .from('badges')
+          .select('*')
+          .order('trigger_value', ascending: true);
+      
+      return badges;
+    } catch (e, stack) {
+      debugPrint('❌ Error getting all badges: $e');
+      debugPrint('Stack trace: $stack');
+      return [];
+    }
+  }
+
   // TEST FUNCTION: Comprehensive badge system test
   Future<void> testBadgeSystem(String userId) async {
     try {
@@ -1009,14 +936,7 @@ class BadgeService {
       debugPrint('👤 Profile ID: $profileId');
 
       // 2. Check current badges
-      final currentBadges = await _supabase
-          .from('user_badges')
-          .select('''
-            badge_id,
-            badges(name)
-          ''')
-          .eq('profile_id', profileId);
-
+      final currentBadges = await getUserBadges(userId);
       debugPrint('🏆 Current badges: ${currentBadges.length}');
       for (final badge in currentBadges) {
         final badgeData = badge['badges'] as Map<String, dynamic>;
@@ -1027,14 +947,7 @@ class BadgeService {
       await checkAllBadges(userId);
 
       // 4. Check badges after check
-      final updatedBadges = await _supabase
-          .from('user_badges')
-          .select('''
-            badge_id,
-            badges(name)
-          ''')
-          .eq('profile_id', profileId);
-
+      final updatedBadges = await getUserBadges(userId);
       debugPrint('🏆 Updated badges: ${updatedBadges.length}');
       for (final badge in updatedBadges) {
         final badgeData = badge['badges'] as Map<String, dynamic>;
@@ -1087,6 +1000,10 @@ class BadgeService {
       
       debugPrint('📝 Active Habits: ${activeHabits.length}');
 
+      // 5. Check available badges
+      final allBadges = await getAllBadges();
+      debugPrint('🎖️ Available Badges in System: ${allBadges.length}');
+
       debugPrint('✅ ===== DEBUG COMPLETED =====');
     } catch (e, stack) {
       debugPrint('❌ Debug error: $e');
@@ -1125,6 +1042,88 @@ class BadgeService {
       debugPrint('✅ NOTIFICATIONS TEST COMPLETED');
     } catch (e, stack) {
       debugPrint('❌ Notifications test failed: $e');
+      debugPrint('Stack trace: $stack');
+    }
+  }
+
+  // Check jika badge tertentu sudah dimiliki user
+  Future<bool> hasBadge(String userId, int badgeId) async {
+    try {
+      final profileResponse = await _supabase
+          .from('profiles')
+          .select('id')
+          .eq('user_id', userId)
+          .single();
+      
+      final profileId = profileResponse['id'] as int;
+
+      final existingBadge = await _supabase
+          .from('user_badges')
+          .select('id')
+          .eq('profile_id', profileId)
+          .eq('badge_id', badgeId)
+          .maybeSingle();
+
+      return existingBadge != null;
+    } catch (e) {
+      debugPrint('❌ Error checking if user has badge: $e');
+      return false;
+    }
+  }
+
+  // Get badge details by ID
+  Future<Map<String, dynamic>?> getBadgeDetails(int badgeId) async {
+    try {
+      final badge = await _supabase
+          .from('badges')
+          .select('*')
+          .eq('id', badgeId)
+          .single();
+      
+      return badge;
+    } catch (e) {
+      debugPrint('❌ Error getting badge details: $e');
+      return null;
+    }
+  }
+
+  // Manually award badge untuk testing
+  Future<void> manuallyAwardBadge(String userId, int badgeId) async {
+    try {
+      debugPrint('🎯 Manually awarding badge $badgeId to user $userId');
+      
+      final profileResponse = await _supabase
+          .from('profiles')
+          .select('id')
+          .eq('user_id', userId)
+          .single();
+      
+      final profileId = profileResponse['id'] as int;
+
+      // Check if badge exists
+      final badgeExists = await getBadgeDetails(badgeId);
+      if (badgeExists == null) {
+        debugPrint('❌ Badge $badgeId does not exist');
+        return;
+      }
+
+      await _awardBadge(profileId, badgeId);
+      
+      // Get badge details for notification
+      final badgeDetails = badgeExists;
+      
+      await _badgeNotificationService.showFloatingBadge(
+        badgeName: badgeDetails['name'] as String,
+        badgeDescription: badgeDetails['description'] as String,
+        badgeId: badgeId,
+      );
+      
+      // Update XP
+      await _updateUserXP(userId, 10);
+      
+      debugPrint('✅ Badge $badgeId manually awarded!');
+    } catch (e, stack) {
+      debugPrint('❌ Error manually awarding badge: $e');
       debugPrint('Stack trace: $stack');
     }
   }

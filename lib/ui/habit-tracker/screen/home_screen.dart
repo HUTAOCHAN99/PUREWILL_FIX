@@ -242,6 +242,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         total: totalHabits,
                       ),
                       
+                      // TAMBAHAN: TEST BUTTONS SECTION
                       _buildTestButtonsSection(),
                       
                       const SizedBox(height: 24),
