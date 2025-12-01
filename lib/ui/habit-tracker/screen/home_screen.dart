@@ -6,6 +6,7 @@ import 'package:purewill/domain/model/profile_model.dart';
 import 'package:purewill/ui/auth/auth_provider.dart';
 import 'package:purewill/ui/auth/screen/login_screen.dart';
 import 'package:purewill/ui/habit-tracker/habit_provider.dart';
+import 'package:purewill/ui/habit-tracker/screen/membership_screen.dart';
 import 'package:purewill/ui/habit-tracker/widget/clean_bottom_navigation_bar.dart';
 import 'package:purewill/ui/habit-tracker/widget/habit_cards_list.dart';
 import 'package:purewill/ui/habit-tracker/widget/habit_header.dart';
@@ -97,6 +98,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
+  void _navigateToMembership() {
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (context) => const MembershipScreen()),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final habitsState = ref.watch(habitNotifierProvider);
@@ -142,6 +149,52 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         progress: progress,
                         completed: completedToday,
                         total: totalHabits,
+                      ),
+                      
+                      // Tombol Membership
+                      const SizedBox(height: 16),
+                      Container(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          onPressed: _navigateToMembership,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.deepPurple,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 24,
+                              vertical: 16,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            elevation: 2,
+                            shadowColor: Colors.deepPurple.withOpacity(0.3),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.star,
+                                color: Colors.yellow[300],
+                                size: 20,
+                              ),
+                              const SizedBox(width: 8),
+                              const Text(
+                                'Premium Membership',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Icon(
+                                Icons.arrow_forward_ios_rounded,
+                                size: 16,
+                                color: Colors.white.withOpacity(0.8),
+                              ),
+                            ],
+                          ),
+                        ),
                       ),
                       
                       const SizedBox(height: 24),
