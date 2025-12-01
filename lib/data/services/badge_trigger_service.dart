@@ -9,346 +9,295 @@ class BadgeTriggerService {
   BadgeTriggerService(this._supabase, this._badgeService);
 
   // Trigger badge check ketika habit selesai
-  Future<void> onHabitCompleted(int habitId, BuildContext context) async {
+  Future<void> onHabitCompleted(String userId) async {
     try {
-      final user = _supabase.auth.currentUser;
-      if (user == null) return;
+      if (userId.isEmpty) return;
 
-      debugPrint('🏆 Habit $habitId completed, checking badges...');
+      debugPrint('🏆 Habit completed, checking badges for user: $userId');
       
       // Tunggu sebentar untuk memastikan data tersimpan
       await Future.delayed(const Duration(milliseconds: 500));
       
       // Trigger badge check
-      await _badgeService.checkAllBadges(user.id);
-      
-      // Tampilkan loading indicator
-      _showBadgeCheckSnackbar(context);
+      await _badgeService.checkAllBadges(userId);
       
     } catch (e, stack) {
       debugPrint('❌ Error triggering badge check: $e');
       debugPrint('Stack trace: $stack');
-      
-      _showErrorSnackbar(context, 'Failed to check badges');
     }
   }
 
   // Trigger badge check ketika habit baru dibuat
-  Future<void> onHabitCreated(BuildContext context) async {
+  Future<void> onHabitCreated(String userId) async {
     try {
-      final user = _supabase.auth.currentUser;
-      if (user == null) return;
+      if (userId.isEmpty) return;
 
-      debugPrint('🏆 New habit created, checking badges...');
+      debugPrint('🏆 New habit created, checking badges for user: $userId');
       
       // Tunggu sebentar
       await Future.delayed(const Duration(milliseconds: 500));
       
       // Trigger badge check untuk habit_count badges
-      await _badgeService.checkAllBadges(user.id);
-      
-      _showBadgeCheckSnackbar(context);
+      await _badgeService.checkAllBadges(userId);
       
     } catch (e, stack) {
       debugPrint('❌ Error triggering badge check: $e');
       debugPrint('Stack trace: $stack');
-      _showErrorSnackbar(context, 'Failed to check badges');
+    }
+  }
+
+  // Trigger badge check untuk morning completion
+  Future<void> onMorningCompletion(String userId) async {
+    try {
+      if (userId.isEmpty) return;
+
+      debugPrint('🌅 Morning completion detected, checking badges for user: $userId');
+      
+      await Future.delayed(const Duration(milliseconds: 500));
+      await _badgeService.checkAllBadges(userId);
+      
+    } catch (e, stack) {
+      debugPrint('❌ Error checking morning completion badges: $e');
+      debugPrint('Stack trace: $stack');
     }
   }
 
   // Trigger badge check ketika streak berubah
-  Future<void> onStreakChanged(BuildContext context) async {
+  Future<void> onStreakChanged(String userId) async {
     try {
-      final user = _supabase.auth.currentUser;
-      if (user == null) return;
+      if (userId.isEmpty) return;
 
-      debugPrint('🔥 Streak changed, checking badges...');
+      debugPrint('🔥 Streak changed, checking badges for user: $userId');
       
       // Tunggu sebentar
       await Future.delayed(const Duration(milliseconds: 500));
       
       // Trigger badge check untuk streak badges
-      await _badgeService.checkAllBadges(user.id);
-      
-      _showBadgeCheckSnackbar(context);
+      await _badgeService.checkAllBadges(userId);
       
     } catch (e, stack) {
-      debugPrint('❌ Error triggering badge check: $e');
+      debugPrint('❌ Error checking streak badges: $e');
       debugPrint('Stack trace: $stack');
-      _showErrorSnackbar(context, 'Failed to check badges');
+    }
+  }
+
+  // Trigger badge check ketika kategori ditambahkan
+  Future<void> onCategoryAdded(String userId) async {
+    try {
+      if (userId.isEmpty) return;
+
+      debugPrint('🏷️ Category added, checking badges for user: $userId');
+      
+      await Future.delayed(const Duration(milliseconds: 500));
+      await _badgeService.checkAllBadges(userId);
+      
+    } catch (e, stack) {
+      debugPrint('❌ Error checking category badges: $e');
+      debugPrint('Stack trace: $stack');
     }
   }
 
   // Trigger badge check secara manual
-  Future<void> manualTrigger(BuildContext context) async {
+  Future<void> manualTrigger(String userId) async {
     try {
-      final user = _supabase.auth.currentUser;
-      if (user == null) {
-        debugPrint('⚠️ No user logged in, cannot trigger badge check');
-        _showErrorSnackbar(context, 'Please login first');
+      if (userId.isEmpty) {
+        debugPrint('⚠️ No user ID provided, cannot trigger badge check');
         return;
       }
 
-      debugPrint('🔄 Manually triggering badge check...');
-      
-      // Tampilkan loading
-      _showLoadingSnackbar(context, 'Checking badges...');
+      debugPrint('🔄 Manually triggering badge check for user: $userId');
       
       // Jalankan badge check
-      await _badgeService.checkAllBadges(user.id);
+      await _badgeService.checkAllBadges(userId);
       
       // Tampilkan summary
-      final badges = await _badgeService.getUserBadges(user.id);
-      
-      // Update snackbar dengan hasil
-      _showSuccessSnackbar(context, 'Found ${badges.length} badges');
-      
+      final badges = await _badgeService.getUserBadges(userId);
       debugPrint('📊 User has ${badges.length} total badges');
       
     } catch (e, stack) {
       debugPrint('❌ Error in manual trigger: $e');
       debugPrint('Stack trace: $stack');
-      _showErrorSnackbar(context, 'Failed to check badges');
     }
   }
 
-  // Test sederhana untuk verifikasi sistem bekerja
-  Future<void> simpleTest(BuildContext context) async {
+  // Check apakah user sudah mendapatkan badge tertentu
+  Future<bool> hasBadge(String userId, int badgeId) async {
     try {
-      final user = _supabase.auth.currentUser;
-      if (user == null) {
-        debugPrint('⚠️ Please login first to test badges');
-        _showErrorSnackbar(context, 'Please login first');
-        return;
-      }
-
-      debugPrint('🧪 Running simple badge system test...');
-      
-      // Tampilkan loading
-      _showLoadingSnackbar(context, 'Testing badge system...');
-      
-      // 1. Show a test notification
-      await _badgeService.testNotificationsOnly();
-      
-      await Future.delayed(const Duration(seconds: 2));
-      
-      // 2. Check current badges
-      final badges = await _badgeService.getUserBadges(user.id);
-      debugPrint('🏆 Current badges: ${badges.length}');
-      
-      // 3. Run a badge check
-      await manualTrigger(context);
-      
-      debugPrint('✅ Simple test completed');
-      
-    } catch (e, stack) {
-      debugPrint('❌ Simple test failed: $e');
-      debugPrint('Stack trace: $stack');
-      _showErrorSnackbar(context, 'Test failed');
-    }
-  }
-
-  // Helper untuk menampilkan snackbar
-  void _showBadgeCheckSnackbar(BuildContext context) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            const Icon(Icons.emoji_events, color: Colors.white, size: 20),
-            const SizedBox(width: 8),
-            const Text('Checking for new badges...'),
-          ],
-        ),
-        backgroundColor: Colors.purple,
-        duration: const Duration(seconds: 2),
-      ),
-    );
-  }
-
-  void _showLoadingSnackbar(BuildContext context, String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            const SizedBox(
-              width: 20,
-              height: 20,
-              child: CircularProgressIndicator(
-                strokeWidth: 2,
-                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-              ),
-            ),
-            const SizedBox(width: 8),
-            Text(message),
-          ],
-        ),
-        backgroundColor: Colors.blue,
-        duration: const Duration(seconds: 3),
-      ),
-    );
-  }
-
-  void _showSuccessSnackbar(BuildContext context, String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            const Icon(Icons.check_circle, color: Colors.white, size: 20),
-            const SizedBox(width: 8),
-            Text(message),
-          ],
-        ),
-        backgroundColor: Colors.green,
-        duration: const Duration(seconds: 2),
-      ),
-    );
-  }
-
-  void _showErrorSnackbar(BuildContext context, String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            const Icon(Icons.error, color: Colors.white, size: 20),
-            const SizedBox(width: 8),
-            Text(message),
-          ],
-        ),
-        backgroundColor: Colors.red,
-        duration: const Duration(seconds: 2),
-      ),
-    );
-  }
-
-  // Check untuk milestone tertentu
-  Future<void> checkForMilestones(BuildContext context) async {
-    try {
-      final user = _supabase.auth.currentUser;
-      if (user == null) return;
-
-      debugPrint('🎯 Checking for milestones...');
-      
-      // Get user data
-      final profile = await _badgeService.getUserProfile(user.id);
-      if (profile == null) return;
-
-      final currentLevel = profile['level'] as int;
-      final currentXP = profile['current_xp'] as int;
-      final xpToNextLevel = profile['xp_to_next_level'] as int;
-
-      // Check for level up
-      if (currentXP >= xpToNextLevel) {
-        _showLevelUpSnackbar(context, currentLevel + 1);
-      }
-
-      // Check for streak milestones
-      final streak = await _calculateCurrentStreak(user.id);
-      if (streak >= 3 && streak % 3 == 0) {
-        _showStreakMilestoneSnackbar(context, streak);
-      }
-
-    } catch (e, stack) {
-      debugPrint('❌ Error checking milestones: $e');
-      debugPrint('Stack trace: $stack');
-    }
-  }
-
-  // Calculate current streak
-  Future<int> _calculateCurrentStreak(String userId) async {
-    try {
-      // Get user's active habits
-      final activeHabits = await _supabase
-          .from('habits')
-          .select('id')
-          .eq('user_id', userId)
-          .eq('is_active', true);
-
-      if (activeHabits.isEmpty) return 0;
-
-      int maxStreak = 0;
-      
-      // Calculate streak for each habit and take the maximum
-      for (final habit in activeHabits) {
-        final habitId = habit['id'] as int;
-        
-        // Get completed logs ordered by date descending
-        final completedLogs = await _supabase
-            .from('daily_logs')
-            .select('log_date')
-            .eq('habit_id', habitId)
-            .eq('status', 'success')
-            .order('log_date', ascending: false);
-
-        if (completedLogs.isEmpty) continue;
-
-        int streak = 0;
-        DateTime currentDate = DateTime.now().toUtc();
-        
-        for (final log in completedLogs) {
-          final logDate = DateTime.parse(log['log_date'] as String).toUtc();
-          final difference = currentDate.difference(logDate).inDays;
-          
-          if (difference == streak) {
-            streak++;
-          } else {
-            break;
-          }
-        }
-        
-        if (streak > maxStreak) {
-          maxStreak = streak;
-        }
-      }
-      
-      return maxStreak;
+      final badges = await _badgeService.getUserBadges(userId);
+      return badges.any((badge) => badge['badge_id'] == badgeId);
     } catch (e) {
-      debugPrint('❌ Error calculating current streak: $e');
+      debugPrint('❌ Error checking if user has badge: $e');
+      return false;
+    }
+  }
+
+  // Get progress menuju badge tertentu - METODE ALTERNATIF
+  Future<Map<String, dynamic>> getBadgeProgress(String userId, int badgeId) async {
+    try {
+      // Ambil detail badge
+      final badgeDetails = await _supabase
+          .from('badges')
+          .select('*')
+          .eq('id', badgeId)
+          .single();
+
+      final triggerType = badgeDetails['trigger_type'] as String;
+      final triggerValue = int.parse(badgeDetails['trigger_value'].toString());
+      
+      int currentProgress = 0;
+
+      // Hitung progress berdasarkan trigger type
+      switch (triggerType) {
+        case 'STREAK':
+        case 'streak':
+          // Hitung streak dari habit terpanjang
+          final activeHabits = await _supabase
+              .from('habits')
+              .select('id')
+              .eq('user_id', userId)
+              .eq('is_active', true);
+          
+          int maxStreak = 0;
+          for (final habit in activeHabits) {
+            final streak = await _calculateHabitStreak(habit['id'] as int);
+            if (streak > maxStreak) maxStreak = streak;
+          }
+          currentProgress = maxStreak;
+          break;
+          
+        case 'TOTAL':
+        case 'habit_count':
+          final habitCount = await _supabase
+              .from('habits')
+              .select('id')
+              .eq('user_id', userId)
+              .eq('is_active', true);
+          currentProgress = habitCount.length;
+          break;
+          
+        case 'first_habit_completion':
+          final completedHabits = await _supabase
+              .from('daily_logs')
+              .select('id')
+              .eq('status', 'success')
+              .limit(1);
+          currentProgress = completedHabits.isNotEmpty ? 1 : 0;
+          break;
+          
+        case 'morning_completion':
+          final completions = await _supabase
+              .from('daily_logs')
+              .select('created_at')
+              .eq('status', 'success');
+          int morningCount = 0;
+          for (final completion in completions) {
+            final createdAt = DateTime.parse(completion['created_at'] as String);
+            if (createdAt.hour < 8) morningCount++;
+          }
+          currentProgress = morningCount;
+          break;
+          
+        case 'category_variety':
+          final categories = await _supabase
+              .from('habits')
+              .select('category_id')
+              .eq('user_id', userId)
+              .eq('is_active', true);
+          final uniqueCategories = categories
+              .where((c) => c['category_id'] != null)
+              .map((c) => c['category_id'])
+              .toSet();
+          currentProgress = uniqueCategories.length;
+          break;
+          
+        default:
+          currentProgress = 0;
+      }
+
+      final percentage = triggerValue > 0 
+          ? (currentProgress / triggerValue * 100).toInt() 
+          : 0;
+
+      return {
+        'badge': badgeDetails,
+        'progress': {'current': currentProgress, 'target': triggerValue},
+        'percentage': percentage,
+      };
+    } catch (e, stack) {
+      debugPrint('❌ Error getting badge progress: $e');
+      debugPrint('Stack trace: $stack');
+      return {
+        'badge': null, 
+        'progress': {'current': 0, 'target': 1}, 
+        'percentage': 0
+      };
+    }
+  }
+
+  // Helper method untuk menghitung streak habit
+  Future<int> _calculateHabitStreak(int habitId) async {
+    try {
+      final completedLogs = await _supabase
+          .from('daily_logs')
+          .select('log_date')
+          .eq('habit_id', habitId)
+          .eq('status', 'success')
+          .order('log_date', ascending: false);
+
+      if (completedLogs.isEmpty) return 0;
+
+      int streak = 0;
+      DateTime currentDate = DateTime.now().toUtc();
+      
+      for (final log in completedLogs) {
+        final logDate = DateTime.parse(log['log_date'] as String).toUtc();
+        final difference = currentDate.difference(logDate).inDays;
+        
+        if (difference == streak) {
+          streak++;
+        } else {
+          break;
+        }
+      }
+      
+      return streak;
+    } catch (e) {
+      debugPrint('Error calculating habit streak: $e');
       return 0;
     }
   }
 
-  void _showLevelUpSnackbar(BuildContext context, int newLevel) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            const Icon(Icons.auto_awesome, color: Colors.yellow, size: 24),
-            const SizedBox(width: 8),
-            Text(
-              '🎉 Level Up! You reached Level $newLevel',
-              style: const TextStyle(fontWeight: FontWeight.bold),
-            ),
-          ],
-        ),
-        backgroundColor: Colors.deepPurple,
-        duration: const Duration(seconds: 3),
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
+  // Reset semua badge user (dibuat method baru di BadgeService)
+  Future<void> resetUserBadges(String userId) async {
+    try {
+      await _resetUserBadgesInSupabase(userId);
+      debugPrint('🔄 Reset all badges for user: $userId');
+    } catch (e, stack) {
+      debugPrint('❌ Error resetting badges: $e');
+      debugPrint('Stack trace: $stack');
+    }
   }
 
-  void _showStreakMilestoneSnackbar(BuildContext context, int streak) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            const Icon(Icons.local_fire_department, color: Colors.orange, size: 24),
-            const SizedBox(width: 8),
-            Text(
-              '🔥 $streak Day Streak! Keep going!',
-              style: const TextStyle(fontWeight: FontWeight.bold),
-            ),
-          ],
-        ),
-        backgroundColor: Colors.deepOrange,
-        duration: const Duration(seconds: 3),
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
-  }
+  // Helper method untuk reset badges
+  Future<void> _resetUserBadgesInSupabase(String userId) async {
+    try {
+      final profileResponse = await _supabase
+          .from('profiles')
+          .select('id')
+          .eq('user_id', userId)
+          .single();
+      
+      final profileId = profileResponse['id'] as int;
 
-  // Cleanup resources jika diperlukan
-  void dispose() {
-    debugPrint('♻️ BadgeTriggerService disposed');
+      await _supabase
+          .from('user_badges')
+          .delete()
+          .eq('profile_id', profileId);
+
+      debugPrint('✅ User badges reset for profile $profileId');
+    } catch (e, stack) {
+      debugPrint('❌ Error resetting user badges in Supabase: $e');
+      debugPrint('Stack trace: $stack');
+    }
   }
 }
