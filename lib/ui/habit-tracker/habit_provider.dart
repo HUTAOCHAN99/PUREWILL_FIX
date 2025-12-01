@@ -6,6 +6,7 @@ import 'package:purewill/data/repository/habit_repository.dart';
 import 'package:purewill/data/repository/reminder_setting_repository.dart';
 import 'package:purewill/data/repository/target_unit_repository.dart';
 import 'package:purewill/data/repository/user_repository.dart';
+import 'package:purewill/data/services/performance_service.dart';
 import 'package:purewill/ui/habit-tracker/view_model/habit_view_model.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -79,3 +80,7 @@ final habitNotifierProvider =
       );
     });
 
+final performanceServiceProvider = Provider<PerformanceService>((ref) {
+  final habitRepository = ref.read(habitRepositoryProvider);
+  return PerformanceService(habitRepository);
+});

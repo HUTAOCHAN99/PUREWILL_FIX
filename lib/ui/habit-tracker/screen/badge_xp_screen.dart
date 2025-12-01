@@ -1,488 +1,211 @@
-// lib\ui\habit-tracker\screen\badge_xp_screen.dart
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Badge; // Hide Flutter's Badge
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:purewill/domain/model/badge_model.dart' as models; // Use alias
+import 'package:purewill/ui/badge/providers/badge_provider.dart';
+import 'package:purewill/ui/badge/ui/components/badge_card.dart';
+import 'package:purewill/ui/badge/ui/components/level_progress.dart';
+import 'package:purewill/ui/badge/ui/components/streak_alert.dart';
+import 'package:purewill/ui/badge/ui/components/xp_progress.dart';
 
-class BadgeXpScreen extends ConsumerStatefulWidget {
+class BadgeXpScreen extends ConsumerWidget {
   const BadgeXpScreen({super.key});
 
   @override
-  ConsumerState<BadgeXpScreen> createState() => _BadgeXpScreenState();
-}
+  Widget build(BuildContext context, WidgetRef ref) {
+    final badgesAsync = ref.watch(badgesProvider);
 
-class _BadgeXpScreenState extends ConsumerState<BadgeXpScreen> {
-  @override
-  Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: AppBar(
-        title: const Text(
-          'Badge & XP',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            color: Colors.black,
-          ),
-        ),
-        backgroundColor: Colors.white,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black),
-          onPressed: () => Navigator.pop(context),
+      appBar: _buildAppBar(context),
+      body: badgesAsync.when(
+        loading: () => const _LoadingState(),
+        error: (error, stack) => _ErrorState(error: error, ref: ref),
+        data: (badges) => _ContentState(badges: badges),
+      ),
+    );
+  }
+
+  AppBar _buildAppBar(BuildContext context) {
+    return AppBar(
+      title: const Text(
+        'Badge & XP',
+        style: TextStyle(
+          fontWeight: FontWeight.bold,
+          color: Colors.black,
         ),
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
+      backgroundColor: Colors.white,
+      elevation: 0,
+      leading: IconButton(
+        icon: const Icon(Icons.arrow_back, color: Colors.black),
+        onPressed: () => Navigator.pop(context),
+      ),
+    );
+  }
+}
+
+class _LoadingState extends StatelessWidget {
+  const _LoadingState();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Center(
+      child: CircularProgressIndicator(
+        valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF7C3AED)),
+      ),
+    );
+  }
+}
+
+class _ErrorState extends StatelessWidget {
+  final Object error;
+  final WidgetRef ref;
+
+  const _ErrorState({required this.error, required this.ref});
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(20.0),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // 9 days streak alert
-            _buildStreakAlert(),
-            const SizedBox(height: 24),
-
-            // Level progress section
-            _buildLevelProgress(),
-            const SizedBox(height: 24),
-
-            // XP progress for next level
-            _buildXpProgress(),
-            const SizedBox(height: 24),
-
-            // Badge Collection
-            _buildBadgeCollection(),
-            const SizedBox(height: 24),
-
-            // Locked Badges
-            _buildLockedBadges(),
+            const Icon(
+              Icons.error_outline,
+              color: Colors.red,
+              size: 64,
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'Failed to load badges',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Colors.black,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              error.toString(),
+              style: const TextStyle(
+                fontSize: 14,
+                color: Colors.grey,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: () => ref.refresh(badgesProvider),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF7C3AED),
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('Retry'),
+            ),
           ],
         ),
       ),
     );
   }
+}
 
-  Widget _buildStreakAlert() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0xFFFF6B6B), Color(0xFFFF8E8E)],
-        ),
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.red.withOpacity(0.3),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
+class _ContentState extends StatelessWidget {
+  final List<models.Badge> badges;
+
+  const _ContentState({required this.badges});
+
+  @override
+  Widget build(BuildContext context) {
+    final unlockedBadges = badges.where((b) => b.isUnlocked).toList();
+    final lockedBadges = badges.where((b) => !b.isUnlocked).toList();
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: const Text(
-                  '9 days streak',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          const Text(
-            'Almost 10 days: #break!',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
+          const StreakAlert(),
+          const SizedBox(height: 24),
+          const LevelProgress(),
+          const SizedBox(height: 24),
+          const XpProgress(),
+          const SizedBox(height: 24),
+          if (unlockedBadges.isNotEmpty) ...[
+            _BadgeSection(
+              title: 'Earned Badges',
+              subtitle: '${unlockedBadges.length} Badges Earned',
+              badges: unlockedBadges,
+              isUnlocked: true,
             ),
-          ),
-          const SizedBox(height: 4),
-          const Text(
-            'Start your streak, just 1 day away from the next achievement.',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 14,
+            const SizedBox(height: 24),
+          ],
+          if (lockedBadges.isNotEmpty) ...[
+            _BadgeSection(
+              title: 'Locked Badges',
+              subtitle: '${lockedBadges.length} Badges to Earn',
+              badges: lockedBadges,
+              isUnlocked: false,
             ),
-          ),
+            const SizedBox(height: 24),
+          ],
         ],
       ),
     );
   }
+}
 
-  Widget _buildLevelProgress() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.grey[50],
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey[200]!),
-      ),
-      child: Column(
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Level 12',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.grey,
-                    ),
-                  ),
-                  SizedBox(height: 4),
-                  Text(
-                    'William Werner',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black,
-                    ),
-                  ),
-                  SizedBox(height: 4),
-                  Text(
-                    'Progress to Level 13',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey,
-                    ),
-                  ),
-                ],
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF7C3AED),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: const Text(
-                  'Lvl 2',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          LinearProgressIndicator(
-            value: 0.75,
-            backgroundColor: Colors.grey[300],
-            valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF7C3AED)),
-            minHeight: 8,
-            borderRadius: BorderRadius.circular(4),
-          ),
-          const SizedBox(height: 8),
-          const Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                '12.5 XP',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.grey,
-                ),
-              ),
-              Text(
-                '16.7 XP',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.grey,
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
+class _BadgeSection extends StatelessWidget {
+  final String title;
+  final String subtitle;
+  final List<models.Badge> badges;
+  final bool isUnlocked;
 
-  Widget _buildXpProgress() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.grey[50],
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey[200]!),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            '12.5 XP needed for next level',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-              color: Colors.black,
-            ),
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              _buildXpStat('10.0%', 'Daily', Colors.green),
-              const SizedBox(width: 16),
-              _buildXpStat('90.0%', 'Weekly', Colors.blue),
-              const SizedBox(width: 16),
-              _buildXpStat('91.0%', 'Monthly', Colors.orange),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
+  const _BadgeSection({
+    required this.title,
+    required this.subtitle,
+    required this.badges,
+    required this.isUnlocked,
+  });
 
-  Widget _buildXpStat(String percentage, String label, Color color) {
-    return Expanded(
-      child: Column(
-        children: [
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
-              shape: BoxShape.circle,
-              border: Border.all(color: color.withOpacity(0.3)),
-            ),
-            child: Center(
-              child: Text(
-                percentage,
-                style: TextStyle(
-                  fontSize: 10,
-                  fontWeight: FontWeight.bold,
-                  color: color,
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            label,
-            style: const TextStyle(
-              fontSize: 12,
-              color: Colors.grey,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildBadgeCollection() {
+  @override
+  Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Badge Collection',
-          style: TextStyle(
+        Text(
+          title,
+          style: const TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.bold,
             color: Colors.black,
           ),
         ),
         const SizedBox(height: 8),
-        const Text(
-          'Earned Badges',
-          style: TextStyle(
+        Text(
+          subtitle,
+          style: const TextStyle(
             fontSize: 14,
             color: Colors.grey,
           ),
         ),
         const SizedBox(height: 16),
-        GridView.count(
+        GridView.builder(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
-          crossAxisCount: 2,
-          crossAxisSpacing: 12,
-          mainAxisSpacing: 12,
-          childAspectRatio: 1.5,
-          children: [
-            _buildBadgeCard(
-              'Consistency Hero',
-              'Finish 7 days streak',
-              Icons.emoji_events,
-              Colors.amber,
-            ),
-            _buildBadgeCard(
-              'Early Bird Champion',
-              'Complete morning routine',
-              Icons.brightness_5,
-              Colors.orange,
-            ),
-            _buildBadgeCard(
-              'Fitness Buddy',
-              'First workout completed',
-              Icons.fitness_center,
-              Colors.green,
-            ),
-            _buildBadgeCard(
-              'Study Master',
-              'Finish study session',
-              Icons.school,
-              Colors.blue,
-            ),
-          ],
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 2,
+            crossAxisSpacing: 12,
+            mainAxisSpacing: 12,
+            childAspectRatio: 1.5,
+          ),
+          itemCount: badges.length,
+          itemBuilder: (context, index) => BadgeCard(
+            badge: badges[index],
+            isUnlocked: isUnlocked,
+          ),
         ),
       ],
-    );
-  }
-
-  Widget _buildLockedBadges() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Locked Badges',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: Colors.black,
-          ),
-        ),
-        const SizedBox(height: 16),
-        GridView.count(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          crossAxisCount: 2,
-          crossAxisSpacing: 12,
-          mainAxisSpacing: 12,
-          childAspectRatio: 1.5,
-          children: [
-            _buildLockedBadgeCard(
-              '30 Day Master',
-              '30 days streak',
-              '3 days left',
-              Icons.lock_clock,
-            ),
-            _buildLockedBadgeCard(
-              'Perfect Performance',
-              'Ready to get it',
-              '3 levels left',
-              Icons.star_border,
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-
-  Widget _buildBadgeCard(String title, String subtitle, IconData icon, Color color) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withOpacity(0.3)),
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(icon, color: color, size: 32),
-          const SizedBox(height: 8),
-          Text(
-            title,
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.bold,
-              color: color,
-            ),
-            textAlign: TextAlign.center,
-            maxLines: 2,
-          ),
-          const SizedBox(height: 4),
-          Text(
-            subtitle,
-            style: const TextStyle(
-              fontSize: 10,
-              color: Colors.grey,
-            ),
-            textAlign: TextAlign.center,
-            maxLines: 2,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildLockedBadgeCard(String title, String subtitle, String progress, IconData icon) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.grey[100],
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey[300]!),
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Stack(
-            alignment: Alignment.center,
-            children: [
-              Icon(icon, color: Colors.grey, size: 32),
-              Container(
-                width: 32,
-                height: 32,
-                decoration: BoxDecoration(
-                  color: Colors.black.withOpacity(0.3),
-                  borderRadius: BorderRadius.circular(16),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Text(
-            title,
-            style: const TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.bold,
-              color: Colors.grey,
-            ),
-            textAlign: TextAlign.center,
-            maxLines: 2,
-          ),
-          const SizedBox(height: 4),
-          Text(
-            subtitle,
-            style: const TextStyle(
-              fontSize: 10,
-              color: Colors.grey,
-            ),
-            textAlign: TextAlign.center,
-            maxLines: 2,
-          ),
-          const SizedBox(height: 4),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-            decoration: BoxDecoration(
-              color: Colors.grey[200],
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Text(
-              progress,
-              style: const TextStyle(
-                fontSize: 9,
-                color: Colors.grey,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-        ],
-      ),
     );
   }
 }

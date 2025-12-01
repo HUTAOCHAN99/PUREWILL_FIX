@@ -1,21 +1,20 @@
 // lib\ui\habit-tracker\widget\habit_detail\performance_chart_widget.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:purewill/ui/auth/view_model/performance_service_provider.dart';
+import 'package:purewill/ui/habit-tracker/habit_provider.dart';
 
 class PerformanceChartWidget extends ConsumerStatefulWidget {
   final int habitId;
 
-  const PerformanceChartWidget({
-    super.key,
-    required this.habitId,
-  });
+  const PerformanceChartWidget({super.key, required this.habitId});
 
   @override
-  ConsumerState<PerformanceChartWidget> createState() => _PerformanceChartWidgetState();
+  ConsumerState<PerformanceChartWidget> createState() =>
+      _PerformanceChartWidgetState();
 }
 
-class _PerformanceChartWidgetState extends ConsumerState<PerformanceChartWidget> {
+class _PerformanceChartWidgetState
+    extends ConsumerState<PerformanceChartWidget> {
   List<double> weeklyPerformance = List.filled(7, 0.0);
   bool isLoading = true;
 
@@ -28,15 +27,17 @@ class _PerformanceChartWidgetState extends ConsumerState<PerformanceChartWidget>
   Future<void> _loadPerformanceData() async {
     try {
       final performanceService = ref.read(performanceServiceProvider);
-      
-      final data = await performanceService.getWeeklyPerformance(widget.habitId);
-      
+
+      final data = await performanceService.getWeeklyPerformance(
+        widget.habitId,
+      );
+
       setState(() {
         weeklyPerformance = data;
         isLoading = false;
       });
     } catch (e) {
-      print('Error loading performance data: $e');
+      debugPrint('Error loading performance data: $e');
       setState(() {
         isLoading = false;
       });
@@ -46,10 +47,10 @@ class _PerformanceChartWidgetState extends ConsumerState<PerformanceChartWidget>
   @override
   Widget build(BuildContext context) {
     final days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-    final maxPerformance = weeklyPerformance.isNotEmpty 
+    final maxPerformance = weeklyPerformance.isNotEmpty
         ? weeklyPerformance.reduce((a, b) => a > b ? a : b)
         : 0.0;
-    
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -76,7 +77,7 @@ class _PerformanceChartWidgetState extends ConsumerState<PerformanceChartWidget>
             ),
           ),
           const SizedBox(height: 16),
-          
+
           if (isLoading)
             const SizedBox(
               height: 120,
@@ -84,21 +85,21 @@ class _PerformanceChartWidgetState extends ConsumerState<PerformanceChartWidget>
             )
           else
             SizedBox(
-              height: 120,
+              height: 140, // TINGGI DITAMBAH
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: List.generate(7, (index) {
                   final percentage = weeklyPerformance[index] / 100;
                   return _buildBarChartItem(
-                    days[index], 
-                    percentage, 
-                    maxPerformance
+                    days[index],
+                    percentage,
+                    maxPerformance,
                   );
                 }),
               ),
             ),
-          
+
           const SizedBox(height: 16),
           const Divider(),
           const SizedBox(height: 8),
@@ -108,9 +109,13 @@ class _PerformanceChartWidgetState extends ConsumerState<PerformanceChartWidget>
     );
   }
 
-  Widget _buildBarChartItem(String day, double percentage, double maxPerformance) {
+  Widget _buildBarChartItem(
+    String day,
+    double percentage,
+    double maxPerformance,
+  ) {
     final height = percentage * 80;
-    
+
     return Column(
       mainAxisAlignment: MainAxisAlignment.end,
       children: [
@@ -128,10 +133,7 @@ class _PerformanceChartWidgetState extends ConsumerState<PerformanceChartWidget>
         const SizedBox(height: 8),
         Text(
           '${(percentage * 100).toInt()}%',
-          style: TextStyle(
-            fontSize: 10,
-            color: Colors.grey[600],
-          ),
+          style: TextStyle(fontSize: 10, color: Colors.grey[600]),
         ),
         const SizedBox(height: 4),
         Text(
@@ -147,35 +149,32 @@ class _PerformanceChartWidgetState extends ConsumerState<PerformanceChartWidget>
   }
 
   Widget _buildPerformanceLegend() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceAround,
+    return Wrap(
+      spacing: 6,
+      runSpacing: 2,
+      alignment: WrapAlignment.spaceAround,
       children: [
         _buildLegendItem(const Color(0xFF4CAF50), "Excellent (80-100%)"),
-        _buildLegendItem(const Color(0xFFFFC107), "Good (60-79%)"),
-        _buildLegendItem(const Color(0xFFF44336), "Needs Improvement (<60%)"),
+      _buildLegendItem(const Color(0xFFFFC107), "Good (60-79%)"),
+      _buildLegendItem(const Color(0xFFF44336), "Needs Improvement (<60%)"),
       ],
     );
   }
 
   Widget _buildLegendItem(Color color, String text) {
     return Row(
+      mainAxisSize: MainAxisSize.min,
       children: [
         Container(
-          width: 12,
-          height: 12,
+          width: 10,
+          height: 10,
           decoration: BoxDecoration(
             color: color,
-            borderRadius: BorderRadius.circular(2),
+            borderRadius: BorderRadius.circular(1),
           ),
         ),
-        const SizedBox(width: 4),
-        Text(
-          text,
-          style: const TextStyle(
-            fontSize: 10,
-            color: Colors.grey,
-          ),
-        ),
+        const SizedBox(width: 2),
+        Text(text, style: const TextStyle(fontSize: 8, color: Colors.grey,fontWeight: FontWeight.bold,)),
       ],
     );
   }

@@ -4,7 +4,7 @@ import 'package:purewill/domain/model/daily_log_model.dart';
 import 'package:purewill/domain/model/habit_model.dart';
 import 'package:purewill/ui/habit-tracker/habit_provider.dart';
 import 'package:purewill/ui/habit-tracker/screen/edit_habit_screen.dart';
-import 'package:purewill/ui/habit-tracker/screen/reminder_setting_screen.dart'; // IMPORT INI
+import 'package:purewill/ui/habit-tracker/screen/reminder_setting_screen.dart';
 import 'package:purewill/ui/habit-tracker/widget/habit_detail/calendar_tracker_widget.dart';
 import 'package:purewill/ui/habit-tracker/widget/habit_detail/habit_actions_dropdown.dart';
 import 'package:purewill/ui/habit-tracker/widget/habit_detail/motivational_quote_widget.dart';
@@ -31,7 +31,6 @@ class _HabitDetailScreenState extends ConsumerState<HabitDetailScreen> {
   int? _completedDays;
 
   List<bool>? _weeklyStreak;
-  List<double>? _weeklyPerformance;
   List<DateTime>? _completionDates; 
   
   @override
@@ -73,17 +72,14 @@ class _HabitDetailScreenState extends ConsumerState<HabitDetailScreen> {
         return !logDateOnly.isBefore(startDateWeek) && 
                !logDateOnly.isAfter(endDateWeek);
       }).toList();
+      
       final completedDays = logsForThisWeek
-    .where((log) => log.status == LogStatus.success)
-    .length;
+        .where((log) => log.status == LogStatus.success)
+        .length;
 
       // Hitung weeklyStreak dari log minggu ini
       final List<bool> localWeeklyStreak = logsForThisWeek.map((dailyLog) {
         return dailyLog.status == LogStatus.success;
-      }).toList();
-
-      final List<double> localWeeklyPerformance = localWeeklyStreak.map((isLogComplete) {
-        return isLogComplete ? 100.0 : 0.0;
       }).toList();
 
       final List<DateTime> localCompletionDates = habitLogForThisMonth.map((dailyLog) {
@@ -91,13 +87,11 @@ class _HabitDetailScreenState extends ConsumerState<HabitDetailScreen> {
       }).toList();
 
       print(localWeeklyStreak);
-      print(localWeeklyPerformance);
       print(localCompletionDates);
 
       if (mounted) {
         setState(() {
           _weeklyStreak = localWeeklyStreak;
-          _weeklyPerformance = localWeeklyPerformance;
           _completionDates = localCompletionDates;
           _completedDays = completedDays;
         });
@@ -105,7 +99,6 @@ class _HabitDetailScreenState extends ConsumerState<HabitDetailScreen> {
 
     } catch (e) {
       print('Error loading completion status: $e');
-      // Anda bisa menambahkan 'if (mounted)' di sini juga jika menampilkan error
     }
   }
 
@@ -115,8 +108,7 @@ class _HabitDetailScreenState extends ConsumerState<HabitDetailScreen> {
     final iconColor = HabitIconHelper.getHabitColor(widget.habit.name);
     final category = HabitIconHelper.getHabitCategory(widget.habit.name);
 
-    if (_weeklyPerformance == null || _weeklyStreak == null || _completionDates == null || _completedDays == null) {
-      // JIKA BELUM SIAP: Tampilkan layar loading sederhana
+    if (_weeklyStreak == null || _completionDates == null || _completedDays == null) {
       return const Scaffold(
         body: Center(
           child: CircularProgressIndicator(),
@@ -151,12 +143,11 @@ class _HabitDetailScreenState extends ConsumerState<HabitDetailScreen> {
               ),
             ),
             centerTitle: true,
-            // PERBAIKAN: Tambahkan parameter habit yang diperlukan
             actions: [
               HabitActionsDropdown(
                 onActionSelected: _handleMenuAction,
                 habitName: widget.habit.name,
-                habit: widget.habit, // TAMBAHAN: parameter yang wajib
+                habit: widget.habit,
               ),
             ],
           ),
@@ -171,29 +162,25 @@ class _HabitDetailScreenState extends ConsumerState<HabitDetailScreen> {
                     isCompleted: _isCompleted,
                     habitColor: iconColor,
                     habitName: widget.habit.name,
-                    completedDays: _completedDays!, // Ini akan 0 jika kosong (sudah benar)
-                    
-                    // JIKA totalDays 0, tampilkan 7 sebagai default minggu
+                    completedDays: _completedDays!,
                     totalDays: 7,
                   ),
                   const SizedBox(height: 24),
 
                   WeeklyStreakWidget(
-                    // JIKA list-nya kosong, buat list baru 
-                    // berisi 7 buah 'false'
                     weeklyStreak: _weeklyStreak!.isEmpty
                         ? List.generate(7, (_) => false)
                         : _weeklyStreak!,
                   ),
                   const SizedBox(height: 24),
 
-                 
+                  // PERUBAHAN PENTING: HANYA habitId
+                  PerformanceChartWidget(
+                    habitId: widget.habit.id,
+                  ),
                   const SizedBox(height: 24),
 
                   CalendarTrackerWidget(
-                    // Widget ini sudah benar. Mengirim '[]' 
-                    // akan menampilkan kalender kosong,
-                    // dan itulah yang Anda inginkan.
                     completionDates: _completionDates!,
                   ),
                   const SizedBox(height: 16),
@@ -209,20 +196,19 @@ class _HabitDetailScreenState extends ConsumerState<HabitDetailScreen> {
     );
   }
 
-  // PERBAIKAN: Handler untuk dropdown menu actions dengan parameter habit
+  // ... method lainnya tetap sama
   void _handleMenuAction(String value) {
     HabitActionsDropdown.handleMenuAction(
       value: value,
       context: context,
       habitName: widget.habit.name,
-      habit: widget.habit, // TAMBAHAN: parameter yang wajib
+      habit: widget.habit,
       onEdit: _editHabit,
-      onReminder: _setReminder, // PERUBAHAN: Gunakan custom handler yang benar
+      onReminder: _setReminder,
       onDelete: _deleteHabit,
     );
   }
 
-  // PERBAIKAN: Edit habit dengan navigasi ke EditHabitScreen
   void _editHabit() {
     Navigator.push(
       context,
@@ -232,7 +218,6 @@ class _HabitDetailScreenState extends ConsumerState<HabitDetailScreen> {
     );
   }
 
-  // PERBAIKAN: Ganti dengan navigasi ke ReminderSettingScreen
   void _setReminder() {
     Navigator.push(
       context,
@@ -243,23 +228,19 @@ class _HabitDetailScreenState extends ConsumerState<HabitDetailScreen> {
   }
 
   void _deleteHabit() {
-    // Custom delete logic bisa ditambahkan di sini
     HabitActionsDropdown.showDeleteConfirmationDialog(
       context: context,
       habitName: widget.habit.name,
       onConfirm: () {
-        // Panggil method delete dari view model
         _performDeleteHabit();
       },
     );
   }
 
-  // PERBAIKAN: Method untuk menghapus habit
   Future<void> _performDeleteHabit() async {
     try {
       final viewModel = ref.read(habitNotifierProvider.notifier);
       
-      // Jika habit adalah default habit, tidak perlu hapus dari database
       if (widget.habit.isDefault) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('"${widget.habit.name}" adalah habit default dan tidak dapat dihapus')),
@@ -267,14 +248,12 @@ class _HabitDetailScreenState extends ConsumerState<HabitDetailScreen> {
         return;
       }
       
-      // Hapus habit dari database
       await viewModel.deleteHabit(habitId: widget.habit.id);
       
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('"${widget.habit.name}" berhasil dihapus')),
       );
       
-      // Kembali ke screen sebelumnya
       if (mounted) {
         Navigator.pop(context);
       }

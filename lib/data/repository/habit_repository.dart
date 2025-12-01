@@ -288,10 +288,4 @@ class HabitRepository {
       return [];
     }
   }
-  
-
-  final performanceServiceProvider = Provider<PerformanceService>((ref) {
-    final habitRepository = ref.read(habitRepositoryProvider);
-    return PerformanceService(habitRepository);
-  });
 }
