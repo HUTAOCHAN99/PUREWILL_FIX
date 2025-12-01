@@ -225,7 +225,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           await badgeService.checkAllBadges(user.id);
           
           // Tampilkan konfirmasi
-          _showSnackBar('Habit completed! Checking for achievements...');
+          _showSnackBar('Habit completed!');
         }
       }
 
