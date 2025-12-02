@@ -1,5 +1,7 @@
+// lib\data\repository\plan_repository.dart
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:purewill/domain/model/plan_model.dart';
+import 'package:purewill/domain/model/profile_model.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 final planRepositoryProvider = Provider<PlanRepository>((ref) {
@@ -44,26 +46,115 @@ class PlanRepository {
     }
   }
 
-  Future<PlanModel?> getCurrentUserPlan() async {
+  // Metode baru: Cek apakah user premium
+  Future<bool> isUserPremium(String userId) async {
+    try {
+      print('🔍 Checking premium status for user: $userId');
+
+      // Query langsung dari profiles
+      final response = await supabase
+          .from('profiles')
+          .select('is_premium_user, current_plan_id')
+          .eq('user_id', userId)
+          .single();
+
+      final isPremium = response['is_premium_user'] ?? false;
+      final planId = response['current_plan_id'];
+
+      print(
+        '📊 Premium check - is_premium_user: $isPremium, current_plan_id: $planId',
+      );
+
+      return isPremium;
+    } catch (e) {
+      print('❌ Error checking premium status: $e');
+      return false;
+    }
+  }
+
+  // Metode baru: Get user profile dengan status premium
+  Future<ProfileModel?> getUserProfileWithPremiumStatus() async {
     try {
       final user = supabase.auth.currentUser;
       if (user == null) return null;
 
+      // Join profiles dengan user_subscriptions
+      final response = await supabase
+          .from('profiles')
+          .select('*, user_subscriptions!inner(*)')
+          .eq('user_id', user.id)
+          .eq('user_subscriptions.status', 'active')
+          .maybeSingle();
+
+      if (response == null) {
+        // Cek hanya profile jika tidak ada subscription
+        final profileResponse = await supabase
+            .from('profiles')
+            .select()
+            .eq('user_id', user.id)
+            .single();
+
+        return ProfileModel.fromJson(profileResponse);
+      }
+
+      return ProfileModel.fromJson(response);
+    } catch (e) {
+      print('Error getting user profile with premium: $e');
+      return null;
+    }
+  }
+
+  Future<PlanModel?> getCurrentUserPlan() async {
+    try {
+      final user = supabase.auth.currentUser;
+      if (user == null) {
+        print('❌ No user logged in');
+        return null;
+      }
+
+      print('🔍 Getting current plan for user: ${user.id}');
+
+      // Query 1: Coba dengan join langsung
       final response = await supabase
           .from('user_subscriptions')
-          .select('plan_id, plans(*)')
+          .select('''
+          *,
+          plans!inner(*)
+        ''')
           .eq('user_id', user.id)
           .eq('status', 'active')
           .maybeSingle();
 
-      if (response == null) return null;
-      
-      final planData = response['plans'];
-      if (planData == null) return null;
-      
-      return PlanModel.fromJson(planData);
+      print('📊 Query 1 result: $response');
+
+      if (response != null && response['plans'] != null) {
+        final planData = response['plans'] as Map<String, dynamic>;
+        print('✅ Found plan: ${planData['name']}');
+        return PlanModel.fromJson(planData);
+      }
+
+      // Query 2: Coba dengan profiles.current_plan_id
+      print('🔄 Trying fallback query...');
+      final profileResponse = await supabase
+          .from('profiles')
+          .select('current_plan_id')
+          .eq('user_id', user.id)
+          .single();
+
+      final planId = profileResponse['current_plan_id'];
+      print('📊 Profile current_plan_id: $planId');
+
+      if (planId != null) {
+        final plan = await getPlanById(planId as int);
+        print('✅ Found plan via profile: ${plan?.name}');
+        return plan;
+      }
+
+      print('⚠️ No active plan found');
+      return null;
     } catch (e) {
-      print('Error getting user plan: $e');
+      print('❌ Error in getCurrentUserPlan: $e');
+      print('Stack trace: ${e.toString()}');
       return null;
     }
   }
@@ -72,6 +163,12 @@ class PlanRepository {
     try {
       final user = supabase.auth.currentUser;
       if (user == null) throw Exception('User not logged in');
+
+      // Dapatkan data plan
+      final plan = await getPlanById(planId);
+      if (plan == null) throw Exception('Plan not found');
+
+      final isPremium = plan.type != 'free';
 
       // Check if user already has active subscription
       final existingSub = await supabase
@@ -97,18 +194,24 @@ class PlanRepository {
           'plan_id': planId,
           'status': 'active',
           'start_date': DateTime.now().toIso8601String(),
-          'end_date': null, // null untuk lifetime subscription
+          'end_date': plan.type == 'yearly'
+              ? DateTime.now().add(Duration(days: 365)).toIso8601String()
+              : DateTime.now().add(Duration(days: 30)).toIso8601String(),
         });
       }
 
-      // Update user profile
+      // Update user profile dengan status premium
       await supabase
           .from('profiles')
           .update({
-            'current_plan_id': planId,
+            'is_premium_user': isPremium,
             'updated_at': DateTime.now().toIso8601String(),
           })
-          .eq('id', user.id);
+          .eq('user_id', user.id);
+
+      print(
+        '✅ User ${user.id} upgraded to ${isPremium ? 'PREMIUM' : 'FREE'} plan',
+      );
     } catch (e) {
       print('Error subscribing to plan: $e');
       rethrow;
@@ -130,17 +233,67 @@ class PlanRepository {
           .eq('user_id', user.id)
           .eq('status', 'active');
 
-      // Update user profile
+      // Update user profile ke non-premium
       await supabase
           .from('profiles')
           .update({
-            'current_plan_id': null,
+            'is_premium_user': false,
             'updated_at': DateTime.now().toIso8601String(),
           })
-          .eq('id', user.id);
+          .eq('user_id', user.id);
+
+      print('❌ User ${user.id} subscription cancelled, set to FREE plan');
     } catch (e) {
       print('Error cancelling subscription: $e');
       rethrow;
+    }
+  }
+
+  // Helper: Cek apakah subscription masih aktif
+  Future<bool> isSubscriptionActive(String userId) async {
+    try {
+      final response = await supabase
+          .from('user_subscriptions')
+          .select()
+          .eq('user_id', userId)
+          .eq('status', 'active')
+          .maybeSingle();
+
+      if (response == null) return false;
+
+      // Cek tanggal berakhir
+      final endDateStr = response['end_date'];
+      if (endDateStr != null) {
+        final endDate = DateTime.parse(endDateStr);
+        return DateTime.now().isBefore(endDate);
+      }
+
+      return true; // Lifetime subscription
+    } catch (e) {
+      print('Error checking subscription active: $e');
+      return false;
+    }
+  }
+
+  // Helper: Sync premium status berdasarkan subscription
+  Future<void> syncPremiumStatus() async {
+    try {
+      final user = supabase.auth.currentUser;
+      if (user == null) return;
+
+      final isActive = await isSubscriptionActive(user.id);
+
+      await supabase
+          .from('profiles')
+          .update({
+            'is_premium_user': isActive,
+            'updated_at': DateTime.now().toIso8601String(),
+          })
+          .eq('user_id', user.id);
+
+      print('🔄 Synced premium status for user ${user.id}: $isActive');
+    } catch (e) {
+      print('Error syncing premium status: $e');
     }
   }
 

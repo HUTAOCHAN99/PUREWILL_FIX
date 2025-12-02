@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:purewill/data/repository/plan_repository.dart';
 import 'package:purewill/data/services/local_notification_service.dart';
 import 'package:purewill/data/services/reminder_sync_service.dart';
 import 'package:purewill/data/services/badge_notification_service.dart';
@@ -30,6 +31,17 @@ Future<void> main() async {
 
   debugPrint('✅ Supabase initialized');
 
+  WidgetsBinding.instance.addPostFrameCallback((_) async {
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user != null) {
+      // Sync premium status saat app startup
+      final planRepo = PlanRepository();
+      await planRepo.syncPremiumStatus();
+
+      // Check badges untuk user
+      await checkUserBadges(user.id);
+    }
+  });
   // Initialize Badge Notification Service
   await badgeNotificationService.initialize(
     onBadgeNotificationTap: (payload) {
@@ -71,9 +83,9 @@ Future<void> main() async {
 // Handle badge notification payload
 void _handleBadgeNotification(String? payload) {
   if (payload == null) return;
-  
+
   debugPrint('🎯 Handling badge notification payload: $payload');
-  
+
   if (payload.startsWith('badge_')) {
     final badgeId = payload.replaceFirst('badge_', '');
     debugPrint('   - Badge ID from notification: $badgeId');
@@ -86,9 +98,9 @@ void _handleBadgeNotification(String? payload) {
 // Handle general notification payload
 void _handleNotificationPayload(String? payload) {
   if (payload == null) return;
-  
+
   debugPrint('🎯 Handling general notification payload: $payload');
-  
+
   if (payload.startsWith('habit_')) {
     final habitId = payload.replaceFirst('habit_', '');
     debugPrint('   - Habit ID from notification: $habitId');
@@ -100,7 +112,7 @@ Future<void> _initializeReminderSyncService() async {
   bool syncInitialized = false;
   int retryCount = 0;
   const maxRetries = 3;
-  
+
   while (!syncInitialized && retryCount < maxRetries) {
     try {
       await ReminderSyncService().initialize();
@@ -108,14 +120,18 @@ Future<void> _initializeReminderSyncService() async {
       debugPrint('✅ ReminderSyncService initialized successfully');
     } catch (e, stackTrace) {
       retryCount++;
-      debugPrint('❌ Retry $retryCount/$maxRetries: Error initializing ReminderSyncService: $e');
+      debugPrint(
+        '❌ Retry $retryCount/$maxRetries: Error initializing ReminderSyncService: $e',
+      );
       debugPrint('Stack trace: $stackTrace');
-      
+
       if (retryCount < maxRetries) {
         debugPrint('🔄 Retrying in 2 seconds...');
         await Future.delayed(const Duration(seconds: 2));
       } else {
-        debugPrint('⚠️ ReminderSyncService initialization failed after $maxRetries attempts');
+        debugPrint(
+          '⚠️ ReminderSyncService initialization failed after $maxRetries attempts',
+        );
       }
     }
   }
@@ -140,7 +156,7 @@ class MyApp extends StatelessWidget {
         '/home': (context) => const HomeScreen(),
         '/signup': (context) => const SignupScreen(),
         '/signup-password': (context) => const ResetPasswordScreen(),
-        '/badges': (context) => const BadgeXpScreen(), 
+        '/badges': (context) => const BadgeXpScreen(),
       },
       debugShowCheckedModeBanner: false,
     );

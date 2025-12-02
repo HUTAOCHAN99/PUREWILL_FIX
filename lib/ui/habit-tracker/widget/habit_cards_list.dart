@@ -23,7 +23,7 @@ class HabitCardsList extends StatelessWidget {
     required this.onHabitTap,
     required this.onCheckboxTap,
     this.buildErrorState,
-    this.buildEmptyState,
+    this.buildEmptyState, required bool isPremiumUser,
   });
 
   @override
