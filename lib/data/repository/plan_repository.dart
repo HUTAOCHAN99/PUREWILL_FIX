@@ -1,4 +1,5 @@
 // lib\data\repository\plan_repository.dart
+import 'dart:math';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:purewill/domain/model/plan_model.dart';
 import 'package:purewill/domain/model/profile_model.dart';
@@ -205,6 +206,7 @@ class PlanRepository {
           .from('profiles')
           .update({
             'is_premium_user': isPremium,
+            'current_plan_id': planId,
             'updated_at': DateTime.now().toIso8601String(),
           })
           .eq('user_id', user.id);
@@ -238,6 +240,7 @@ class PlanRepository {
           .from('profiles')
           .update({
             'is_premium_user': false,
+            'current_plan_id': null,
             'updated_at': DateTime.now().toIso8601String(),
           })
           .eq('user_id', user.id);
@@ -297,6 +300,28 @@ class PlanRepository {
     }
   }
 
+  // Method untuk simulasi proses pembayaran
+  Future<bool> processPayment(int planId, String paymentMethod) async {
+    try {
+      // Simulasi proses pembayaran
+      print('💰 Processing payment for plan $planId with $paymentMethod');
+      await Future.delayed(const Duration(seconds: 2));
+      
+      // Simulasi 95% success rate
+      final random = Random().nextDouble();
+      if (random < 0.95) {
+        print('✅ Payment successful');
+        return true;
+      } else {
+        print('❌ Payment failed');
+        throw Exception('Payment failed. Please try again.');
+      }
+    } catch (e) {
+      print('Error processing payment: $e');
+      rethrow;
+    }
+  }
+
   List<PlanModel> _getDefaultPlans() {
     return [
       PlanModel(
@@ -306,9 +331,9 @@ class PlanRepository {
         price: 0,
         currency: 'IDR',
         features: [
-          'Akses Fltur Habits Tracker',
-          'Akses Fltur Komunitas',
-          'Akses Fltur Artikel Gratis',
+          'Akses Fitur Habits Tracker',
+          'Akses Fitur Komunitas',
+          'Akses Fitur Artikel Gratis',
           'Reminder & Notifikasi (Basic reminder)',
         ],
         isActive: true,
@@ -321,11 +346,11 @@ class PlanRepository {
         originalPrice: 59000,
         currency: 'IDR',
         features: [
-          'Fltur Habits Tracker Premium (graft, request)',
-          'Konsultasi Psikologi (2 sesi) (older, chat)',
+          'Fitur Habits Tracker Premium (grafik, report)',
+          'Konsultasi Psikologi (2 sesi) (online, chat)',
           'Riwayat & Catatan Konsultasi (save 30 hari)',
           'Smart reminder (otomatis sesuai pola kebiasaan)',
-          'Komunitas Eksklusif & Forum Dukungan untuk Sharing lainnya',
+          'Komunitas Eksklusif & Forum Dukungan untuk Sharing',
         ],
         isPopular: true,
         isActive: true,
@@ -341,11 +366,11 @@ class PlanRepository {
         originalPrice: 588000,
         currency: 'IDR',
         features: [
-          'Fltur Habits Tracker Premium (graft, request)',
-          'Konsultasi Psikologi (24 sesi) (older, chat)',
+          'Fitur Habits Tracker Premium (grafik, report)',
+          'Konsultasi Psikologi (24 sesi) (online, chat)',
           'Riwayat & Catatan Konsultasi (save 365 hari)',
           'Smart reminder (otomatis sesuai pola kebiasaan)',
-          'Komunitas Eksklusif & Forum Dukungan untuk Sharing lainnya',
+          'Komunitas Eksklusif & Forum Dukungan untuk Sharing',
           'Diskon 40% dari harga bulanan',
           'Prioritas dukungan customer',
         ],

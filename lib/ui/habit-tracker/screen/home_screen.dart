@@ -1,5 +1,4 @@
 // lib\ui\habit-tracker\screen\home_screen.dart
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:purewill/domain/model/daily_log_model.dart';
@@ -10,7 +9,7 @@ import 'package:purewill/ui/auth/auth_provider.dart';
 import 'package:purewill/ui/auth/screen/login_screen.dart';
 import 'package:purewill/ui/habit-tracker/habit_provider.dart';
 import 'package:purewill/ui/habit-tracker/screen/membership_screen.dart';
-import 'package:purewill/ui/membership/plan_provider.dart'; // IMPORT PLAN PROVIDER
+import 'package:purewill/ui/membership/plan_provider.dart'; 
 import 'package:purewill/ui/habit-tracker/widget/clean_bottom_navigation_bar.dart';
 import 'package:purewill/ui/habit-tracker/widget/habit_cards_list.dart';
 import 'package:purewill/ui/habit-tracker/widget/habit_header.dart';

@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:purewill/ui/habit-tracker/widget/clean_bottom_navigation_bar.dart';
 import 'package:purewill/ui/membership/plan_provider.dart';
 import 'package:purewill/domain/model/plan_model.dart';
+import 'package:purewill/ui/membership/payment_confirmation_screen.dart';
+import 'package:purewill/ui/membership/premium_status_screen.dart';
 
 class MembershipScreen extends ConsumerStatefulWidget {
   const MembershipScreen({super.key});
@@ -45,43 +47,95 @@ class _MembershipScreenState extends ConsumerState<MembershipScreen> {
   }
 
   Future<void> _handleSubscribe(PlanModel plan) async {
-    try {
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (context) => const Center(
-          child: CircularProgressIndicator(),
-        ),
-      );
-
-      await ref.read(planProvider.notifier).subscribeToPlan(plan.id);
-
-      if (context.mounted) {
-        Navigator.of(context).pop();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Berhasil berlangganan ${plan.name}!'),
-            backgroundColor: Colors.green,
-          ),
+    // Skip payment confirmation untuk plan free
+    if (plan.type == 'free') {
+      try {
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (context) =>
+              const Center(child: CircularProgressIndicator()),
         );
-        
-        // Kembali ke home setelah beberapa detik
-        await Future.delayed(const Duration(seconds: 2));
+
+        await ref.read(planProvider.notifier).subscribeToPlan(plan.id);
+
         if (context.mounted) {
           Navigator.of(context).pop();
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Successfully activated ${plan.name} plan!'),
+              backgroundColor: Colors.green,
+            ),
+          );
+
+          // Kembali ke home setelah beberapa detik
+          await Future.delayed(const Duration(seconds: 2));
+          if (context.mounted) {
+            Navigator.of(context).pop();
+          }
+        }
+      } catch (e) {
+        if (context.mounted) {
+          Navigator.of(context).pop();
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Failed to activate plan: $e'),
+              backgroundColor: Colors.red,
+            ),
+          );
         }
       }
-    } catch (e) {
-      if (context.mounted) {
-        Navigator.of(context).pop();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Gagal berlangganan: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
+      return;
     }
+
+    // Untuk plan premium, langsung navigate ke payment confirmation screen
+    // User akan memilih payment method di sana
+    Navigator.of(context)
+        .push(
+          MaterialPageRoute(
+            builder: (context) => PaymentConfirmationScreen(
+              selectedPlan: plan,
+              paymentMethod:
+                  '', // Kosongkan dulu, user akan pilih di screen payment
+            ),
+          ),
+        )
+        .then((value) async {
+          // Jika payment berhasil (value == true), proses subscription
+          if (value == true && context.mounted) {
+            // Tampilkan loading
+            showDialog(
+              context: context,
+              barrierDismissible: false,
+              builder: (context) =>
+                  const Center(child: CircularProgressIndicator()),
+            );
+
+            try {
+              await ref.read(planProvider.notifier).subscribeToPlan(plan.id);
+
+              if (context.mounted) {
+                Navigator.of(context).pop(); // Tutup loading
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Successfully subscribed to ${plan.name}!'),
+                    backgroundColor: Colors.green,
+                  ),
+                );
+              }
+            } catch (e) {
+              if (context.mounted) {
+                Navigator.of(context).pop(); // Tutup loading
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Failed: $e'),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+              }
+            }
+          }
+        });
   }
 
   @override
@@ -92,11 +146,8 @@ class _MembershipScreenState extends ConsumerState<MembershipScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text(
-          'Membership',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            fontSize: 20,
-          ),
+          'PureWill',
+          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
         ),
         centerTitle: true,
         backgroundColor: Colors.white,
@@ -117,111 +168,124 @@ class _MembershipScreenState extends ConsumerState<MembershipScreen> {
           child: planState.isLoading
               ? const Center(child: CircularProgressIndicator())
               : planState.error != null
-                  ? Center(child: Text(planState.error!))
-                  : SingleChildScrollView(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 20, vertical: 20),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          // Logo dan Title
-                          Image.asset(
-                            'assets/images/logo.png',
-                            height: 60,
-                            width: 60,
-                          ),
-                          const SizedBox(height: 16),
-                          const Text(
-                            'PureWill',
-                            style: TextStyle(
-                              fontSize: 28,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.black87,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          const Text(
-                            'Choose Your Plan',
-                            style: TextStyle(
-                              fontSize: 18,
-                              color: Colors.black54,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          const Padding(
-                            padding: EdgeInsets.symmetric(horizontal: 40),
-                            child: Text(
-                              'Unlock your full potential with premium features',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: Colors.black45,
-                              ),
-                            ),
-                          ),
-                          
-                          // Tampilkan plan current user jika ada
-                          if (currentUserPlan != null)
-                            Padding(
-                              padding: const EdgeInsets.only(top: 16),
-                              child: Container(
-                                padding: const EdgeInsets.all(12),
-                                decoration: BoxDecoration(
-                                  color: Colors.green[50],
-                                  borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(color: Colors.green),
+              ? Center(child: Text(planState.error!))
+              : SingleChildScrollView(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 20,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      // Logo dan Title
+                      const SizedBox(height: 16),
+                      const SizedBox(height: 8),
+                      const Text(
+                        'Choose Your Plan',
+                        style: TextStyle(
+                          fontSize: 18,
+                          color: Color.fromARGB(255, 0, 0, 0),
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      const Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 20),
+                        child: Text(
+                          'Unlock your full potential with premium features',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(fontSize: 14, color: Colors.black45),
+                        ),
+                      ),
+
+                      // Tampilkan plan current user jika ada
+                      if (currentUserPlan != null)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 16),
+                          child: GestureDetector(
+                            onTap: () {
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (context) =>
+                                      const PremiumStatusScreen(),
                                 ),
-                                child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    const Icon(Icons.check_circle,
-                                        color: Colors.green, size: 20),
-                                    const SizedBox(width: 8),
-                                    Text(
-                                      'Current Plan: ${currentUserPlan.name}',
-                                      style: const TextStyle(
-                                        color: Colors.green,
-                                        fontWeight: FontWeight.w600,
-                                      ),
+                              );
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: Colors.green[50],
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(color: Colors.green),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.green.withOpacity(0.1),
+                                    blurRadius: 4,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ],
+                              ),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  const Icon(
+                                    Icons.check_circle,
+                                    color: Colors.green,
+                                    size: 20,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    'Current Plan: ${currentUserPlan.name}',
+                                    style: const TextStyle(
+                                      color: Colors.green,
+                                      fontWeight: FontWeight.w600,
                                     ),
-                                  ],
-                                ),
+                                  ),
+                                  const Spacer(),
+                                  const Icon(
+                                    Icons.arrow_forward_ios_rounded,
+                                    color: Colors.green,
+                                    size: 16,
+                                  ),
+                                ],
                               ),
                             ),
-                          
-                          const SizedBox(height: 32),
+                          ),
+                        ),
 
-                          // Free Plan Card
-                          if (planState.freePlan != null)
-                            _buildPlanCard(
-                              plan: planState.freePlan!,
-                              isSelected: _selectedPlanIndex == 0 &&
-                                  planState.freePlan!.type == 'free',
-                              onTap: () => setState(() => _selectedPlanIndex = 0),
-                              onSubscribe: _handleSubscribe,
-                            ),
+                      const SizedBox(height: 32),
 
-                          const SizedBox(height: 20),
-                          const Divider(thickness: 2),
-                          const SizedBox(height: 20),
+                      // Free Plan Card
+                      if (planState.freePlan != null)
+                        _buildPlanCard(
+                          plan: planState.freePlan!,
+                          isSelected:
+                              _selectedPlanIndex == 0 &&
+                              planState.freePlan!.type == 'free',
+                          onTap: () => setState(() => _selectedPlanIndex = 0),
+                          onSubscribe: _handleSubscribe,
+                        ),
 
-                          // Toggle untuk monthly/yearly jika ada premium plans
-                          if (planState.premiumPlans.isNotEmpty)
-                            _buildPlanTypeToggle(
-                              onChanged: _handlePlanTypeChange,
-                              initialValue: _planType,
-                            ),
-                          if (planState.premiumPlans.isNotEmpty)
-                            const SizedBox(height: 20),
+                      const SizedBox(height: 20),
+                      const Divider(thickness: 2),
+                      const SizedBox(height: 20),
 
-                          // Premium Plan Cards berdasarkan tipe
-                          ...planState.premiumPlans
-                              .where((plan) => plan.type == _planType)
-                              .toList()
-                              .asMap()
-                              .entries
-                              .map((entry) {
+                      // Toggle untuk monthly/yearly jika ada premium plans
+                      if (planState.premiumPlans.isNotEmpty)
+                        _buildPlanTypeToggle(
+                          onChanged: _handlePlanTypeChange,
+                          initialValue: _planType,
+                        ),
+                      if (planState.premiumPlans.isNotEmpty)
+                        const SizedBox(height: 20),
+
+                      // Premium Plan Cards berdasarkan tipe
+                      ...planState.premiumPlans
+                          .where((plan) => plan.type == _planType)
+                          .toList()
+                          .asMap()
+                          .entries
+                          .map((entry) {
                             final index = entry.key;
                             final plan = entry.value;
                             return Padding(
@@ -229,30 +293,35 @@ class _MembershipScreenState extends ConsumerState<MembershipScreen> {
                               child: _buildPlanCard(
                                 plan: plan,
                                 isSelected: _selectedPlanIndex == index + 1,
-                                onTap: () => setState(() => _selectedPlanIndex = index + 1),
+                                onTap: () => setState(
+                                  () => _selectedPlanIndex = index + 1,
+                                ),
                                 onSubscribe: _handleSubscribe,
                               ),
                             );
-                          }).toList(),
+                          })
+                          .toList(),
 
-                          const SizedBox(height: 40),
+                      const SizedBox(height: 40),
 
-                          // Terms and Conditions
-                          const Padding(
-                            padding: EdgeInsets.symmetric(horizontal: 20),
-                            child: Text(
-                              'Dengan memilih paket, Anda menyetujui Syarat & Ketentuan dan Kebijakan Privasi PureWill',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Colors.black54,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 20),
-                        ],
+                      // Why Choose Premium Section
+                      _buildWhyChoosePremiumSection(),
+
+                      const SizedBox(height: 40),
+
+                      // Terms and Conditions
+                      const Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 20),
+                        child: Text(
+                          'Dengan memilih paket, Anda menyetujui Syarat & Ketentuan dan Kebijakan Privasi PureWill',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(fontSize: 12, color: Colors.black54),
+                        ),
                       ),
-                    ),
+                      const SizedBox(height: 20),
+                    ],
+                  ),
+                ),
         ),
       ),
       bottomNavigationBar: CleanBottomNavigationBar(
@@ -344,8 +413,8 @@ class _MembershipScreenState extends ConsumerState<MembershipScreen> {
           border: Border.all(
             color: isSelected
                 ? plan.type == 'free'
-                    ? Colors.blue
-                    : Colors.deepPurple
+                      ? Colors.blue
+                      : Colors.deepPurple
                 : Colors.grey[300]!,
             width: isSelected ? 2 : 1,
           ),
@@ -370,7 +439,9 @@ class _MembershipScreenState extends ConsumerState<MembershipScreen> {
                   if (plan.badgeText != null)
                     Container(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 4),
+                        horizontal: 12,
+                        vertical: 4,
+                      ),
                       decoration: BoxDecoration(
                         color: plan.badgeText == 'POPULAR'
                             ? Colors.orange
@@ -390,7 +461,9 @@ class _MembershipScreenState extends ConsumerState<MembershipScreen> {
                     const SizedBox(width: 8),
                     Container(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 4),
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
                       decoration: BoxDecoration(
                         color: Colors.red,
                         borderRadius: BorderRadius.circular(8),
@@ -409,10 +482,7 @@ class _MembershipScreenState extends ConsumerState<MembershipScreen> {
                     const SizedBox(width: 8),
                     Text(
                       'Berlaku hingga ${plan.promoEndDate!.day}/${plan.promoEndDate!.month}/${plan.promoEndDate!.year}',
-                      style: const TextStyle(
-                        fontSize: 10,
-                        color: Colors.red,
-                      ),
+                      style: const TextStyle(fontSize: 10, color: Colors.red),
                     ),
                   ],
                 ],
@@ -426,9 +496,7 @@ class _MembershipScreenState extends ConsumerState<MembershipScreen> {
               style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
-                color: plan.type == 'free'
-                    ? Colors.blue
-                    : Colors.deepPurple,
+                color: plan.type == 'free' ? Colors.blue : Colors.deepPurple,
               ),
             ),
             const SizedBox(height: 8),
@@ -451,10 +519,7 @@ class _MembershipScreenState extends ConsumerState<MembershipScreen> {
                 if (plan.type != 'free')
                   Text(
                     plan.type == 'yearly' ? '/tahun' : '/bulan',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.grey[600],
-                    ),
+                    style: TextStyle(fontSize: 14, color: Colors.grey[600]),
                   ),
               ],
             ),
@@ -530,9 +595,7 @@ class _MembershipScreenState extends ConsumerState<MembershipScreen> {
                   elevation: 0,
                 ),
                 child: Text(
-                  plan.type == 'free'
-                      ? 'Gunakan Sekarang'
-                      : 'Pilih Paket Ini',
+                  plan.type == 'free' ? 'Gunakan Sekarang' : 'Pilih Paket Ini',
                   style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
@@ -542,6 +605,118 @@ class _MembershipScreenState extends ConsumerState<MembershipScreen> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildWhyChoosePremiumSection() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Colors.deepPurple.shade50, Colors.blue.shade50],
+        ),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.deepPurple.shade100, width: 1),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          // Title
+          Text(
+            'Why Choose Premium?',
+            style: TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.bold,
+              color: Colors.deepPurple.shade800,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Get access to exclusive features that enhance your experience',
+            textAlign: TextAlign.center,
+            style: TextStyle(fontSize: 14, color: Colors.grey.shade700),
+          ),
+          const SizedBox(height: 32),
+
+          // Features Grid
+          GridView.count(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            crossAxisCount: 2,
+            childAspectRatio: 1.2,
+            mainAxisSpacing: 16,
+            crossAxisSpacing: 16,
+            children: [
+              _buildPremiumFeature(
+                icon: Icons.analytics_outlined,
+                title: 'Advanced Analytics',
+              ),
+              _buildPremiumFeature(
+                icon: Icons.cloud_sync_outlined,
+                title: 'Cloud Sync',
+              ),
+              _buildPremiumFeature(
+                icon: Icons.notifications_active_outlined,
+                title: 'Smart Reminders',
+              ),
+              _buildPremiumFeature(
+                icon: Icons.workspace_premium_outlined,
+                title: 'Exclusive Badges',
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPremiumFeature({required IconData icon, required String title}) {
+    return Container(
+      padding: const EdgeInsets.all(8),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.deepPurple.withOpacity(0.05),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+        border: Border.all(color: Colors.deepPurple.shade100, width: 1),
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            width: 50,
+            height: 50,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [Colors.deepPurple.shade400, Colors.blue.shade400],
+              ),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(icon, color: Colors.white, size: 24),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            title,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: Colors.deepPurple.shade800,
+            ),
+          ),
+          const SizedBox(height: 4),
+        ],
       ),
     );
   }
