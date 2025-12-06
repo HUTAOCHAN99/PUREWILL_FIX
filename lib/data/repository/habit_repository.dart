@@ -48,17 +48,7 @@ class HabitRepository {
           .toList();
 
       print(response);
-      // Gabungkan dengan default habits
-      // final defaultHabits = DefaultHabitsService.getDefaultHabits();
-
-      // Filter default habits yang belum dibuat oleh user
       final userHabitNames = userHabits.map((h) => h.name).toSet();
-      // final availableDefaultHabits = defaultHabits
-      // .where((defaultHabit) => !userHabitNames.contains(defaultHabit.name))
-      // .toList();
-
-      // Gabungkan user habits dengan available default habits
-      // final allHabits = [...userHabits, ...availableDefaultHabits];
       final allHabits = [...userHabits];
 
       print('=== COMBINED HABITS ===');

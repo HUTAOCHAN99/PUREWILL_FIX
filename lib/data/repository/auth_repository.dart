@@ -39,12 +39,23 @@ class AuthRepository {
       final AuthResponse response = await _supabaseClient.auth.signUp(
         email: email,
         password: password,
-        data: {fullname: fullname},
+        // Data user metadata yang benar
+        data: {
+          "full_name": fullname,
+          "email": email, // tambah ini
+        },
       );
+
+      // Debug log untuk melihat response
+      log(
+        'SIGNUP RESPONSE: ${response.user?.email} - ${response.user?.userMetadata}',
+        name: 'AUTH_REPO',
+      );
+
       return response.user;
     } on AuthException catch (e, stackTrace) {
       log(
-        'AUTH FAILURE: Supabase signup failed.',
+        'AUTH FAILURE: Supabase signup failed: ${e.message}',
         error: e,
         stackTrace: stackTrace,
         name: 'AUTH_REPO',
@@ -52,7 +63,7 @@ class AuthRepository {
       rethrow;
     } catch (e, stackTrace) {
       log(
-        'GENERAL FAILURE: Unexpected error during sign in.',
+        'GENERAL FAILURE: Unexpected error during signup: $e',
         error: e,
         stackTrace: stackTrace,
         name: 'AUTH_REPO',

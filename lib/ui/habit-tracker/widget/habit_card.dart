@@ -11,6 +11,7 @@ class HabitCard extends StatelessWidget {
   final Color color;
   final LogStatus status;
   final bool isDefault;
+  final String category; // Tambahkan parameter category
   final VoidCallback? onTap;
   final VoidCallback? onCheckboxTap;
 
@@ -22,6 +23,7 @@ class HabitCard extends StatelessWidget {
     required this.color,
     required this.progress,
     required this.status,
+    required this.category, // Required parameter baru
     this.isDefault = false,
     this.onTap,
     this.onCheckboxTap,
@@ -50,6 +52,7 @@ class HabitCard extends StatelessWidget {
         ),
         child: Row(
           children: [
+            // CircleAvatar dengan icon kategori
             Stack(
               children: [
                 CircleAvatar(
@@ -105,6 +108,7 @@ class HabitCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // Baris pertama: Judul habit
                   Row(
                     children: [
                       Expanded(
@@ -129,14 +133,45 @@ class HabitCard extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(height: 4),
-                  Text(
-                    subtitle,
-                    style: TextStyle(
-                      color: isCompleted ? Colors.green : Colors.grey,
-                      fontWeight: isCompleted
-                          ? FontWeight.w500
-                          : FontWeight.normal,
-                    ),
+                  
+                  // Baris kedua: Subtitle (target value) dan Kategori sejajar
+                  Row(
+                    children: [
+                      // Subtitle (target value)
+                      Expanded(
+                        child: Text(
+                          subtitle,
+                          style: TextStyle(
+                            color: isCompleted ? Colors.green : Colors.grey,
+                            fontWeight: isCompleted
+                                ? FontWeight.w500
+                                : FontWeight.normal,
+                          ),
+                        ),
+                      ),
+                      
+                      // Kategori
+                      Container(
+                        margin: const EdgeInsets.only(left: 8),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: color.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: color.withOpacity(0.3)),
+                        ),
+                        child: Text(
+                          category,
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w500,
+                            color: color,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 8),
                   LinearPercentIndicator(
@@ -150,7 +185,7 @@ class HabitCard extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 12),
-            // Area checkbox yang tidak terpengaruh GestureDetector parent
+            // Checkbox
             IgnorePointer(
               ignoring: false,
               child: GestureDetector(
@@ -163,15 +198,17 @@ class HabitCard extends StatelessWidget {
                     color: isCompleted ? Colors.green : Colors.transparent,
                     shape: BoxShape.circle,
                     border: Border.all(
-                      color: isCompleted ? Colors.green : Colors.grey,
+                      color: isCompleted ? Colors.green : Colors.grey[400]!,
                       width: 2,
                     ),
                   ),
-                  child: Icon(
-                    isCompleted ? Icons.check : Icons.circle_outlined,
-                    color: isCompleted ? Colors.white : Colors.grey,
-                    size: 20,
-                  ),
+                  child: isCompleted
+                      ? const Icon(
+                          Icons.check,
+                          color: Colors.white,
+                          size: 20,
+                        )
+                      : null,
                 ),
               ),
             ),

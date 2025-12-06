@@ -1,9 +1,11 @@
 // lib\ui\habit-tracker\widget\clean_bottom_navigation_bar.dart
 import 'package:flutter/material.dart';
+import 'package:purewill/ui/habit-tracker/screen/community_selection_screen.dart';
 
 class CleanBottomNavigationBar extends StatelessWidget {
   final int currentIndex;
   final Function(int) onTap;
+  
   const CleanBottomNavigationBar({
     super.key,
     required this.currentIndex,
@@ -33,7 +35,18 @@ class CleanBottomNavigationBar extends StatelessWidget {
         ),
         showUnselectedLabels: true,
         elevation: 0,
-        onTap: onTap,
+        onTap: (index) {
+          // Handle navigation untuk komunitas (index 3)
+          if (index == 3) {
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (context) => const CommunitySelectionScreen(),
+              ),
+            );
+          } else {
+            onTap(index);
+          }
+        },
         items: const [
           BottomNavigationBarItem(
             icon: Icon(Icons.home_outlined, size: 24),
@@ -51,9 +64,9 @@ class CleanBottomNavigationBar extends StatelessWidget {
             label: 'Add Habit',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.chat_outlined, size: 24),
-            activeIcon: Icon(Icons.chat, size: 24),
-            label: 'Forum',
+            icon: Icon(Icons.people_outline, size: 24), // Ubah icon
+            activeIcon: Icon(Icons.people, size: 24), // Ubah icon aktif
+            label: 'Komunitas',
           ),
         ],
       ),

@@ -1,7 +1,6 @@
 // lib\ui\habit-tracker\screen\home_screen.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:purewill/domain/model/daily_log_model.dart';
 import 'package:purewill/domain/model/habit_model.dart';
 import 'package:purewill/domain/model/plan_model.dart';
 import 'package:purewill/domain/model/profile_model.dart';
@@ -15,6 +14,7 @@ import 'package:purewill/ui/habit-tracker/widget/habit_cards_list.dart';
 import 'package:purewill/ui/habit-tracker/widget/habit_header.dart';
 import 'package:purewill/ui/habit-tracker/widget/habit_welcome_message.dart';
 import 'package:purewill/ui/habit-tracker/widget/progress_card.dart';
+import 'package:purewill/ui/habit-tracker/widget/premium_card_button.dart';
 import 'package:purewill/ui/habit-tracker/screen/habit_detail_screen.dart';
 import 'package:purewill/ui/habit-tracker/screen/add_habit_screen.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -22,6 +22,9 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 // Import untuk badge service
 import 'package:purewill/data/services/badge_service.dart';
 import 'package:purewill/data/services/badge_notification_service.dart';
+
+// Perlu LogStatus dari daily_log_model
+import 'package:purewill/domain/model/daily_log_model.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -116,15 +119,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
-  // Helper method untuk format tanggal
-  String _formatEndDate(String planType) {
-    if (planType == 'free') return 'Selamanya';
-    if (planType == 'monthly') return '30 hari';
-    if (planType == 'yearly') return '365 hari';
-    return 'Aktif';
-  }
-
-  // Debug method
+  // Debug method (opsional, bisa dihapus jika tidak digunakan)
   void _debugCheckPremiumStatus() async {
     try {
       final user = Supabase.instance.client.auth.currentUser;
@@ -157,7 +152,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final habitsState = ref.watch(habitNotifierProvider);
     final planState = ref.watch(planProvider);
     
-    // DEBUG LOGS
+    // DEBUG LOGS (opsional untuk development)
     print('🏠 HomeScreen build() called');
     print('   PlanState:');
     print('   - isLoading: ${planState.isLoading}');
@@ -253,7 +248,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           child: SafeArea(
             child: Column(
               children: [
-                // UPDATE: Pass premium status ke HabitHeader
                 HabitHeader(
                   userEmail: userEmail,
                   userName: userName,
@@ -277,56 +271,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           total: totalHabits,
                         ),
                         
-                        // Tombol Membership - UPDATE dengan status premium
+                        // TOMBOL MEMBERSHIP
                         const SizedBox(height: 16),
-                        Container(
-                          width: double.infinity,
-                          child: ElevatedButton(
-                            onPressed: _navigateToMembership,
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: isPremiumUser 
-                                  ? Colors.green
-                                  : Colors.deepPurple,
-                              foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 24,
-                                vertical: 16,
-                              ),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              elevation: 2,
-                              shadowColor: isPremiumUser 
-                                  ? Colors.green.withAlpha(77)
-                                  : Colors.deepPurple.withAlpha(77),
-                            ),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(
-                                  Icons.star,
-                                  color: isPremiumUser ? Colors.yellow : Colors.yellow[300],
-                                  size: 20,
-                                ),
-                                const SizedBox(width: 8),
-                                Text(
-                                  isPremiumUser 
-                                      ? 'Premium Member' 
-                                      : 'Upgrade to Premium',
-                                  style: const TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                Icon(
-                                  Icons.arrow_forward_ios_rounded,
-                                  size: 16,
-                                  color: Colors.white.withOpacity(0.8),
-                                ),
-                              ],
-                            ),
-                          ),
+                        PremiumCardButton(
+                          isPremiumUser: isPremiumUser,
+                          currentPlan: currentPlan,
+                          onTap: _navigateToMembership,
                         ),
                         
                         const SizedBox(height: 24),
@@ -472,136 +422,5 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         ),
       );
     }
-  }
-
-  // Method untuk menampilkan detail plan
-  void _showPlanDetails(BuildContext context, PlanModel currentPlan) {
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) {
-        return Container(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(
-                child: Container(
-                  width: 60,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: Colors.grey[300],
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 20),
-              Center(
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 8,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.green[50],
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: Colors.green),
-                  ),
-                  child: Text(
-                    'CURRENT PLAN',
-                    style: TextStyle(
-                      color: Colors.green[800],
-                      fontWeight: FontWeight.bold,
-                      fontSize: 12,
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-              Center(
-                child: Text(
-                  currentPlan.name,
-                  style: const TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.green,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 8),
-              Center(
-                child: Text(
-                  currentPlan.formattedPrice,
-                  style: const TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.black87,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 20),
-              const Divider(),
-              const SizedBox(height: 16),
-              const Text(
-                'Features:',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              const SizedBox(height: 12),
-              ...currentPlan.features.map((feature) => Padding(
-                padding: const EdgeInsets.only(bottom: 8),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Icon(
-                      Icons.check_circle,
-                      color: Colors.green,
-                      size: 18,
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        feature,
-                        style: const TextStyle(fontSize: 14),
-                      ),
-                    ),
-                  ],
-                ),
-              )).toList(),
-              const SizedBox(height: 24),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () {
-                    Navigator.pop(context);
-                    _navigateToMembership();
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.deepPurple,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  child: const Text(
-                    'Manage Subscription',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 10),
-            ],
-          ),
-        );
-      },
-    );
   }
 }
