@@ -1,6 +1,9 @@
 import 'dart:developer';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:purewill/data/services/default_habits_service.dart';
+import 'package:purewill/data/services/performance_service.dart';
 import 'package:purewill/domain/model/habit_model.dart';
+import 'package:purewill/ui/habit-tracker/habit_provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class HabitRepository {
@@ -44,9 +47,7 @@ class HabitRepository {
           .toList();
 
       print(response);
-
-      // final userHabitNames = userHabits.map((h) => h.name).toSet();
-
+      final userHabitNames = userHabits.map((h) => h.name).toSet();
       final allHabits = [...userHabits];
 
       print('=== COMBINED HABITS ===');
@@ -70,9 +71,11 @@ class HabitRepository {
         name: 'HABIT_REPO',
       );
 
+      // Fallback: return default habits jika error
       print('=== USING DEFAULT HABITS AS FALLBACK ===');
       final defaultHabits = DefaultHabitsService.getDefaultHabits();
 
+      // Debug print untuk default habits
       for (var habit in defaultHabits) {
         print(
           'Default Habit: ${habit.name}, Target: ${habit.targetValue}, Unit: ${habit.unit}',
@@ -272,30 +275,4 @@ class HabitRepository {
       return [];
     }
   }
-
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

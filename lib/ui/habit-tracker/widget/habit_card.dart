@@ -1,3 +1,4 @@
+// lib\ui\habit-tracker\widget\habit_card.dart
 import 'package:flutter/material.dart';
 import 'package:percent_indicator/linear_percent_indicator.dart';
 import 'package:purewill/domain/model/daily_log_model.dart';
@@ -10,6 +11,7 @@ class HabitCard extends StatelessWidget {
   final Color color;
   final LogStatus status;
   final bool isDefault;
+  final String category; // Tambahkan parameter category
   final VoidCallback? onTap;
   final VoidCallback? onCheckboxTap;
 
@@ -21,6 +23,7 @@ class HabitCard extends StatelessWidget {
     required this.color,
     required this.progress,
     required this.status,
+    required this.category, // Required parameter baru
     this.isDefault = false,
     this.onTap,
     this.onCheckboxTap,
@@ -28,6 +31,8 @@ class HabitCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isCompleted = status == LogStatus.success;
+    
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -47,18 +52,23 @@ class HabitCard extends StatelessWidget {
         ),
         child: Row(
           children: [
+            // CircleAvatar dengan icon kategori
             Stack(
               children: [
                 CircleAvatar(
                   radius: 20,
-                  backgroundColor: status == LogStatus.success
+                  backgroundColor: isCompleted
                       ? color.withOpacity(0.2)
                       : color.withOpacity(0.1),
                   child: Icon(
                     icon,
-                    color: status == LogStatus.success
-                        ? color
-                        : color.withOpacity(0.7),
+// <<<<<<< HEAD
+//                     color: status == LogStatus.success
+//                         ? color
+//                         : color.withOpacity(0.7),
+// =======
+                    color: isCompleted ? color : color.withOpacity(0.7),
+// >>>>>>> f2d2932ae1d617906d117abaeeb90fd7045aea0c
                     size: 22,
                   ),
                 ),
@@ -79,7 +89,7 @@ class HabitCard extends StatelessWidget {
                       ),
                     ),
                   ),
-                if ("success" == LogStatus.success)
+                if (isCompleted)
                   Positioned(
                     right: -2,
                     top: -2,
@@ -104,6 +114,7 @@ class HabitCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // Baris pertama: Judul habit
                   Row(
                     children: [
                       Expanded(
@@ -112,10 +123,15 @@ class HabitCard extends StatelessWidget {
                           style: TextStyle(
                             fontWeight: FontWeight.w600,
                             fontSize: 16,
-                            color: status == LogStatus.success
-                                ? Colors.grey
-                                : Colors.black,
-                            decoration: status == LogStatus.success
+// <<<<<<< HEAD
+//                             color: status == LogStatus.success
+//                                 ? Colors.grey
+//                                 : Colors.black,
+//                             decoration: status == LogStatus.success
+// =======
+                            color: isCompleted ? Colors.grey : Colors.black,
+                            decoration: isCompleted
+// >>>>>>> f2d2932ae1d617906d117abaeeb90fd7045aea0c
                                 ? TextDecoration.lineThrough
                                 : null,
                           ),
@@ -130,24 +146,70 @@ class HabitCard extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(height: 4),
-                  Text(
-                    subtitle,
-                    style: TextStyle(
-                      color: status == LogStatus.success
-                          ? Colors.green
-                          : Colors.grey,
-                      fontWeight: status == LogStatus.success
-                          ? FontWeight.w500
-                          : FontWeight.normal,
-                    ),
+// <<<<<<< HEAD
+//                   Text(
+//                     subtitle,
+//                     style: TextStyle(
+//                       color: status == LogStatus.success
+//                           ? Colors.green
+//                           : Colors.grey,
+//                       fontWeight: status == LogStatus.success
+//                           ? FontWeight.w500
+//                           : FontWeight.normal,
+//                     ),
+// =======
+                  
+                  // Baris kedua: Subtitle (target value) dan Kategori sejajar
+                  Row(
+                    children: [
+                      // Subtitle (target value)
+                      Expanded(
+                        child: Text(
+                          subtitle,
+                          style: TextStyle(
+                            color: isCompleted ? Colors.green : Colors.grey,
+                            fontWeight: isCompleted
+                                ? FontWeight.w500
+                                : FontWeight.normal,
+                          ),
+                        ),
+                      ),
+                      
+                      // Kategori
+                      Container(
+                        margin: const EdgeInsets.only(left: 8),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: color.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: color.withOpacity(0.3)),
+                        ),
+                        child: Text(
+                          category,
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w500,
+                            color: color,
+                          ),
+                        ),
+                      ),
+                    ],
+// >>>>>>> f2d2932ae1d617906d117abaeeb90fd7045aea0c
                   ),
                   const SizedBox(height: 8),
                   LinearPercentIndicator(
                     lineHeight: 6,
                     percent: progress,
-                    progressColor: status == LogStatus.success
-                        ? Colors.green
-                        : color,
+// <<<<<<< HEAD
+//                     progressColor: status == LogStatus.success
+//                         ? Colors.green
+//                         : color,
+// =======
+                    progressColor: isCompleted ? Colors.green : color,
+// >>>>>>> f2d2932ae1d617906d117abaeeb90fd7045aea0c
                     backgroundColor: Colors.grey[200]!,
                     barRadius: const Radius.circular(8),
                   ),
@@ -155,33 +217,56 @@ class HabitCard extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 12),
+// <<<<<<< HEAD
+// =======
+            // Checkbox
+// >>>>>>> f2d2932ae1d617906d117abaeeb90fd7045aea0c
             IgnorePointer(
               ignoring: false,
               child: GestureDetector(
                 onTap: onCheckboxTap,
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 300),
+                  width: 28,
+                  height: 28,
                   decoration: BoxDecoration(
-                    color: status == LogStatus.success
-                        ? Colors.green
-                        : Colors.transparent,
+// <<<<<<< HEAD
+                  //   color: status == LogStatus.success
+                  //       ? Colors.green
+                  //       : Colors.transparent,
+                  //   shape: BoxShape.circle,
+                  //   border: Border.all(
+                  //     color: status == LogStatus.success
+                  //         ? Colors.green
+                  //         : Colors.grey,
+                  //     width: 2,
+                  //   ),
+                  // ),
+                  // child: Icon(
+                  //   status == LogStatus.success
+                  //       ? Icons.check
+                  //       : Icons.circle_outlined,
+                  //   color: status == LogStatus.success
+                  //       ? Colors.white
+                  //       : Colors.grey,
+                  //   size: 24,
+                  // ),
+// =======
+                    color: isCompleted ? Colors.green : Colors.transparent,
                     shape: BoxShape.circle,
                     border: Border.all(
-                      color: status == LogStatus.success
-                          ? Colors.green
-                          : Colors.grey,
+                      color: isCompleted ? Colors.green : Colors.grey[400]!,
                       width: 2,
                     ),
                   ),
-                  child: Icon(
-                    status == LogStatus.success
-                        ? Icons.check
-                        : Icons.circle_outlined,
-                    color: status == LogStatus.success
-                        ? Colors.white
-                        : Colors.grey,
-                    size: 24,
-                  ),
+                  child: isCompleted
+                      ? const Icon(
+                          Icons.check,
+                          color: Colors.white,
+                          size: 20,
+                        )
+                      : null,
+// >>>>>>> f2d2932ae1d617906d117abaeeb90fd7045aea0c
                 ),
               ),
             ),

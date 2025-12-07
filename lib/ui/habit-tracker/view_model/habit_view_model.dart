@@ -36,7 +36,10 @@ class HabitsState {
     this.categories = const [],
     this.currentUser,
     this.currentHabitDetail,
+// <<<<<<< HEAD
     this.currentReminderSetting,
+// =======
+// >>>>>>> f2d2932ae1d617906d117abaeeb90fd7045aea0c
   });
 
   HabitsState copyWith({
@@ -49,7 +52,10 @@ class HabitsState {
     List<ReminderSettingModel>? reminderSettings,
     ProfileModel? currentUser,
     HabitModel? currentHabitDetail,
-    ReminderSettingModel? currentReminderSetting,
+// <<<<<<< HEAD
+//     ReminderSettingModel? currentReminderSetting,
+// =======
+// >>>>>>> f2d2932ae1d617906d117abaeeb90fd7045aea0c
   }) {
     return HabitsState(
       status: status ?? this.status,
@@ -182,7 +188,7 @@ class HabitsViewModel extends StateNotifier<HabitsState> {
         habit.id,
       );
 
-      print("exiting log complete status = ");
+      print("existing log complete status = ");
       print(existingLog?.status == LogStatus.success);
 
       if (existingLog != null) {
@@ -449,6 +455,7 @@ class HabitsViewModel extends StateNotifier<HabitsState> {
         repeatDaily: repeatDaily,
         isSoundEnabled: isSoundEnabled,
         isVibrationEnabled: isVibrationEnabled,
+        createdAt: DateTime.now(), // TAMBAHKAN INI
       );
 
       final reminderSettingBefore = await _reminderSettingRepository.fetchReminderSettingsByHabit(habitId);

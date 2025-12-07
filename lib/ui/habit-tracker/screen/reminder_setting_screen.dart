@@ -1,477 +1,772 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:purewill/data/services/local_notification_service.dart';
+import 'package:purewill/data/services/reminder_sync_service.dart';
 import 'package:purewill/domain/model/habit_model.dart';
-import 'package:purewill/domain/model/reminder_setting_model.dart';
 import 'package:purewill/data/repository/reminder_setting_repository.dart';
+import 'package:purewill/domain/model/reminder_setting_model.dart';
 import 'package:purewill/ui/habit-tracker/habit_provider.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+
+// <<<<<<< HEAD
+// class ReminderSettingScreen extends ConsumerStatefulWidget {
+// =======
+// Import components dan controller
+import '../controller/reminder_setting_controller.dart';
+import '../components/reminder_setting_components.dart' as components;
 
 class ReminderSettingScreen extends ConsumerStatefulWidget {
+// >>>>>>> f2d2932ae1d617906d117abaeeb90fd7045aea0c
   final HabitModel habit;
   final ReminderSettingModel? reminderSetting;
   const ReminderSettingScreen({super.key, required this.habit, this.reminderSetting});
   @override
+  // ConsumerState<ReminderSettingScreen> createState() => _ReminderSettingScreenState();
   ConsumerState<ReminderSettingScreen> createState() => _ReminderSettingScreenState();
 }
 
-class _ReminderSettingScreenState extends ConsumerState<ReminderSettingScreen> {
-  late final ReminderSettingRepository _repository;
-  late final LocalNotificationService _notificationService;
-  bool _isLoading = true;
-  bool _hasChanges = false;
+// <<<<<<< HEAD
+// class _ReminderSettingScreenState extends ConsumerState<ReminderSettingScreen> {
+//   late final ReminderSettingRepository _repository;
+//   late final LocalNotificationService _notificationService;
+//   bool _isLoading = true;
+//   bool _hasChanges = false;
 
-  final List<int> _snoozeOptions = [10, 30];
-  int _selectedSnoozeIndex = 0;
-  int _customSnoozeMinutes = 5;
-  bool _useCustomSnooze = false;
+//   final List<int> _snoozeOptions = [10, 30];
+//   int _selectedSnoozeIndex = 0;
+//   int _customSnoozeMinutes = 5;
+//   bool _useCustomSnooze = false;
   
-  TimeOfDay _selectedTime = TimeOfDay.now();
+//   TimeOfDay _selectedTime = TimeOfDay.now();
   
-  bool _pushNotification = true;
-  bool _emailNotification = false;
+//   bool _pushNotification = true;
+//   bool _emailNotification = false;
   
-  bool _repeatDaily = true;
-  bool _soundEnabled = true;
-  bool _vibrationEnabled = false;
+//   bool _repeatDaily = true;
+//   bool _soundEnabled = true;
+//   bool _vibrationEnabled = false;
+// =======
+class _ReminderSettingScreenState extends ConsumerState<ReminderSettingScreen> {
+  late ReminderSettingController _controller;
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+
+  // Variabel untuk live clock
+  DateTime _currentTime = DateTime.now();
+  late Timer _timer;
+// >>>>>>> f2d2932ae1d617906d117abaeeb90fd7045aea0c
 
   @override
   void initState() {
     super.initState();
+// <<<<<<< HEAD
     
-    _notificationService = LocalNotificationService();
-    if (widget.reminderSetting != null) {
-      _initializeFormFromModel(widget.reminderSetting!);
-      _isLoading = false;
-    } else {
-      // If no existing setting, create a default one
-      final reminderSetting = ReminderSettingModel(
-        id: '',
-        habitId: widget.habit.id,
-        isEnabled: true,
-        time: DateTime.now(),
-        snoozeDuration: 10,
-        repeatDaily: true,
-        isSoundEnabled: true,
-        isVibrationEnabled: false,
-      );
-      _initializeFormFromModel(reminderSetting);
-      _isLoading = false;
-    }
+//     _notificationService = LocalNotificationService();
+//     if (widget.reminderSetting != null) {
+//       _initializeFormFromModel(widget.reminderSetting!);
+//       _isLoading = false;
+//     } else {
+//       // If no existing setting, create a default one
+//       final reminderSetting = ReminderSettingModel(
+//         id: '',
+//         habitId: widget.habit.id,
+//         isEnabled: true,
+//         time: DateTime.now(),
+//         snoozeDuration: 10,
+//         repeatDaily: true,
+//         isSoundEnabled: true,
+//         isVibrationEnabled: false,
+//       );
+//       _initializeFormFromModel(reminderSetting);
+//       _isLoading = false;
+//     }
+// =======
+    _initializeController();
+    _startLiveClock();
   }
 
-  void _initializeFormFromModel(ReminderSettingModel model) {
-    debugPrint('🎛️ === INITIALIZING FORM FROM MODEL ===');
-    debugPrint('⏰ Model time: ${model.time}');
-    debugPrint('🔔 Model snooze: ${model.snoozeDuration}');
-    
-    final snoozeIndex = _snoozeOptions.indexOf(model.snoozeDuration);
-    if (snoozeIndex != -1) {
-      _selectedSnoozeIndex = snoozeIndex;
-      _useCustomSnooze = false;
-      debugPrint('🔔 Using predefined snooze: ${_snoozeOptions[_selectedSnoozeIndex]}min');
-    } else {
-      _useCustomSnooze = true;
-      _customSnoozeMinutes = model.snoozeDuration;
-      debugPrint('🔔 Using custom snooze: ${_customSnoozeMinutes}min');
-    }
-    
-    _selectedTime = TimeOfDay.fromDateTime(model.time);
-    _repeatDaily = model.repeatDaily;
-    _soundEnabled = model.isSoundEnabled;
-    _vibrationEnabled = model.isVibrationEnabled;
-    
-    debugPrint('🎛️ === FORM INITIALIZATION COMPLETE ===');
+  void _initializeController() {
+    _controller = ReminderSettingController(
+      habit: widget.habit,
+      repository: ReminderSettingRepository(Supabase.instance.client),
+      notificationService: LocalNotificationService(),
+    )..addListener(_onControllerUpdate);
+  }
+
+  void _onControllerUpdate() {
+    if (mounted) setState(() {});
+  }
+
+  // Method untuk live clock
+  void _startLiveClock() {
+    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (mounted) {
+        setState(() {
+          _currentTime = DateTime.now();
+        });
+      }
+    });
+// >>>>>>> f2d2932ae1d617906d117abaeeb90fd7045aea0c
+  }
+
+  String _formatTime(DateTime dateTime) {
+    return '${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}:${dateTime.second.toString().padLeft(2, '0')}';
+  }
+
+  String _formatDate(DateTime dateTime) {
+    return '${dateTime.day}/${dateTime.month}/${dateTime.year}';
+  }
+
+  @override
+  void dispose() {
+    _controller.removeListener(_onControllerUpdate);
+    _timer.cancel(); // Cancel timer saat dispose
+    super.dispose();
+  }
+
+  void _showSnackBar(String message, {bool isError = false}) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: isError ? Colors.red : Colors.green,
+        duration: const Duration(seconds: 3),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
   }
 
   Future<void> _saveSettings() async {
-    debugPrint('💾 === SAVE SETTINGS START ===');
-    debugPrint('🔍 Habit ID sebelum save: ${widget.habit.id}');
-    debugPrint('🔍 ReminderSetting ID: ${widget.reminderSetting!.id}');
+// <<<<<<< HEAD
+//     debugPrint('💾 === SAVE SETTINGS START ===');
+//     debugPrint('🔍 Habit ID sebelum save: ${widget.habit.id}');
+//     debugPrint('🔍 ReminderSetting ID: ${widget.reminderSetting!.id}');
     
-    // 🚨 VALIDASI KRITIS
-    if (widget.habit.id <= 0) {
-      debugPrint('❌ CRITICAL ERROR: Invalid habit ID: ${widget.habit.id}');
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('❌ ERROR: Invalid habit data. Please save habit first.')),
-        );
-      }
-      return;
-    }
+//     // 🚨 VALIDASI KRITIS
+//     if (widget.habit.id <= 0) {
+//       debugPrint('❌ CRITICAL ERROR: Invalid habit ID: ${widget.habit.id}');
+//       if (mounted) {
+//         ScaffoldMessenger.of(context).showSnackBar(
+//           const SnackBar(content: Text('❌ ERROR: Invalid habit data. Please save habit first.')),
+//         );
+//       }
+//       return;
+//     }
 
-    setState(() {
-      _isLoading = true;
-    });
+//     setState(() {
+//       _isLoading = true;
+//     });
 
-    try {
-      final snoozeDuration = _useCustomSnooze 
-          ? _customSnoozeMinutes 
-          : _snoozeOptions[_selectedSnoozeIndex];
+//     try {
+//       final snoozeDuration = _useCustomSnooze 
+//           ? _customSnoozeMinutes 
+//           : _snoozeOptions[_selectedSnoozeIndex];
 
-      // Create DateTime with selected time
-      final now = DateTime.now();
-      final scheduledDateTime = DateTime(
-        now.year,
-        now.month,
-        now.day,
-        _selectedTime.hour,
-        _selectedTime.minute,
-      );
+//       // Create DateTime with selected time
+//       final now = DateTime.now();
+//       final scheduledDateTime = DateTime(
+//         now.year,
+//         now.month,
+//         now.day,
+//         _selectedTime.hour,
+//         _selectedTime.minute,
+//       );
 
-      final updatedSetting = ReminderSettingModel(
-        id: widget.reminderSetting!.id,
-        habitId: widget.habit.id,
-        isEnabled: true,
-        time: scheduledDateTime,
-        snoozeDuration: snoozeDuration,
-        repeatDaily: _repeatDaily,
-        isSoundEnabled: _soundEnabled,
-        isVibrationEnabled: _vibrationEnabled,
-      );
+//       final updatedSetting = ReminderSettingModel(
+//         id: widget.reminderSetting!.id,
+//         habitId: widget.habit.id,
+//         isEnabled: true,
+//         time: scheduledDateTime,
+//         snoozeDuration: snoozeDuration,
+//         repeatDaily: _repeatDaily,
+//         isSoundEnabled: _soundEnabled,
+//         isVibrationEnabled: _vibrationEnabled,
+//       );
 
-      debugPrint('📦 ReminderSetting to save:');
-      debugPrint('   - Habit ID: ${updatedSetting.habitId}');
-      debugPrint('   - Time: ${updatedSetting.time}');
-      debugPrint('   - Snooze: ${updatedSetting.snoozeDuration}min');
-      debugPrint('   - Repeat Daily: ${updatedSetting.repeatDaily}');
+//       debugPrint('📦 ReminderSetting to save:');
+//       debugPrint('   - Habit ID: ${updatedSetting.habitId}');
+//       debugPrint('   - Time: ${updatedSetting.time}');
+//       debugPrint('   - Snooze: ${updatedSetting.snoozeDuration}min');
+//       debugPrint('   - Repeat Daily: ${updatedSetting.repeatDaily}');
 
   
-      await ref.read(habitNotifierProvider.notifier).saveReminderSetting(habitId: updatedSetting.habitId, isEnabled: updatedSetting.isEnabled, time: updatedSetting.time, snoozeDuration: snoozeDuration, repeatDaily: updatedSetting.repeatDaily, isSoundEnabled: updatedSetting.isSoundEnabled, isVibrationEnabled: updatedSetting.isVibrationEnabled);
+//       await ref.read(habitNotifierProvider.notifier).saveReminderSetting(habitId: updatedSetting.habitId, isEnabled: updatedSetting.isEnabled, time: updatedSetting.time, snoozeDuration: snoozeDuration, repeatDaily: updatedSetting.repeatDaily, isSoundEnabled: updatedSetting.isSoundEnabled, isVibrationEnabled: updatedSetting.isVibrationEnabled);
 
-      // Schedule notification jika push notification diaktifkan
-      if (_pushNotification) {
-        debugPrint('🔔 Scheduling notification...');
-        await _scheduleNotification();
-      } else {
-        // Cancel existing notifications jika push notification dimatikan
-        debugPrint('🔕 Cancelling notifications...');
-        await _notificationService.cancelNotification(widget.habit.id);
-      }
+//       // Schedule notification jika push notification diaktifkan
+//       if (_pushNotification) {
+//         debugPrint('🔔 Scheduling notification...');
+//         await _scheduleNotification();
+//       } else {
+//         // Cancel existing notifications jika push notification dimatikan
+//         debugPrint('🔕 Cancelling notifications...');
+//         await _notificationService.cancelNotification(widget.habit.id);
+//       }
 
-      // Check pending notifications for debugging
-      await _checkPendingNotifications();
+//       // Check pending notifications for debugging
+//       await _checkPendingNotifications();
 
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('✅ Settings saved successfully!')),
-        );
-      }
+//       if (mounted) {
+//         ScaffoldMessenger.of(context).showSnackBar(
+//           const SnackBar(content: Text('✅ Settings saved successfully!')),
+//         );
+//       }
 
-      setState(() {
-        _hasChanges = false;
-      });
+//       setState(() {
+//         _hasChanges = false;
+//       });
       
-      debugPrint('💾 === SAVE SETTINGS SUCCESS ===');
-    } catch (e, stackTrace) {
-      debugPrint('❌ SAVE SETTINGS ERROR: $e');
-      debugPrint('📋 StackTrace: $stackTrace');
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('❌ Failed to save settings: $e')),
-        );
-      }
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
-    }
-  }
-
-  Future<void> _scheduleNotification() async {
+//       debugPrint('💾 === SAVE SETTINGS SUCCESS ===');
+//     } catch (e, stackTrace) {
+//       debugPrint('❌ SAVE SETTINGS ERROR: $e');
+//       debugPrint('📋 StackTrace: $stackTrace');
+//       if (mounted) {
+//         ScaffoldMessenger.of(context).showSnackBar(
+//           SnackBar(content: Text('❌ Failed to save settings: $e')),
+//         );
+//       }
+//     } finally {
+//       if (mounted) {
+//         setState(() {
+//           _isLoading = false;
+//         });
+//       }
+// =======
     try {
-      debugPrint('⏰ === SCHEDULING NOTIFICATION ===');
-      debugPrint('   - Habit: ${widget.habit.name}');
-      debugPrint('   - Time: ${_selectedTime.format(context)}');
-      debugPrint('   - Repeat: $_repeatDaily');
-      
-      if (_repeatDaily) {
-        // Schedule daily repeating notification
-        await _notificationService.scheduleDailyReminder(
-          id: widget.habit.id,
-          title: 'Habit Reminder: ${widget.habit.name}',
-          body: 'Time to complete your habit: ${widget.habit.name}',
-          time: _selectedTime,
-          habitId: widget.habit.id.toString(),
-        );
-        debugPrint('🔁 Daily notification scheduled');
-      } else {
-        // Schedule one-time notification
-        final now = DateTime.now();
-        DateTime scheduledDateTime = DateTime(
-          now.year,
-          now.month,
-          now.day,
-          _selectedTime.hour,
-          _selectedTime.minute,
-        );
-
-        // Jika waktu sudah lewat hari ini, jadwalkan untuk besok
-        if (scheduledDateTime.isBefore(now)) {
-          scheduledDateTime = scheduledDateTime.add(const Duration(days: 1));
-          debugPrint('⏩ Time passed, scheduling for tomorrow');
-        }
-
-        await _notificationService.scheduleOneTimeReminder(
-          id: widget.habit.id,
-          title: 'Habit Reminder: ${widget.habit.name}',
-          body: 'Time to complete your habit: ${widget.habit.name}',
-          scheduledTime: scheduledDateTime,
-          habitId: widget.habit.id.toString(),
-        );
-        debugPrint('⏰ One-time notification scheduled');
-      }
-      
-      debugPrint('✅ Notification scheduled successfully for ${_selectedTime.format(context)}');
-    } catch (e, stackTrace) {
-      debugPrint('❌ ERROR scheduling notification: $e');
-      debugPrint('📋 StackTrace: $stackTrace');
+      await _controller.saveSettings();
+      _showSnackBar('Reminder settings saved successfully!');
+    } catch (e) {
+      _showSnackBar('Failed to save settings: $e', isError: true);
+// >>>>>>> f2d2932ae1d617906d117abaeeb90fd7045aea0c
     }
   }
 
-  // Method untuk memilih waktu
-  Future<void> _selectTime() async {
-    debugPrint('🕒 Opening time picker...');
-    final TimeOfDay? pickedTime = await showTimePicker(
-      context: context,
-      initialTime: _selectedTime,
-    );
-    
-    if (pickedTime != null && pickedTime != _selectedTime) {
-      debugPrint('🕒 Time selected: ${pickedTime.format(context)}');
-      setState(() {
-        _selectedTime = pickedTime;
-        _hasChanges = true;
-      });
-    } else {
-      debugPrint('🕒 Time picker cancelled');
-    }
-  }
-
-  // Test notification
   Future<void> _testNotification() async {
-    debugPrint('🧪 Testing notification...');
     try {
-      await _notificationService.showTestNotification(widget.habit.name);
-      debugPrint('✅ Test notification sent');
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('✅ Test notification sent!')),
-        );
-      }
-    } catch (e, stackTrace) {
-      debugPrint('❌ Test notification failed: $e');
-      debugPrint('📋 StackTrace: $stackTrace');
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('❌ Failed to send test notification: $e')),
-        );
-      }
+      await _controller.testNotification();
+      _showSnackBar('Test notification sent!');
+    } catch (e) {
+      _showSnackBar('Failed to send test notification: $e', isError: true);
     }
   }
 
-  // Check pending notifications for debugging
   Future<void> _checkPendingNotifications() async {
     try {
-      debugPrint('📋 === CHECKING PENDING NOTIFICATIONS ===');
-      final pending = await _notificationService.getPendingNotifications();
-      debugPrint('   Total pending: ${pending.length}');
-      for (var notif in pending) {
-        debugPrint('   - ID: ${notif.id}, Title: ${notif.title}');
-      }
-      debugPrint('📋 === PENDING NOTIFICATIONS CHECK COMPLETE ===');
+      await _controller.checkPendingNotifications();
+      _showSnackBar('Pending notifications checked - see console for details');
     } catch (e) {
-      debugPrint('❌ Error checking pending notifications: $e');
+      _showSnackBar('Failed to check notifications: $e', isError: true);
     }
   }
 
-  void _onSnoozeOptionChanged(int? index) {
-    if (index == null) return;
-    
-    debugPrint('🔔 Snooze option changed to index: $index');
-    setState(() {
-      _selectedSnoozeIndex = index;
-      _useCustomSnooze = false;
-      _hasChanges = true;
-    });
+  Future<void> _checkPermissions() async {
+    try {
+      await _controller.checkPermissions();
+      _showSnackBar('Permission check completed - see console for details');
+    } catch (e) {
+      _showSnackBar('Failed to check permissions: $e', isError: true);
+    }
   }
 
-  void _onCustomSnoozeChanged(String value) {
-    final minutes = int.tryParse(value) ?? 5;
-    debugPrint('🔔 Custom snooze changed to: $minutes minutes');
-    setState(() {
-      _customSnoozeMinutes = minutes.clamp(1, 60);
-      _useCustomSnooze = true;
-      _hasChanges = true;
-    });
-  }
-
-  // 🎯 DEBUG METHOD: Print semua state
-  void _debugCurrentState() {
-    debugPrint('🎯 === CURRENT STATE DEBUG ===');
-    debugPrint('   Habit ID: ${widget.habit.id}');
-    debugPrint('   Selected Time: ${_selectedTime.format(context)}');
-    debugPrint('   Push Notification: $_pushNotification');
-    debugPrint('   Repeat Daily: $_repeatDaily');
-    debugPrint('   Snooze: ${_useCustomSnooze ? _customSnoozeMinutes : _snoozeOptions[_selectedSnoozeIndex]}min');
-    debugPrint('   Sound: $_soundEnabled, Vibration: $_vibrationEnabled');
-    debugPrint('🎯 === STATE DEBUG COMPLETE ===');
+  Future<void> _resetReminderData() async {
+    try {
+      await _controller.resetReminderData();
+      _showSnackBar('Reminder data reset successfully');
+    } catch (e) {
+      _showSnackBar('Failed to reset data: $e', isError: true);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      key: _scaffoldKey,
       appBar: AppBar(
-        title: const Text('Reminder Settings'),
+        title: const Text(
+          'Reminder Settings',
+          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+        ),
+        backgroundColor: Colors.blue[50],
+        foregroundColor: Colors.blue[800],
+        elevation: 0,
         actions: [
-          // 🎯 DEBUG BUTTON
+          // Debug button
           IconButton(
-            icon: const Icon(Icons.bug_report),
-            onPressed: _debugCurrentState,
-            tooltip: 'Debug State',
+            icon: const Icon(Icons.bug_report_outlined),
+            onPressed: _controller.debugCurrentState,
+            tooltip: 'Debug Current State',
           ),
-          if (_hasChanges)
+          // Save button di appbar jika ada perubahan
+          if (_controller.hasChanges && !_controller.isLoading)
             TextButton(
-              onPressed: _isLoading ? null : _saveSettings,
+              onPressed: _saveSettings,
               child: const Text(
-                'Save',
-                style: TextStyle(color: Colors.white),
+                'SAVE',
+                style: TextStyle(
+                  color: Colors.blue,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
         ],
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // 🎯 HABIT INFO DEBUG CARD (SIMPLE VERSION)
-                  Card(
-                    color: Colors.blue[50],
-                    child: Padding(
-                      padding: const EdgeInsets.all(12),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            '🔍 Current Habit:',
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              color: Colors.blue,
-                            ),
-                          ),
-                          Text('ID: ${widget.habit.id}'),
-                          Text('Name: "${widget.habit.name}"'),
-                        ],
-                      ),
-                    ),
-                  ),
-                  
-                  const SizedBox(height: 16),
-                  
-                  // Reminders Section
-                  _buildRemindersSection(),
-                  
-                  const SizedBox(height: 24),
-                  
-                  // Notification Time Section
-                  _buildNotificationTimeSection(),
-                  
-                  const SizedBox(height: 24),
-                  
-                  // Notification Channel Section
-                  _buildNotificationChannelSection(),
-                  
-                  const SizedBox(height: 24),
-                  
-                  // Advanced Settings Section
-                  _buildAdvancedSettingsSection(),
-                  
-                  const SizedBox(height: 24),
-                  
-                  // Test Button
-                  _buildTestButton(),
-
-                  // Debug Button
-                  _buildDebugButton(),
-                  
-                  const SizedBox(height: 16),
-                  
-                  // Save Button
-                  _buildSaveButton(),
-                ],
-              ),
-            ),
+      body: _controller.isLoading ? const _LoadingState() : _buildContent(),
     );
   }
 
-  Widget _buildRemindersSection() {
-    return const Column(
+  Widget _buildContent() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Live Clock Debug Section - DITAMBAHKAN
+          _buildLiveClockSection(),
+
+          const SizedBox(height: 16),
+
+          // Header Info
+          _buildHeaderSection(),
+
+          const SizedBox(height: 24),
+
+          // Main Reminder Settings
+          _buildMainSettingsSection(),
+
+          const SizedBox(height: 24),
+
+          // Advanced Settings
+          _buildAdvancedSettingsSection(),
+
+          const SizedBox(height: 24),
+
+          // Testing Tools
+          _buildTestingToolsSection(),
+
+          const SizedBox(height: 32),
+
+          // Save Button
+          _buildSaveButton(),
+
+          const SizedBox(height: 16),
+        ],
+      ),
+    );
+  }
+
+  // WIDGET BARU: Live Clock Section
+  Widget _buildLiveClockSection() {
+    return Card(
+      elevation: 2,
+      color: Colors.orange[50],
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: Colors.orange[300]!, width: 1),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Section Header
+            const Row(
+              children: [
+                Icon(Icons.access_time, size: 20, color: Colors.orange),
+                SizedBox(width: 8),
+                Text(
+                  'Device Time Debug',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.orange,
+                  ),
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 12),
+
+            // Current Time Display
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Current Device Time:',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.grey,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      _formatTime(_currentTime),
+                      style: const TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.orange,
+                      ),
+                    ),
+                  ],
+                ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    const Text(
+                      'Date:',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.grey,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      _formatDate(_currentTime),
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.orange,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 8),
+
+            // Timezone Info
+            FutureBuilder<String>(
+              future: _getTimezoneInfo(),
+              builder: (context, snapshot) {
+                return Text(
+                  snapshot.data ?? 'Loading timezone info...',
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey,
+                    fontStyle: FontStyle.italic,
+                  ),
+                );
+              },
+            ),
+
+            const SizedBox(height: 8),
+
+            // Selected Time Comparison
+            _buildTimeComparison(),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // Method untuk mendapatkan info timezone
+  Future<String> _getTimezoneInfo() async {
+    try {
+      final timezoneOffset = _currentTime.timeZoneOffset;
+      final isDST = _currentTime.timeZoneName.contains('DT');
+      final hours = timezoneOffset.inHours;
+      final minutes = timezoneOffset.inMinutes.remainder(60);
+      final sign = hours >= 0 ? '+' : '-';
+
+      return 'Timezone: UTC${sign}${hours.abs().toString().padLeft(2, '0')}:${minutes.toString().padLeft(2, '0')} • ${_currentTime.timeZoneName} ${isDST ? '(Daylight Saving)' : ''}';
+    } catch (e) {
+      return 'Timezone: Unable to determine';
+    }
+  }
+
+  // Widget untuk perbandingan waktu yang dipilih dengan waktu sekarang
+  Widget _buildTimeComparison() {
+    final selectedTime = _controller.selectedTime;
+    final now = _currentTime;
+
+    // Buat DateTime dengan waktu yang dipilih untuk hari ini
+    final selectedDateTime = DateTime(
+      now.year,
+      now.month,
+      now.day,
+      selectedTime.hour,
+      selectedTime.minute,
+      0,
+    );
+
+    final difference = selectedDateTime.difference(now);
+    final isPast = difference.isNegative;
+    final absoluteDifference = difference.abs();
+
+    String statusText;
+    Color statusColor;
+    IconData statusIcon;
+
+    if (isPast) {
+      statusText =
+          'Selected time was ${_formatDuration(absoluteDifference)} ago';
+      statusColor = Colors.red;
+      statusIcon = Icons.schedule;
+    } else {
+      statusText = 'Selected time is in ${_formatDuration(absoluteDifference)}';
+      statusColor = Colors.green;
+      statusIcon = Icons.timer;
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: statusColor.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: statusColor.withOpacity(0.3)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(statusIcon, color: statusColor, size: 16),
+              const SizedBox(width: 8),
+              Text(
+                'Time Comparison',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  color: statusColor,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            statusText,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+              color: statusColor,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Selected: ${_controller.getTimeString(selectedTime)}',
+            style: const TextStyle(fontSize: 11, color: Colors.grey),
+          ),
+          Text(
+            'Current: ${_formatTime(now)}',
+            style: const TextStyle(fontSize: 11, color: Colors.grey),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _formatDuration(Duration duration) {
+    if (duration.inHours > 0) {
+      return '${duration.inHours}h ${duration.inMinutes.remainder(60)}m';
+    } else if (duration.inMinutes > 0) {
+      return '${duration.inMinutes}m ${duration.inSeconds.remainder(60)}s';
+    } else {
+      return '${duration.inSeconds}s';
+    }
+  }
+
+  Widget _buildHeaderSection() {
+    return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Reminders',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
+        // Habit Info Card
+        Card(
+          color: Colors.blue[50],
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Row(
+                  children: [
+                    Icon(Icons.info, color: Colors.blue, size: 16),
+                    SizedBox(width: 4),
+                    Text(
+                      'Current Habit:',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.blue,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Text('ID: ${widget.habit.id}'),
+                Text('Name: "${widget.habit.name}"'),
+              ],
+            ),
           ),
         ),
-        SizedBox(height: 8),
-        Text(
-          'Get notified about important updates',
-          style: TextStyle(
-            color: Colors.grey,
-            fontSize: 14,
+
+        const SizedBox(height: 16),
+
+        // Status Info
+        _buildStatusInfo(),
+      ],
+    );
+  }
+
+  Widget _buildStatusInfo() {
+    final hasReminder =
+        _controller.reminderSetting != null &&
+        _controller.reminderSetting!.isEnabled;
+
+    String statusText;
+    Color statusColor;
+
+    if (hasReminder) {
+      statusText = _controller.reminderSetting!.dynamicTimeDisplay;
+      statusColor = Colors.green;
+    } else {
+      statusText = 'No active reminder set';
+      statusColor = Colors.grey;
+    }
+
+    return Card(
+      color: hasReminder ? Colors.green[50] : Colors.grey[100],
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Row(
+          children: [
+            Icon(
+              hasReminder
+                  ? Icons.notifications_active
+                  : Icons.notifications_off,
+              color: hasReminder ? statusColor : Colors.grey,
+              size: 20,
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                statusText,
+                style: TextStyle(
+                  fontWeight: FontWeight.w500,
+                  color: hasReminder ? statusColor : Colors.grey[700],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMainSettingsSection() {
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Section Header
+            const Row(
+              children: [
+                Icon(Icons.settings, size: 20, color: Colors.blue),
+                SizedBox(width: 8),
+                Text(
+                  'Reminder Settings',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.blue,
+                  ),
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 16),
+
+            // Enable/Disable Toggle
+            _buildEnableToggle(),
+
+            const SizedBox(height: 16),
+
+            // Time Picker
+            _buildTimePicker(),
+
+            const SizedBox(height: 16),
+
+            // Snooze Settings
+            _buildSnoozeSettings(),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEnableToggle() {
+    return Card(
+      elevation: 1,
+      color: Colors.grey[50],
+      child: SwitchListTile(
+        title: const Text(
+          'Enable Reminder',
+          style: TextStyle(fontWeight: FontWeight.w500),
+        ),
+        subtitle: const Text('Receive notifications for this habit'),
+        value: _controller.pushNotification,
+        onChanged: (value) => _controller.setPushNotification(value),
+        activeColor: Colors.blue,
+        secondary: const Icon(Icons.notifications, color: Colors.blue),
+      ),
+    );
+  }
+
+  Widget _buildTimePicker() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Reminder Time',
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+        ),
+        const SizedBox(height: 8),
+        Card(
+          elevation: 2,
+          child: ListTile(
+            leading: const Icon(Icons.access_time, color: Colors.blue),
+            title: const Text(
+              'Set Time',
+              style: TextStyle(fontWeight: FontWeight.w500),
+            ),
+            subtitle: Text(
+              _controller.getTimeString(_controller.selectedTime),
+              style: const TextStyle(fontSize: 16),
+            ),
+            trailing: const Icon(Icons.arrow_drop_down, color: Colors.grey),
+            onTap: () => _showTimePicker(),
           ),
         ),
       ],
     );
   }
 
-  Widget _buildNotificationTimeSection() {
+  Widget _buildSnoozeSettings() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text(
-          'Notification Time',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-          ),
+          'Snooze Duration',
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
         ),
-        const SizedBox(height: 16),
-        
-        // Time Picker
-        ListTile(
-          leading: const Icon(Icons.access_time),
-          title: const Text('Reminder Time'),
-          subtitle: Text(_selectedTime.format(context)),
-          onTap: _selectTime,
-          trailing: const Icon(Icons.arrow_drop_down),
-        ),
-        
-        const SizedBox(height: 16),
-        
-        // Snooze Options
+        const SizedBox(height: 8),
         const Text(
-          'Snooze Options',
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w500,
-          ),
+          'How long to wait before reminding again',
+          style: TextStyle(color: Colors.grey, fontSize: 14),
         ),
         const SizedBox(height: 12),
-        
+
+        // Snooze Options
         Column(
           children: [
-            for (int i = 0; i < _snoozeOptions.length; i++)
-              _buildSnoozeOption(
-                '${_snoozeOptions[i]} minutes',
-                i,
-              ),
+            for (int i = 0; i < _controller.snoozeOptions.length; i++)
+              _buildSnoozeOption(i),
             _buildCustomSnoozeOption(),
           ],
         ),
@@ -479,244 +774,396 @@ class _ReminderSettingScreenState extends ConsumerState<ReminderSettingScreen> {
     );
   }
 
-  Widget _buildSnoozeOption(String text, int index) {
+  Widget _buildSnoozeOption(int index) {
+    final isSelected =
+        _controller.selectedSnoozeIndex == index &&
+        !_controller.useCustomSnooze;
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
-      child: Container(
-        decoration: BoxDecoration(
-          border: Border.all(
-            color: (_selectedSnoozeIndex == index && !_useCustomSnooze) 
-                ? Colors.blue 
-                : Colors.grey.shade300,
-          ),
+      child: Card(
+        elevation: 1,
+        color: isSelected ? Colors.blue[50] : Colors.white,
+        shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(8),
+          side: BorderSide(
+            color: isSelected ? Colors.blue : Colors.grey[300]!,
+            width: isSelected ? 2 : 1,
+          ),
         ),
         child: RadioListTile<int>(
-          title: Text(text),
           value: index,
-          groupValue: _useCustomSnooze ? null : _selectedSnoozeIndex,
-          onChanged: (value) => _onSnoozeOptionChanged(value),
+          groupValue: _controller.useCustomSnooze
+              ? null
+              : _controller.selectedSnoozeIndex,
+          onChanged: (value) {
+            if (value != null) {
+              _controller.setSnoozeOption(value);
+            }
+          },
+          activeColor: Colors.blue,
+          title: Text(
+            '${_controller.snoozeOptions[index]} minutes',
+            style: TextStyle(
+              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+              color: isSelected ? Colors.blue[800] : Colors.black,
+            ),
+          ),
         ),
       ),
     );
   }
 
   Widget _buildCustomSnoozeOption() {
-    return Container(
-      decoration: BoxDecoration(
-        border: Border.all(
-          color: _useCustomSnooze ? Colors.blue : Colors.grey.shade300,
-        ),
+    final isSelected = _controller.useCustomSnooze;
+
+    return Card(
+      elevation: 1,
+      color: isSelected ? Colors.blue[50] : Colors.white,
+      shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(8),
+        side: BorderSide(
+          color: isSelected ? Colors.blue : Colors.grey[300]!,
+          width: isSelected ? 2 : 1,
+        ),
       ),
       child: RadioListTile<int>(
+        value: -1,
+        groupValue: isSelected ? -1 : null,
+        onChanged: (value) {
+          if (value != null) {
+            _controller.setUseCustomSnooze(true);
+          }
+        },
+        activeColor: Colors.blue,
         title: Row(
           children: [
-            const Text('Custom'),
+            const Text('Custom', style: TextStyle(fontWeight: FontWeight.w500)),
             const SizedBox(width: 16),
             SizedBox(
-              width: 80,
+              width: 100,
               child: TextField(
                 controller: TextEditingController(
-                  text: _customSnoozeMinutes.toString(),
+                  text: _controller.customSnoozeMinutes.toString(),
                 ),
-                onChanged: _onCustomSnoozeChanged,
+                onChanged: (value) {
+                  final minutes = int.tryParse(value) ?? 5;
+                  _controller.setCustomSnooze(minutes);
+                },
                 keyboardType: TextInputType.number,
                 decoration: const InputDecoration(
-                  hintText: '5 min',
+                  hintText: 'Minutes',
                   border: OutlineInputBorder(),
-                  contentPadding: EdgeInsets.symmetric(horizontal: 8),
+                  contentPadding: EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
+                  isDense: true,
                 ),
               ),
             ),
           ],
         ),
-        value: -1,
-        groupValue: _useCustomSnooze ? -1 : null,
-        onChanged: (value) {
-          setState(() {
-            _useCustomSnooze = true;
-            _hasChanges = true;
-          });
-        },
       ),
-    );
-  }
-
-  Widget _buildNotificationChannelSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Notification Channel',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        const SizedBox(height: 16),
-        
-        Column(
-          children: [
-            CheckboxListTile(
-              title: const Text('Push Notification'),
-              value: _pushNotification,
-              onChanged: (value) {
-                setState(() {
-                  _pushNotification = value ?? false;
-                  _hasChanges = true;
-                });
-              },
-            ),
-            CheckboxListTile(
-              title: const Text('Email'),
-              value: _emailNotification,
-              onChanged: (value) {
-                setState(() {
-                  _emailNotification = value ?? false;
-                  _hasChanges = true;
-                });
-              },
-            ),
-            CheckboxListTile(
-              title: const Text('Both'),
-              value: _pushNotification && _emailNotification,
-              onChanged: (value) {
-                setState(() {
-                  final newValue = value ?? false;
-                  _pushNotification = newValue;
-                  _emailNotification = newValue;
-                  _hasChanges = true;
-                });
-              },
-            ),
-          ],
-        ),
-      ],
     );
   }
 
   Widget _buildAdvancedSettingsSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Advanced Settings',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        const SizedBox(height: 16),
-        
-        Column(
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            CheckboxListTile(
-              title: const Text('Repeat Daily'),
-              value: _repeatDaily,
-              onChanged: (value) {
-                setState(() {
-                  _repeatDaily = value ?? true;
-                  _hasChanges = true;
-                });
-              },
+            // Section Header
+            const Row(
+              children: [
+                Icon(Icons.tune, size: 20, color: Colors.purple),
+                SizedBox(width: 8),
+                Text(
+                  'Advanced Settings',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.purple,
+                  ),
+                ),
+              ],
             ),
-            CheckboxListTile(
-              title: const Text('Sound'),
-              value: _soundEnabled,
-              onChanged: (value) {
-                setState(() {
-                  _soundEnabled = value ?? true;
-                  _hasChanges = true;
-                });
-              },
+
+            const SizedBox(height: 16),
+
+            // Repeat Daily
+            _buildAdvancedOption(
+              title: 'Repeat Daily',
+              subtitle: 'Send reminder every day at the same time',
+              value: _controller.repeatDaily,
+              onChanged: _controller.setRepeatDaily,
+              icon: Icons.repeat,
             ),
-            CheckboxListTile(
-              title: const Text('Vibration'),
-              value: _vibrationEnabled,
-              onChanged: (value) {
-                setState(() {
-                  _vibrationEnabled = value ?? false;
-                  _hasChanges = true;
-                });
-              },
+
+            const Divider(height: 1),
+
+            // Sound
+            _buildAdvancedOption(
+              title: 'Sound',
+              subtitle: 'Play sound with notification',
+              value: _controller.soundEnabled,
+              onChanged: _controller.setSoundEnabled,
+              icon: Icons.volume_up,
+            ),
+
+            const Divider(height: 1),
+
+            // Vibration
+            _buildAdvancedOption(
+              title: 'Vibration',
+              subtitle: 'Vibrate device with notification',
+              value: _controller.vibrationEnabled,
+              onChanged: _controller.setVibrationEnabled,
+              icon: Icons.vibration,
             ),
           ],
-        ),
-      ],
-    );
-  }
-
-  Widget _buildTestButton() {
-    return SizedBox(
-      width: double.infinity,
-      child: OutlinedButton.icon(
-        onPressed: _testNotification,
-        icon: const Icon(Icons.notifications_active),
-        label: const Text('Test Notification'),
-        style: OutlinedButton.styleFrom(
-          foregroundColor: Colors.blue,
-          padding: const EdgeInsets.symmetric(vertical: 12),
         ),
       ),
     );
   }
 
-  Widget _buildDebugButton() {
+  Widget _buildAdvancedOption({
+    required String title,
+    required String subtitle,
+    required bool value,
+    required Function(bool) onChanged,
+    required IconData icon,
+  }) {
+    return ListTile(
+      leading: Icon(icon, color: Colors.purple),
+      title: Text(title, style: const TextStyle(fontWeight: FontWeight.w500)),
+      subtitle: Text(subtitle),
+      trailing: Switch(
+        value: value,
+        onChanged: onChanged,
+        activeColor: Colors.purple,
+      ),
+      contentPadding: EdgeInsets.zero,
+    );
+  }
+
+  Widget _buildTestingToolsSection() {
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Row(
+              children: [
+                Icon(Icons.build, size: 20, color: Colors.orange),
+                SizedBox(width: 8),
+                Text(
+                  'Testing Tools',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.orange,
+                  ),
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 8),
+            const Text(
+              'Use these tools to test and debug notifications',
+              style: TextStyle(color: Colors.grey, fontSize: 14),
+            ),
+
+            const SizedBox(height: 16),
+
+            // Test Buttons
+            Column(
+              children: [
+                _buildTestButton(
+                  icon: Icons.notifications_active,
+                  label: 'Test Immediate Notification',
+                  color: Colors.green,
+                  onPressed: _testNotification,
+                ),
+                const SizedBox(height: 8),
+                _buildTestButton(
+                  icon: Icons.list_alt,
+                  label: 'Check Pending Notifications',
+                  color: Colors.blue,
+                  onPressed: _checkPendingNotifications,
+                ),
+                const SizedBox(height: 8),
+                _buildTestButton(
+                  icon: Icons.security,
+                  label: 'Check Permissions',
+                  color: Colors.purple,
+                  onPressed: _checkPermissions,
+                ),
+                const SizedBox(height: 8),
+                _buildTestButton(
+                  icon: Icons.restart_alt,
+                  label: 'Reset Reminder Data',
+                  color: Colors.red,
+                  onPressed: _resetReminderData,
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTestButton({
+    required IconData icon,
+    required String label,
+    required Color color,
+    required VoidCallback onPressed,
+  }) {
+    return SizedBox(
+      width: double.infinity,
+      child: OutlinedButton.icon(
+        onPressed: onPressed,
+        icon: Icon(icon, size: 20),
+        label: Text(
+          label,
+          style: TextStyle(fontWeight: FontWeight.w500, color: color),
+        ),
+        style: OutlinedButton.styleFrom(
+          foregroundColor: color,
+          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+          side: BorderSide(color: color),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          alignment: Alignment.centerLeft,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSaveButton() {
     return Column(
       children: [
-        SizedBox(
-          width: double.infinity,
-          child: OutlinedButton.icon(
-            onPressed: _checkPendingNotifications,
-            icon: const Icon(Icons.bug_report),
-            label: const Text('Check Pending Notifications'),
-            style: OutlinedButton.styleFrom(
-              foregroundColor: Colors.orange,
-              padding: const EdgeInsets.symmetric(vertical: 12),
+        if (_controller.hasChanges)
+          Card(
+            color: Colors.blue[50],
+            child: Padding(
+              padding: const EdgeInsets.all(12),
+              child: Row(
+                children: [
+                  const Icon(Icons.info, color: Colors.blue, size: 20),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'You have unsaved changes',
+                      style: TextStyle(
+                        color: Colors.blue[800],
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
-        ),
+
         const SizedBox(height: 8),
+
         SizedBox(
           width: double.infinity,
-          child: OutlinedButton.icon(
-            onPressed: _debugCurrentState,
-            icon: const Icon(Icons.info),
-            label: const Text('Debug Current State'),
-            style: OutlinedButton.styleFrom(
-              foregroundColor: Colors.green,
-              padding: const EdgeInsets.symmetric(vertical: 12),
+          child: ElevatedButton(
+            onPressed: _controller.isLoading ? null : _saveSettings,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.blue,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              elevation: 2,
             ),
+            child: _controller.isLoading
+                ? const SizedBox(
+                    height: 20,
+                    width: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                    ),
+                  )
+                : const Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.save, size: 20),
+                      SizedBox(width: 8),
+                      Text(
+                        'Save Reminder Settings',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
           ),
         ),
       ],
     );
   }
 
-  Widget _buildSaveButton() {
-    return SizedBox(
-      width: double.infinity,
-      child: ElevatedButton(
-        onPressed: _isLoading ? null : _saveSettings,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.blue,
-          foregroundColor: Colors.white,
-          padding: const EdgeInsets.symmetric(vertical: 16),
-        ),
-        child: _isLoading
-            ? const SizedBox(
-                height: 20,
-                width: 20,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                ),
-              )
-            : const Text(
-                'Save Settings',
-                style: TextStyle(fontSize: 16),
+  Future<void> _showTimePicker() async {
+    final TimeOfDay? pickedTime = await showTimePicker(
+      context: context,
+      initialTime: _controller.selectedTime,
+      builder: (BuildContext context, Widget? child) {
+        return Theme(
+          data: ThemeData.light().copyWith(
+            colorScheme: const ColorScheme.light(
+              primary: Colors.blue,
+              onPrimary: Colors.white,
+              surface: Colors.white,
+              onSurface: Colors.black,
+            ),
+            timePickerTheme: const TimePickerThemeData(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.all(Radius.circular(12)),
               ),
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+
+    if (pickedTime != null && pickedTime != _controller.selectedTime) {
+      _controller.setSelectedTime(pickedTime);
+      _showSnackBar('Time set to ${_controller.getTimeString(pickedTime)}');
+    }
+  }
+}
+
+class _LoadingState extends StatelessWidget {
+  const _LoadingState();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          CircularProgressIndicator(),
+          SizedBox(height: 16),
+          Text(
+            'Loading reminder settings...',
+            style: TextStyle(fontSize: 16, color: Colors.grey),
+          ),
+        ],
       ),
     );
   }

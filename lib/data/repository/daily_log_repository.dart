@@ -23,7 +23,7 @@ class DailyLogRepository {
         'habit_id': habitId,
         'log_date': date.toIso8601String().substring(0, 10),
         'status': status.name,
-        'actual_value': actualValue,
+        'actual_value': actualValue?.toInt(), // UBAH INI: convert ke int
         'created_at': DateTime.now().toIso8601String(),
       };
 

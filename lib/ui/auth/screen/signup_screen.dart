@@ -4,6 +4,7 @@ import 'package:purewill/ui/auth/auth_provider.dart';
 import 'package:purewill/ui/auth/screen/login_screen.dart';
 import 'package:purewill/ui/auth/screen/verif_screen.dart';
 import 'package:purewill/ui/auth/view_model/auth_view_model.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class SignupScreen extends ConsumerStatefulWidget {
   const SignupScreen({super.key});
@@ -14,6 +15,7 @@ class SignupScreen extends ConsumerStatefulWidget {
 
 class _SignupScreenState extends ConsumerState<SignupScreen> {
   bool _obscurePassword = true;
+  bool _isLoading = false;
   final TextEditingController _fullNameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
@@ -27,41 +29,97 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
     );
   }
 
-  Future<void> _signUp() async {
-    try {
-          await ref
-              .read(
-                authNotifierProvider.notifier,
-              )
-              .signup(
-                _fullNameController.text.trim(),
-                _emailController.text.trim(),
-                _passwordController.text.trim(),
-              );
-          if (!mounted) return;
+// <<<<<<< HEAD
+//   Future<void> _signUp() async {
+//     try {
+//           await ref
+//               .read(
+//                 authNotifierProvider.notifier,
+//               )
+//               .signup(
+//                 _fullNameController.text.trim(),
+//                 _emailController.text.trim(),
+//                 _passwordController.text.trim(),
+//               );
+//           if (!mounted) return;
 
-          _showSnackBar("Registrasi Berhasil! Mengalihkan...");
+//           _showSnackBar("Registrasi Berhasil! Mengalihkan...");
 
-          await Future.delayed(const Duration(seconds: 1));
+//           await Future.delayed(const Duration(seconds: 1));
 
-          if (!mounted) return;
+//           if (!mounted) return;
 
-          Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (context) => VerificationScreen(
-              email: _emailController.text.trim(),
-              type: VerificationType.registration,
-            ),
-          ),
-        );
+//           Navigator.of(context).push(
+//           MaterialPageRoute(
+//             builder: (context) => VerificationScreen(
+//               email: _emailController.text.trim(),
+//               type: VerificationType.registration,
+//             ),
+//           ),
+//         );
 
-        } catch (e) {
-          if (mounted) {
-            _showSnackBar(
-                "Login Gagal: ${e.toString().replaceFirst('Exception: ', '')}");
-          }
-        }
+//         } catch (e) {
+//           if (mounted) {
+//             _showSnackBar(
+//                 "Login Gagal: ${e.toString().replaceFirst('Exception: ', '')}");
+//           }
+//         }
+// =======
+ Future<void> _signUp() async {
+  if (!_formKey.currentState!.validate()) return;
+  
+  try {
+    // Tampilkan loading
+    setState(() {
+      _isLoading = true;
+    });
+    
+    // 1. Sign up user
+    await ref.read(authNotifierProvider.notifier).signup(
+      _fullNameController.text.trim(),
+      _emailController.text.trim(),
+      _passwordController.text.trim(),
+    );
+    
+    if (!mounted) return;
+    
+    // 2. Tampilkan pesan sukses
+    _showSnackBar("Registrasi Berhasil! Kode OTP telah dikirim ke email.");
+    
+    // 3. Check OTP status
+    final currentUser = Supabase.instance.client.auth.currentUser;
+    print('User after signup: ${currentUser?.email}');
+    print('User confirmed: ${currentUser?.confirmedAt}');
+    
+    // 4. Navigasi ke verification screen
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => VerificationScreen(
+          email: _emailController.text.trim(),
+          type: VerificationType.registration,
+        ),
+      ),
+    );
+    
+  } on AuthException catch (e) {
+    _showSnackBar("Registrasi Gagal: ${e.message}");
+    
+    // Log error detail
+    print('AuthException: ${e.message}');
+    print('Status: ${e.statusCode}');
+    
+  } catch (e) {
+    _showSnackBar("Terjadi kesalahan: $e");
+    print('Error: $e');
+  } finally {
+    if (mounted) {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+// >>>>>>> f2d2932ae1d617906d117abaeeb90fd7045aea0c
   }
+}
 
   @override
   void dispose() {

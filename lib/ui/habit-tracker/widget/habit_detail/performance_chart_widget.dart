@@ -1,19 +1,56 @@
-// lib\ui\habit-tracker\widget\performance_chart_widget.dart
+// lib\ui\habit-tracker\widget\habit_detail\performance_chart_widget.dart
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:purewill/ui/habit-tracker/habit_provider.dart';
 
-class PerformanceChartWidget extends StatelessWidget {
-  final List<double> weeklyPerformance;
+class PerformanceChartWidget extends ConsumerStatefulWidget {
+  final int habitId;
 
-  const PerformanceChartWidget({
-    super.key,
-    required this.weeklyPerformance,
-  });
+  const PerformanceChartWidget({super.key, required this.habitId});
+
+  @override
+  ConsumerState<PerformanceChartWidget> createState() =>
+      _PerformanceChartWidgetState();
+}
+
+class _PerformanceChartWidgetState
+    extends ConsumerState<PerformanceChartWidget> {
+  List<double> weeklyPerformance = List.filled(7, 0.0);
+  bool isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadPerformanceData();
+  }
+
+  Future<void> _loadPerformanceData() async {
+    try {
+      final performanceService = ref.read(performanceServiceProvider);
+
+      final data = await performanceService.getWeeklyPerformance(
+        widget.habitId,
+      );
+
+      setState(() {
+        weeklyPerformance = data;
+        isLoading = false;
+      });
+    } catch (e) {
+      debugPrint('Error loading performance data: $e');
+      setState(() {
+        isLoading = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-    final maxPerformance = weeklyPerformance.reduce((a, b) => a > b ? a : b);
-    
+    final maxPerformance = weeklyPerformance.isNotEmpty
+        ? weeklyPerformance.reduce((a, b) => a > b ? a : b)
+        : 0.0;
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -31,7 +68,6 @@ class PerformanceChartWidget extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Title inside the chart
           const Text(
             "Weekly Performance",
             style: TextStyle(
@@ -41,18 +77,29 @@ class PerformanceChartWidget extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 16),
-          
-          SizedBox(
-            height: 120,
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: List.generate(7, (index) {
-                final percentage = weeklyPerformance[index] / 100;
-                return _buildBarChartItem(days[index], percentage, maxPerformance);
-              }),
+
+          if (isLoading)
+            const SizedBox(
+              height: 120,
+              child: Center(child: CircularProgressIndicator()),
+            )
+          else
+            SizedBox(
+              height: 140, // TINGGI DITAMBAH
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: List.generate(7, (index) {
+                  final percentage = weeklyPerformance[index] / 100;
+                  return _buildBarChartItem(
+                    days[index],
+                    percentage,
+                    maxPerformance,
+                  );
+                }),
+              ),
             ),
-          ),
+
           const SizedBox(height: 16),
           const Divider(),
           const SizedBox(height: 8),
@@ -62,9 +109,13 @@ class PerformanceChartWidget extends StatelessWidget {
     );
   }
 
-  Widget _buildBarChartItem(String day, double percentage, double maxPerformance) {
+  Widget _buildBarChartItem(
+    String day,
+    double percentage,
+    double maxPerformance,
+  ) {
     final height = percentage * 80;
-    
+
     return Column(
       mainAxisAlignment: MainAxisAlignment.end,
       children: [
@@ -82,17 +133,14 @@ class PerformanceChartWidget extends StatelessWidget {
         const SizedBox(height: 8),
         Text(
           '${(percentage * 100).toInt()}%',
-          style: TextStyle(
-            fontSize: 10,
-            color: Colors.grey[600],
-          ),
+          style: TextStyle(fontSize: 10, color: Colors.grey[600]),
         ),
         const SizedBox(height: 4),
         Text(
           day,
           style: TextStyle(
             fontSize: 12,
-            fontWeight: FontWeight.normal, // Tidak bold
+            fontWeight: FontWeight.normal,
             color: Colors.grey[600],
           ),
         ),
@@ -101,35 +149,32 @@ class PerformanceChartWidget extends StatelessWidget {
   }
 
   Widget _buildPerformanceLegend() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceAround,
+    return Wrap(
+      spacing: 6,
+      runSpacing: 2,
+      alignment: WrapAlignment.spaceAround,
       children: [
         _buildLegendItem(const Color(0xFF4CAF50), "Excellent (80-100%)"),
-        _buildLegendItem(const Color(0xFFFFC107), "Good (60-79%)"),
-        _buildLegendItem(const Color(0xFFF44336), "Needs Improvement (<60%)"),
+      _buildLegendItem(const Color(0xFFFFC107), "Good (60-79%)"),
+      _buildLegendItem(const Color(0xFFF44336), "Needs Improvement (<60%)"),
       ],
     );
   }
 
   Widget _buildLegendItem(Color color, String text) {
     return Row(
+      mainAxisSize: MainAxisSize.min,
       children: [
         Container(
-          width: 12,
-          height: 12,
+          width: 10,
+          height: 10,
           decoration: BoxDecoration(
             color: color,
-            borderRadius: BorderRadius.circular(2),
+            borderRadius: BorderRadius.circular(1),
           ),
         ),
-        const SizedBox(width: 4),
-        Text(
-          text,
-          style: const TextStyle(
-            fontSize: 10,
-            color: Colors.grey,
-          ),
-        ),
+        const SizedBox(width: 2),
+        Text(text, style: const TextStyle(fontSize: 8, color: Colors.grey,fontWeight: FontWeight.bold,)),
       ],
     );
   }
