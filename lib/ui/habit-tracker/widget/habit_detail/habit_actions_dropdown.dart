@@ -1,4 +1,3 @@
-// lib\ui\habit-tracker\widget\habit_detail\habit_actions_dropdown.dart
 import 'package:flutter/material.dart';
 import 'package:purewill/domain/model/habit_model.dart';
 import 'package:purewill/ui/habit-tracker/screen/edit_habit_screen.dart';
@@ -57,7 +56,6 @@ class HabitActionsDropdown extends StatelessWidget {
     );
   }
 
-  // Static method untuk show delete confirmation dialog
   static void showDeleteConfirmationDialog({
     required BuildContext context,
     required String habitName,
@@ -85,7 +83,6 @@ class HabitActionsDropdown extends StatelessWidget {
     );
   }
 
-  // Static method untuk handle menu actions dengan default behavior
   static void handleMenuAction({
     required String value,
     required BuildContext context,
@@ -100,7 +97,6 @@ class HabitActionsDropdown extends StatelessWidget {
         if (onEdit != null) {
           onEdit();
         } else {
-          // Default behavior: navigate to EditHabitScreen
           _navigateToEditScreen(context, habit);
         }
         break;
@@ -108,7 +104,6 @@ class HabitActionsDropdown extends StatelessWidget {
         if (onReminder != null) {
           onReminder();
         } else {
-          // Default behavior: navigate to ReminderSettingScreen
           _navigateToReminderSettings(context, habit);
         }
         break;
@@ -131,7 +126,6 @@ class HabitActionsDropdown extends StatelessWidget {
     }
   }
 
-  // Method untuk navigasi ke edit screen
   static void _navigateToEditScreen(BuildContext context, HabitModel habit) {
     Navigator.push(
       context,
@@ -141,7 +135,6 @@ class HabitActionsDropdown extends StatelessWidget {
     );
   }
 
-  // Method untuk navigasi ke reminder settings screen
   static void _navigateToReminderSettings(BuildContext context, HabitModel habit) {
     Navigator.push(
       context,

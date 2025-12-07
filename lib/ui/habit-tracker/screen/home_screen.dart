@@ -1,4 +1,3 @@
-// lib\ui\habit-tracker\screen\home_screen.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:purewill/domain/model/daily_log_model.dart';
@@ -51,22 +50,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   void _onNavBarTap(int index) {
-    print('NavBar tapped: index $index'); // Debug print
-
     if (index == 2) {
-      print('Navigating to AddHabitScreen...');
       Navigator.of(context)
           .push(MaterialPageRoute(builder: (context) => const AddHabitScreen()))
           .then((_) {
-            print('Returned from AddHabitScreen');
             if (mounted) {
               setState(() {
-                _currentIndex = 0; // Kembali ke Home setelah add habit
+                _currentIndex = 0;
               });
             }
           });
     } else {
-      print('Switching to tab: $index');
       setState(() {
         _currentIndex = index;
       });
@@ -81,7 +75,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final String userName = currentUser?.fullName ?? "user not found";
     final String userEmail = currentUser?.email ?? "email not found";
 
-    // Hitung habits yang completed today
     final completedToday = userHabits.where((habit) {
       return _todayCompletionStatus[habit.id] == LogStatus.success;
     }).length;
@@ -135,7 +128,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         todayCompletionStatus: _todayCompletionStatus,
                         habits: userHabits,
                         onHabitTap: _handleHabitTap,
-                        onCheckboxTap: _handleCheckboxTap, // TAMBAH INI
+                        onCheckboxTap: _handleCheckboxTap,
                       ),
                     ],
                   ),
@@ -170,22 +163,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           _todayCompletionStatus[habit.id] == LogStatus.success;
       final newStatus = !currentStatus;
 
-  
       setState(() {
         _todayCompletionStatus[habit.id] = newStatus
             ? LogStatus.success
             : LogStatus.neutral;
       });
 
-      // Update ke backend menggunakan method yang sudah ada
       await ref
           .read(habitNotifierProvider.notifier)
           .toggleHabitCompletion(habit);
-
-      // Refresh data untuk sinkronisasi
-      // _loadTodayCompletionStatus();
     } catch (e) {
-      // Jika error, kembalikan status sebelumnya
       final previousStatus =
           _todayCompletionStatus[habit.id] == LogStatus.success;
       setState(() {

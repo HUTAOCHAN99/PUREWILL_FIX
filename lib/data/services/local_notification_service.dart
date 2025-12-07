@@ -4,7 +4,8 @@ import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest.dart' as tz;
 
 class LocalNotificationService {
-  static final LocalNotificationService _instance = LocalNotificationService._internal();
+  static final LocalNotificationService _instance =
+      LocalNotificationService._internal();
   factory LocalNotificationService() => _instance;
   LocalNotificationService._internal();
 
@@ -12,32 +13,28 @@ class LocalNotificationService {
 
   Future<void> initialize() async {
     _notificationsPlugin = FlutterLocalNotificationsPlugin();
-    
-    // Initialize timezone
+
     tz.initializeTimeZones();
 
-    // Android settings
-    const AndroidInitializationSettings androidSettings = 
+    const AndroidInitializationSettings androidSettings =
         AndroidInitializationSettings('@mipmap/ic_launcher');
-    
-    // iOS settings
-    const DarwinInitializationSettings iosSettings = DarwinInitializationSettings(
-      requestAlertPermission: true,
-      requestBadgePermission: true,
-      requestSoundPermission: true,
-    );
 
-    // Windows settings - PERBAIKAN: tambahkan defaultActionName
-    const LinuxInitializationSettings linuxSettings = LinuxInitializationSettings(
-      defaultActionName: 'Open notification',
-    );
+    const DarwinInitializationSettings iosSettings =
+        DarwinInitializationSettings(
+          requestAlertPermission: true,
+          requestBadgePermission: true,
+          requestSoundPermission: true,
+        );
 
-    // Initialization settings
-    const InitializationSettings initializationSettings = InitializationSettings(
-      android: androidSettings,
-      iOS: iosSettings,
-      linux: linuxSettings,
-    );
+    const LinuxInitializationSettings linuxSettings =
+        LinuxInitializationSettings(defaultActionName: 'Open notification');
+
+    const InitializationSettings initializationSettings =
+        InitializationSettings(
+          android: androidSettings,
+          iOS: iosSettings,
+          linux: linuxSettings,
+        );
 
     await _notificationsPlugin.initialize(
       initializationSettings,
@@ -46,13 +43,14 @@ class LocalNotificationService {
       },
     );
 
-    // Request permissions untuk iOS
     await _requestPermissions();
   }
 
   Future<void> _requestPermissions() async {
-    final iOSPlatform = _notificationsPlugin.resolvePlatformSpecificImplementation<
-        IOSFlutterLocalNotificationsPlugin>();
+    final iOSPlatform = _notificationsPlugin
+        .resolvePlatformSpecificImplementation<
+          IOSFlutterLocalNotificationsPlugin
+        >();
     await iOSPlatform?.requestPermissions(
       alert: true,
       badge: true,
@@ -60,7 +58,6 @@ class LocalNotificationService {
     );
   }
 
-  // Schedule daily reminder
   Future<void> scheduleDailyReminder({
     required int id,
     required String title,
@@ -79,29 +76,26 @@ class LocalNotificationService {
         time.minute,
       );
 
-      // Jika waktu sudah lewat hari ini, schedule untuk besok
       if (scheduledDate.isBefore(now)) {
         scheduledDate = scheduledDate.add(const Duration(days: 1));
       }
 
-      // Android notification details
-      const AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
-        'daily_habit_channel',
-        'Daily Habit Reminders',
-        channelDescription: 'Daily reminders for your habits',
-        importance: Importance.high,
-        priority: Priority.high,
-        enableVibration: true,
-        playSound: true,
-      );
+      const AndroidNotificationDetails androidDetails =
+          AndroidNotificationDetails(
+            'daily_habit_channel',
+            'Daily Habit Reminders',
+            channelDescription: 'Daily reminders for your habits',
+            importance: Importance.high,
+            priority: Priority.high,
+            enableVibration: true,
+            playSound: true,
+          );
 
-      // iOS notification details
       const DarwinNotificationDetails iosDetails = DarwinNotificationDetails(
         sound: 'default',
         badgeNumber: 1,
       );
 
-      // Windows notification details
       const LinuxNotificationDetails linuxDetails = LinuxNotificationDetails();
 
       const NotificationDetails notificationDetails = NotificationDetails(
@@ -110,7 +104,6 @@ class LocalNotificationService {
         linux: linuxDetails,
       );
 
-      // Schedule the notification - PERBAIKAN: hapus parameter deprecated
       await _notificationsPlugin.zonedSchedule(
         id,
         title,
@@ -129,7 +122,6 @@ class LocalNotificationService {
     }
   }
 
-  // Schedule one-time reminder
   Future<void> scheduleOneTimeReminder({
     required int id,
     required String title,
@@ -138,15 +130,19 @@ class LocalNotificationService {
     required String habitId,
   }) async {
     try {
-      final tz.TZDateTime scheduledDate = tz.TZDateTime.from(scheduledTime, tz.local);
-
-      const AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
-        'one_time_habit_channel', 
-        'One-time Habit Reminders',
-        channelDescription: 'One-time reminders for your habits',
-        importance: Importance.high,
-        priority: Priority.high,
+      final tz.TZDateTime scheduledDate = tz.TZDateTime.from(
+        scheduledTime,
+        tz.local,
       );
+
+      const AndroidNotificationDetails androidDetails =
+          AndroidNotificationDetails(
+            'one_time_habit_channel',
+            'One-time Habit Reminders',
+            channelDescription: 'One-time reminders for your habits',
+            importance: Importance.high,
+            priority: Priority.high,
+          );
 
       const DarwinNotificationDetails iosDetails = DarwinNotificationDetails();
 
@@ -175,28 +171,26 @@ class LocalNotificationService {
     }
   }
 
-  // Cancel specific notification
   Future<void> cancelNotification(int id) async {
     await _notificationsPlugin.cancel(id);
     debugPrint('Notification $id cancelled');
   }
 
-  // Cancel all notifications
   Future<void> cancelAllNotifications() async {
     await _notificationsPlugin.cancelAll();
     debugPrint('All notifications cancelled');
   }
 
-  // Test notification - untuk debugging
   Future<void> showTestNotification(String habitName) async {
-    const AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
-      'test_channel_id',
-      'Test Notifications',
-      channelDescription: 'Channel for test notifications',
-      importance: Importance.high,
-      priority: Priority.high,
-      enableVibration: true,
-    );
+    const AndroidNotificationDetails androidDetails =
+        AndroidNotificationDetails(
+          'test_channel_id',
+          'Test Notifications',
+          channelDescription: 'Channel for test notifications',
+          importance: Importance.high,
+          priority: Priority.high,
+          enableVibration: true,
+        );
 
     const DarwinNotificationDetails iosDetails = DarwinNotificationDetails();
 
@@ -218,7 +212,6 @@ class LocalNotificationService {
     debugPrint('Test notification shown for $habitName');
   }
 
-  // Check pending notifications (untuk debugging)
   Future<List<PendingNotificationRequest>> getPendingNotifications() async {
     return await _notificationsPlugin.pendingNotificationRequests();
   }

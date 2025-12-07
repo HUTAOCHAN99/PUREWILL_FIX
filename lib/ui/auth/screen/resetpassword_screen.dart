@@ -14,7 +14,9 @@ class ResetPasswordScreen extends ConsumerStatefulWidget {
 }
 
 class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
-  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _emailController = TextEditingController(
+    text: "abimanyuputrar265@gmail.com",
+  );
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   final ScrollController _scrollController = ScrollController();
 
@@ -70,7 +72,6 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
   Widget build(BuildContext context) {
     ref.listen<AuthState>(authNotifierProvider, (previous, next) {
       if (next.status == AuthStatus.failure) {
-        
       } else if (next.status == AuthStatus.success) {}
     });
 

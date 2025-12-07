@@ -1,4 +1,3 @@
-// lib\ui\habit-tracker\screen\edit_habit_screen.dart
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
@@ -67,7 +66,6 @@ class _EditHabitScreenState extends ConsumerState<EditHabitScreen> {
     _selectedFrequency = habit.frequency;
     _selectedCategoryId = habit.categoryId;
     
-    // Handle unit selection
     if (habit.unit != null) {
       if (_unitOptions.contains(habit.unit)) {
         _selectedUnit = habit.unit!;
@@ -79,7 +77,6 @@ class _EditHabitScreenState extends ConsumerState<EditHabitScreen> {
       }
     }
     
-    // Handle reminder settings
     _reminderEnabled = habit.reminderEnabled;
     _reminderTime = habit.reminderTime;
   }
@@ -129,7 +126,6 @@ class _EditHabitScreenState extends ConsumerState<EditHabitScreen> {
         print('Reminder Time: $_reminderTime');
         print('==================');
 
-        // Prepare update data
         final updateData = <String, dynamic>{
           'name': _nameController.text,
           'frecuency_type': _selectedFrequency,
@@ -139,7 +135,6 @@ class _EditHabitScreenState extends ConsumerState<EditHabitScreen> {
           'reminder_enabled': _reminderEnabled,
         };
 
-        // Add reminder time if enabled
         if (_reminderEnabled && _reminderTime != null) {
           updateData['reminder_time'] = 
             '${_reminderTime!.hour.toString().padLeft(2, '0')}:${_reminderTime!.minute.toString().padLeft(2, '0')}';
@@ -151,7 +146,6 @@ class _EditHabitScreenState extends ConsumerState<EditHabitScreen> {
         print(updateData);
         print('==================');
 
-        // Use view model to update habit
         await viewModel.updateHabits(
           habitId: widget.habit.id,
           newName: _nameController.text,
@@ -162,7 +156,6 @@ class _EditHabitScreenState extends ConsumerState<EditHabitScreen> {
 
         print('=== HABIT UPDATED SUCCESS ===');
 
-        // Show success message
         if (mounted) {
           Navigator.of(context).pop();
           ScaffoldMessenger.of(context).showSnackBar(
@@ -206,12 +199,10 @@ class _EditHabitScreenState extends ConsumerState<EditHabitScreen> {
 
       body: Stack(
         children: [
-          // Background image dengan blur effect
           Positioned.fill(
             child: Image.asset('assets/images/home/bg.png', fit: BoxFit.cover),
           ),
 
-          // Blur effect overlay
           Positioned.fill(
             child: BackdropFilter(
               filter: ImageFilter.blur(sigmaX: 8.0, sigmaY: 8.0),
@@ -219,7 +210,6 @@ class _EditHabitScreenState extends ConsumerState<EditHabitScreen> {
             ),
           ),
 
-          // Content
           SafeArea(
             child: Form(
               key: _formKey,
@@ -228,7 +218,6 @@ class _EditHabitScreenState extends ConsumerState<EditHabitScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Habit Name Section
                     const Text(
                       'Habit Name',
                       style: TextStyle(
@@ -277,7 +266,6 @@ class _EditHabitScreenState extends ConsumerState<EditHabitScreen> {
                     ),
                     const SizedBox(height: 24),
 
-                    // Category Section
                     const Text(
                       'Category',
                       style: TextStyle(
@@ -313,7 +301,6 @@ class _EditHabitScreenState extends ConsumerState<EditHabitScreen> {
                     ),
                     const SizedBox(height: 24),
 
-                    // Frequency Section
                     const Text(
                       'Frequency',
                       style: TextStyle(
@@ -366,7 +353,6 @@ class _EditHabitScreenState extends ConsumerState<EditHabitScreen> {
                     ),
                     const SizedBox(height: 24),
 
-                    // Target Value Section
                     const Text(
                       'Target',
                       style: TextStyle(
@@ -378,7 +364,6 @@ class _EditHabitScreenState extends ConsumerState<EditHabitScreen> {
                     const SizedBox(height: 8),
                     Row(
                       children: [
-                        // Target Value Input
                         Expanded(
                           flex: 2,
                           child: Container(
@@ -435,7 +420,6 @@ class _EditHabitScreenState extends ConsumerState<EditHabitScreen> {
                         ),
                         const SizedBox(width: 12),
                         
-                        // Unit Selection
                         Expanded(
                           flex: 3,
                           child: Container(
@@ -497,7 +481,6 @@ class _EditHabitScreenState extends ConsumerState<EditHabitScreen> {
                       ],
                     ),
                     
-                    // Custom Unit Input (muncul jika memilih "other")
                     if (_showCustomUnit) ...[
                       const SizedBox(height: 12),
                       const Text(
@@ -562,7 +545,6 @@ class _EditHabitScreenState extends ConsumerState<EditHabitScreen> {
                     ),
                     const SizedBox(height: 24),
 
-                    // Reminder Section
                     Container(
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(12),
@@ -664,10 +646,9 @@ class _EditHabitScreenState extends ConsumerState<EditHabitScreen> {
                     ),
                     const SizedBox(height: 24),
 
-                    // Update Button
                     SaveButton(
                       onPressed: _updateHabit,
-                      buttonText: 'Update Habit',
+                      text: 'Update Habit',
                     )
                   ],
                 ),

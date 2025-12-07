@@ -20,7 +20,6 @@ class _AuthWrapperState extends ConsumerState<AuthWrapper> {
   }
 
   void _setupAuthListener() {
-    // Listen to auth state changes
     final supabaseClient = ref.read(supabaseClientProvider);
     supabaseClient.auth.onAuthStateChange.listen((data) {
       final AuthChangeEvent event = data.event;
@@ -30,7 +29,6 @@ class _AuthWrapperState extends ConsumerState<AuthWrapper> {
       print('Session: ${session != null ? "Active" : "None"}');
       
       if (event == AuthChangeEvent.signedOut) {
-        // Force navigation to login when signed out
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (mounted) {
             Navigator.of(context).pushAndRemoveUntil(

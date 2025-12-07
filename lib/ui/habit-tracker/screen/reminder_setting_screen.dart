@@ -1,40 +1,35 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:purewill/data/services/local_notification_service.dart';
 import 'package:purewill/domain/model/habit_model.dart';
 import 'package:purewill/domain/model/reminder_setting_model.dart';
 import 'package:purewill/data/repository/reminder_setting_repository.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:purewill/ui/habit-tracker/habit_provider.dart';
 
-class ReminderSettingScreen extends StatefulWidget {
+class ReminderSettingScreen extends ConsumerStatefulWidget {
   final HabitModel habit;
-
-  const ReminderSettingScreen({super.key, required this.habit});
-
+  final ReminderSettingModel? reminderSetting;
+  const ReminderSettingScreen({super.key, required this.habit, this.reminderSetting});
   @override
-  State<ReminderSettingScreen> createState() => _ReminderSettingScreenState();
+  ConsumerState<ReminderSettingScreen> createState() => _ReminderSettingScreenState();
 }
 
-class _ReminderSettingScreenState extends State<ReminderSettingScreen> {
+class _ReminderSettingScreenState extends ConsumerState<ReminderSettingScreen> {
   late final ReminderSettingRepository _repository;
   late final LocalNotificationService _notificationService;
-  late ReminderSettingModel _reminderSetting;
   bool _isLoading = true;
   bool _hasChanges = false;
 
-  // Form state
   final List<int> _snoozeOptions = [10, 30];
   int _selectedSnoozeIndex = 0;
   int _customSnoozeMinutes = 5;
   bool _useCustomSnooze = false;
   
-  // Time picker
   TimeOfDay _selectedTime = TimeOfDay.now();
   
-  // Notification channels
   bool _pushNotification = true;
   bool _emailNotification = false;
   
-  // Advanced settings
   bool _repeatDaily = true;
   bool _soundEnabled = true;
   bool _vibrationEnabled = false;
@@ -43,57 +38,13 @@ class _ReminderSettingScreenState extends State<ReminderSettingScreen> {
   void initState() {
     super.initState();
     
-    // 🎯 DEBUG: CEK HABIT DATA DARI PARAMETER
-    _debugHabitData();
-    
-    _repository = ReminderSettingRepository(Supabase.instance.client);
     _notificationService = LocalNotificationService();
-    _loadReminderSettings();
-  }
-
-  void _debugHabitData() {
-    debugPrint('🎯 === DEBUG HABIT DATA START ===');
-    debugPrint('🚀 Habit ID: ${widget.habit.id}');
-    debugPrint('📝 Habit Name: "${widget.habit.name}"');
-    debugPrint('🔍 Habit Type: ${widget.habit.runtimeType}');
-    debugPrint('📊 Habit toString: ${widget.habit.toString()}');
-    debugPrint('🎯 === DEBUG HABIT DATA END ===');
-  }
-
-  Future<void> _loadReminderSettings() async {
-    debugPrint('🔄 === LOADING REMINDER SETTINGS START ===');
-    debugPrint('📋 Habit ID untuk fetch: ${widget.habit.id}');
-    
-    try {
-      final settings = await _repository.fetchReminderSettingsByHabit(widget.habit.id);
-      debugPrint('✅ Fetch settings success, count: ${settings.length}');
-      
-      if (settings.isNotEmpty) {
-        _reminderSetting = settings.first;
-        debugPrint('📝 Existing reminder found: ID ${_reminderSetting.id}');
-        _initializeFormFromModel(_reminderSetting);
-      } else {
-        // Create default reminder setting
-        debugPrint('📝 No existing reminder, creating default');
-        _reminderSetting = ReminderSettingModel(
-          id: '',
-          habitId: widget.habit.id,
-          isEnabled: true,
-          time: DateTime.now(),
-          snoozeDuration: 10,
-          repeatDaily: true,
-          isSoundEnabled: true,
-          isVibrationEnabled: false,
-        );
-        _initializeFormFromModel(_reminderSetting);
-      }
-    } catch (e, stackTrace) {
-      debugPrint('❌ ERROR loading settings: $e');
-      debugPrint('📋 StackTrace: $stackTrace');
-      
-      // If error, create default setting
-      debugPrint('🔄 Creating fallback default settings');
-      _reminderSetting = ReminderSettingModel(
+    if (widget.reminderSetting != null) {
+      _initializeFormFromModel(widget.reminderSetting!);
+      _isLoading = false;
+    } else {
+      // If no existing setting, create a default one
+      final reminderSetting = ReminderSettingModel(
         id: '',
         habitId: widget.habit.id,
         isEnabled: true,
@@ -103,14 +54,8 @@ class _ReminderSettingScreenState extends State<ReminderSettingScreen> {
         isSoundEnabled: true,
         isVibrationEnabled: false,
       );
-      _initializeFormFromModel(_reminderSetting);
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
-      debugPrint('🔄 === LOADING REMINDER SETTINGS COMPLETE ===');
+      _initializeFormFromModel(reminderSetting);
+      _isLoading = false;
     }
   }
 
@@ -141,7 +86,7 @@ class _ReminderSettingScreenState extends State<ReminderSettingScreen> {
   Future<void> _saveSettings() async {
     debugPrint('💾 === SAVE SETTINGS START ===');
     debugPrint('🔍 Habit ID sebelum save: ${widget.habit.id}');
-    debugPrint('🔍 ReminderSetting ID: ${_reminderSetting.id}');
+    debugPrint('🔍 ReminderSetting ID: ${widget.reminderSetting!.id}');
     
     // 🚨 VALIDASI KRITIS
     if (widget.habit.id <= 0) {
@@ -174,7 +119,7 @@ class _ReminderSettingScreenState extends State<ReminderSettingScreen> {
       );
 
       final updatedSetting = ReminderSettingModel(
-        id: _reminderSetting.id,
+        id: widget.reminderSetting!.id,
         habitId: widget.habit.id,
         isEnabled: true,
         time: scheduledDateTime,
@@ -190,21 +135,8 @@ class _ReminderSettingScreenState extends State<ReminderSettingScreen> {
       debugPrint('   - Snooze: ${updatedSetting.snoozeDuration}min');
       debugPrint('   - Repeat Daily: ${updatedSetting.repeatDaily}');
 
-      // Save to database
-      if (_reminderSetting.id.isEmpty) {
-        debugPrint('🆕 Creating NEW reminder setting...');
-        final created = await _repository.createReminderSetting(updatedSetting);
-        _reminderSetting = created;
-        debugPrint('✅ New reminder created with ID: ${_reminderSetting.id}');
-      } else {
-        debugPrint('📝 UPDATING existing reminder: ${_reminderSetting.id}');
-        await _repository.updateReminderSetting(
-          reminderSettingId: _reminderSetting.id,
-          updates: updatedSetting.toJson(),
-        );
-        _reminderSetting = updatedSetting;
-        debugPrint('✅ Reminder updated successfully');
-      }
+  
+      await ref.read(habitNotifierProvider.notifier).saveReminderSetting(habitId: updatedSetting.habitId, isEnabled: updatedSetting.isEnabled, time: updatedSetting.time, snoozeDuration: snoozeDuration, repeatDaily: updatedSetting.repeatDaily, isSoundEnabled: updatedSetting.isSoundEnabled, isVibrationEnabled: updatedSetting.isVibrationEnabled);
 
       // Schedule notification jika push notification diaktifkan
       if (_pushNotification) {

@@ -13,8 +13,12 @@ class LoginScreen extends ConsumerStatefulWidget {
 
 class _LoginScreenState extends ConsumerState<LoginScreen> {
   bool _obscurePassword = true;
-  final TextEditingController _emailController = TextEditingController();
-  final TextEditingController _passwordController = TextEditingController();
+  final TextEditingController _emailController = TextEditingController(
+    text: "abimanyuputrar265@gmail.com",
+  );
+  final TextEditingController _passwordController = TextEditingController(
+    text: "Rumah_1234",
+  );
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   final ScrollController _scrollController = ScrollController();
 
@@ -29,43 +33,32 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   }
 
   Future<void> _login() async {
+    final authState = ref.watch(authNotifierProvider);
     try {
-          // 1. Coba login
-          await ref
-              .read(
-                authNotifierProvider.notifier,
-              )
-              .login(
-                _emailController.text.trim(),
-                _passwordController.text.trim(),
-              );
-          
-          // 2. JIKA SUKSES, cek 'mounted'
-          if (!mounted) return;
+      await ref
+          .read(authNotifierProvider.notifier)
+          .login(_emailController.text.trim(), _passwordController.text.trim());
 
-          // 3. Tampilkan pesan sukses
-          _showSnackBar("Login Berhasil! Mengalihkan...");
+      if (!mounted) return;
 
-          // 4. Beri jeda 1-2 detik agar SnackBar terbaca
-          await Future.delayed(const Duration(seconds: 1));
+      _showSnackBar("Login Berhasil!");
 
-          // 5. Cek 'mounted' LAGI (sangat penting setelah 'await')
-          if (!mounted) return;
+      await Future.delayed(const Duration(seconds: 1));
 
-          // 6. Baru navigasi
-          Navigator.pushNamedAndRemoveUntil(
-            context,
-            '/home',
-            (Route<dynamic> route) => false,
-          );
+      if (!mounted) return;
 
-        } catch (e) {
-          // 7. JIKA GAGAL, tangkap error
-          if (mounted) {
-            _showSnackBar(
-                "Login Gagal: ${e.toString().replaceFirst('Exception: ', '')}");
-          }
-        }
+      Navigator.pushNamedAndRemoveUntil(
+        context,
+        '/home',
+        (Route<dynamic> route) => false,
+      );
+    } catch (e) {
+      if (mounted) {
+        _showSnackBar(
+          "Login failed: ${authState.errorMessage ?? 'Unknown error'}",
+        );
+      }
+    }
   }
 
   @override
@@ -106,7 +99,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               padding: EdgeInsets.all(screenWidth * 0.06),
               child: Column(
                 children: [
-                  // Logo section
                   SizedBox(
                     height: screenHeight * 0.25,
                     child: Column(
@@ -154,11 +146,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
                   SizedBox(height: screenHeight * 0.05),
 
-                  // Form section - Gunakan Expanded dengan SingleChildScrollView
                   Expanded(
                     child: SingleChildScrollView(
                       controller: _scrollController,
-                      // Tambahkan physics untuk scroll yang lebih smooth
                       physics: const ClampingScrollPhysics(),
                       child: Form(
                         key: _formKey,
@@ -180,12 +170,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              // Container icon dengan teks di samping
                               Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 crossAxisAlignment: CrossAxisAlignment.center,
                                 children: [
-                                  // Icon container
                                   Container(
                                     width: screenWidth * 0.15,
                                     height: screenWidth * 0.12,
@@ -214,7 +202,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                     ),
                                   ),
                                   SizedBox(width: 4),
-                                  // Teks di samping icon
                                   Column(
                                     mainAxisAlignment: MainAxisAlignment.center,
                                     crossAxisAlignment:
@@ -259,7 +246,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
                               SizedBox(height: screenHeight * 0.02),
 
-                              // Email TextField
                               Container(
                                 height: 40,
                                 decoration: BoxDecoration(
@@ -314,7 +300,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                             height: 0,
                                           ),
                                         ),
-                                        // Auto scroll ketika keyboard muncul
                                         onTap: () {
                                           Future.delayed(
                                             const Duration(milliseconds: 300),
@@ -347,8 +332,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                               ),
 
                               SizedBox(height: 16),
-
-                              // Password TextField
                               Container(
                                 height: 40,
                                 decoration: BoxDecoration(
@@ -404,7 +387,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                             height: 0,
                                           ),
                                         ),
-                                        // Auto scroll ketika keyboard muncul
                                         onTap: () {
                                           Future.delayed(
                                             const Duration(milliseconds: 300),
@@ -446,7 +428,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
                               SizedBox(height: 8),
 
-                              // Forgot Password
                               Align(
                                 alignment: Alignment.centerRight,
                                 child: GestureDetector(
@@ -478,14 +459,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
                               SizedBox(height: 24),
 
-                              // Login button
                               SizedBox(
                                 width: double.infinity,
                                 child: ElevatedButton(
-                                  onPressed: isLoading
-                                      ? null
-                                      : _login,
-
+                                  onPressed: isLoading ? null : _login,
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: Colors.black,
                                     foregroundColor: Colors.white,
@@ -520,7 +497,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
                               SizedBox(height: 16),
 
-                              // Register text
                               Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
@@ -567,7 +543,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
                   SizedBox(height: screenHeight * 0.05),
 
-                  // Help section
                   SizedBox(
                     width: double.infinity,
                     child: Column(
@@ -583,9 +558,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         ),
                         SizedBox(height: 4),
                         GestureDetector(
-                          onTap: () {
-                            // Contact support logic
-                          },
+                          onTap: () {},
                           child: Text(
                             "Contact support",
                             style: TextStyle(

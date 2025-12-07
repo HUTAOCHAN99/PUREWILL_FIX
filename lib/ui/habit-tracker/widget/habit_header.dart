@@ -118,8 +118,7 @@ class HabitHeader extends ConsumerWidget {
                     style: const TextStyle(color: Colors.grey, fontSize: 14),
                   ),
                   const SizedBox(height: 20),
-                  
-                  // TAMBAHAN: Menu Badge & XP
+
                   MenuButton(
                     icon: Icons.emoji_events_outlined,
                     title: 'Badge & XP',
@@ -128,7 +127,7 @@ class HabitHeader extends ConsumerWidget {
                       _navigateToBadgeXpScreen(context);
                     },
                   ),
-                  
+
                   MenuButton(
                     icon: Icons.settings_outlined,
                     title: 'Settings',
@@ -174,13 +173,10 @@ class HabitHeader extends ConsumerWidget {
     );
   }
 
-  // TAMBAHAN: Method untuk navigasi ke halaman Badge & XP
   void _navigateToBadgeXpScreen(BuildContext context) {
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => const BadgeXpScreen(),
-      ),
-    );
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (context) => const BadgeXpScreen()));
   }
 
   void _showLogoutConfirmation(BuildContext context) {
@@ -197,7 +193,11 @@ class HabitHeader extends ConsumerWidget {
           ElevatedButton(
             onPressed: () {
               onLogout();
-              Navigator.pushNamedAndRemoveUntil(context, '/logout', (route) => false,);
+              Navigator.pushNamedAndRemoveUntil(
+                context,
+                '/logout',
+                (route) => false,
+              );
             },
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
             child: const Text('Logout'),

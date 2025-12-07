@@ -1,4 +1,3 @@
-// lib\ui\habit-tracker\widget\habit_details\progress_widget.dart
 import 'package:flutter/material.dart';
 
 class ProgressWidget extends StatelessWidget {
@@ -19,8 +18,8 @@ class ProgressWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final progress = completedDays / totalDays;
-    
+    final progress = totalDays == 0 ? 0.0 : completedDays / totalDays;
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(20),
@@ -32,7 +31,6 @@ class ProgressWidget extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Weekly Progress dan Persentase dalam satu baris
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -55,8 +53,7 @@ class ProgressWidget extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 16),
-          
-          // Progress Bar
+
           Container(
             height: 10,
             decoration: BoxDecoration(
@@ -65,15 +62,13 @@ class ProgressWidget extends StatelessWidget {
             ),
             child: Stack(
               children: [
-                // Background
                 Container(
                   decoration: BoxDecoration(
                     color: Colors.grey[300],
                     borderRadius: BorderRadius.circular(5),
                   ),
                 ),
-                
-                // Progress Fill
+
                 FractionallySizedBox(
                   widthFactor: progress,
                   child: Container(
@@ -87,12 +82,10 @@ class ProgressWidget extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 16),
-          
-          // Keterangan dan Points dalam satu baris
+
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              // Keterangan di pojok kiri
               Text(
                 "$completedDays of $totalDays days completed",
                 style: TextStyle(
@@ -101,8 +94,7 @@ class ProgressWidget extends StatelessWidget {
                   fontWeight: FontWeight.w500,
                 ),
               ),
-              
-              // Points di pojok kanan
+
               Row(
                 children: List.generate(totalDays, (index) {
                   return Container(
@@ -110,7 +102,9 @@ class ProgressWidget extends StatelessWidget {
                     width: 8,
                     height: 8,
                     decoration: BoxDecoration(
-                      color: index < completedDays ? habitColor : Colors.grey[300],
+                      color: index < completedDays
+                          ? habitColor
+                          : Colors.grey[300],
                       shape: BoxShape.circle,
                     ),
                   );

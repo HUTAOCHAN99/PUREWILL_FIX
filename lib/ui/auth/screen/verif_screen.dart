@@ -143,27 +143,16 @@ class _VerificationScreenState extends ConsumerState<VerificationScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // ref.listen<AuthState>(authNotifierProvider, (previous, next) {
-    //   if (next.status == AuthStatus.failure) {
-    //     throw Exception('Verification code was sent not successfully.');
-    //   } else if (next.status == AuthStatus.success && next.user != null) {
-    //     if (widget.type == VerificationType.registration) {
           
-    //     } else {
           
-    //     }
-    //   }
-    // });
     final screenHeight = MediaQuery.of(context).size.height;
     final screenWidth = MediaQuery.of(context).size.width;
     final authState = ref.watch(authNotifierProvider);
     final isLoading = authState.status == AuthStatus.loading;
 
     return Scaffold(
-      // Tambahkan resizeToAvoidBottomInset untuk mencegah resize otomatis
       resizeToAvoidBottomInset: false,
       body: GestureDetector(
-        // Tambahkan GestureDetector untuk dismiss keyboard saat tap di luar
         onTap: () => FocusScope.of(context).unfocus(),
         child: Container(
           width: double.infinity,
@@ -179,7 +168,6 @@ class _VerificationScreenState extends ConsumerState<VerificationScreen> {
               padding: EdgeInsets.all(screenWidth * 0.06),
               child: Column(
                 children: [
-                  // Logo section
                   Container(
                     height: screenHeight * 0.25,
                     child: Column(
@@ -227,11 +215,9 @@ class _VerificationScreenState extends ConsumerState<VerificationScreen> {
 
                   SizedBox(height: screenHeight * 0.02),
 
-                  // Form section
                   Expanded(
                     child: SingleChildScrollView(
                       controller: _scrollController,
-                      // Tambahkan physics untuk scroll yang lebih smooth
                       physics: const ClampingScrollPhysics(),
                       child: Column(
                         children: [
@@ -252,7 +238,6 @@ class _VerificationScreenState extends ConsumerState<VerificationScreen> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                // Header
                                 Row(
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   crossAxisAlignment: CrossAxisAlignment.center,
@@ -343,7 +328,6 @@ class _VerificationScreenState extends ConsumerState<VerificationScreen> {
                                 ),
                                 SizedBox(height: screenHeight * 0.02),
 
-                                // OTP Input
                                 Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
@@ -414,7 +398,6 @@ class _VerificationScreenState extends ConsumerState<VerificationScreen> {
                                                 verifCode();
                                               }
                                             },
-                                            // Auto scroll ketika keyboard muncul
                                             onTap: () {
                                               Future.delayed(
                                                 const Duration(milliseconds: 300),
@@ -436,7 +419,6 @@ class _VerificationScreenState extends ConsumerState<VerificationScreen> {
 
                                 SizedBox(height: screenHeight * 0.02),
 
-                                // Verify button
                                 SizedBox(
                                   width: double.infinity,
                                   child: ElevatedButton(
@@ -480,7 +462,6 @@ class _VerificationScreenState extends ConsumerState<VerificationScreen> {
 
                                 SizedBox(height: screenHeight * 0.02),
 
-                                // Resend code
                                 Column(
                                   children: [
                                     Center(
@@ -530,7 +511,6 @@ class _VerificationScreenState extends ConsumerState<VerificationScreen> {
                     ),
                   ),
 
-                  // Help section
                   Container(
                     child: Column(
                       children: [

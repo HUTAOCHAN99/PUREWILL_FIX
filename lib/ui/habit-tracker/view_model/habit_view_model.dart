@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:flutter_riverpod/legacy.dart';
 import 'package:purewill/data/repository/category_repository.dart';
 import 'package:purewill/data/repository/target_unit_repository.dart';
@@ -21,8 +23,8 @@ class HabitsState {
   final List<DailyLogModel> dailyLogs;
   final List<TargetUnitModel> targetUnits;
   final List<CategoryModel> categories;
-  final List<ReminderSettingModel> reminderSettings;
   final HabitModel? currentHabitDetail;
+  final ReminderSettingModel? currentReminderSetting;
   ProfileModel? currentUser;
 
   HabitsState({
@@ -32,10 +34,9 @@ class HabitsState {
     this.dailyLogs = const [],
     this.targetUnits = const [],
     this.categories = const [],
-    this.reminderSettings = const [],
     this.currentUser,
-    this.currentHabitDetail 
-
+    this.currentHabitDetail,
+    this.currentReminderSetting,
   });
 
   HabitsState copyWith({
@@ -47,7 +48,8 @@ class HabitsState {
     List<CategoryModel>? caregories,
     List<ReminderSettingModel>? reminderSettings,
     ProfileModel? currentUser,
-    HabitModel? currentHabitDetail
+    HabitModel? currentHabitDetail,
+    ReminderSettingModel? currentReminderSetting,
   }) {
     return HabitsState(
       status: status ?? this.status,
@@ -56,8 +58,8 @@ class HabitsState {
       dailyLogs: dailyLogs ?? this.dailyLogs,
       targetUnits: targetUnits ?? this.targetUnits,
       categories: caregories ?? categories,
-      reminderSettings: reminderSettings ?? this.reminderSettings,
       currentUser: currentUser ?? this.currentUser,
+      currentHabitDetail: currentHabitDetail ?? this.currentHabitDetail,
     );
   }
 }
@@ -113,9 +115,7 @@ class HabitsViewModel extends StateNotifier<HabitsState> {
     }
   }
 
-  Future<void> loadHabitDetail({
-    required int habitId
-  }) async {
+  Future<void> loadHabitDetail({required int habitId}) async {
     state = state.copyWith(status: HabitStatus.loading, errorMessage: null);
 
     try {
@@ -191,7 +191,11 @@ class HabitsViewModel extends StateNotifier<HabitsState> {
         await _dailyLogRepository.recordLog(
           habitId: habit.id,
           date: today,
-          status: (existingLog.status == LogStatus.success) ? LogStatus.failed : existingLog.status == LogStatus.failed ? LogStatus.neutral : LogStatus.success, 
+          status: (existingLog.status == LogStatus.success)
+              ? LogStatus.failed
+              : existingLog.status == LogStatus.failed
+              ? LogStatus.neutral
+              : LogStatus.success,
           actualValue: habit.targetValue?.toDouble(),
         );
 
@@ -251,7 +255,7 @@ class HabitsViewModel extends StateNotifier<HabitsState> {
       final completionStatus = <int, LogStatus>{};
 
       for (final log in todayLogs) {
-        completionStatus[log.habitId] = log.status;      
+        completionStatus[log.habitId] = log.status;
       }
 
       print("completion status");
@@ -356,7 +360,6 @@ class HabitsViewModel extends StateNotifier<HabitsState> {
     int? newTargetValue,
   }) async {
     try {
-      // Fetch the old habit to compare changes
       final oldHabit = await _habitRepository.getHabitById(habitId);
       if (oldHabit == null) {
         throw Exception('Habit not found');
@@ -396,13 +399,11 @@ class HabitsViewModel extends StateNotifier<HabitsState> {
       }
 
       if (updateData.isEmpty) {
-        // Jika Map kosong, JANGAN panggil Supabase.
         return;
       }
 
       await _habitRepository.updateHabit(habitId: habitId, updates: updateData);
 
-      // Handle date changes for daily logs
       if (newStartDate != null && newStartDate != oldHabit.startDate) {
         await _dailyLogRepository.deleteLogsBeforeDate(
           habitId: habitId,
@@ -429,7 +430,7 @@ class HabitsViewModel extends StateNotifier<HabitsState> {
     }
   }
 
-  Future<void> createReminderSetting({
+  Future<void> saveReminderSetting({
     required int habitId,
     required bool isEnabled,
     required DateTime time,
@@ -450,8 +451,32 @@ class HabitsViewModel extends StateNotifier<HabitsState> {
         isVibrationEnabled: isVibrationEnabled,
       );
 
+      final reminderSettingBefore = await _reminderSettingRepository.fetchReminderSettingsByHabit(habitId);
+
+      if (reminderSettingBefore.id.isNotEmpty) {
+        await _reminderSettingRepository.updateReminderSetting(reminderSettingId: reminderSettingBefore.id, updates: {
+          'is_enabled': isEnabled,
+          'time': time.toIso8601String(),
+          'snooze_duration': snoozeDuration,
+          'repeat_daily': repeatDaily,
+          'is_sound_enabled': isSoundEnabled,
+          'is_vibration_enabled': isVibrationEnabled,
+        });
+        await loadCurrentReminderSetting(habitId);
+        log(
+        'UPDATE REMINDER SETTING SUCCESS: Reminder setting created for habit $habitId.',
+        name: 'HABIT_VIEW_MODEL',
+      );
+        return;
+      } 
+
       await _reminderSettingRepository.createReminderSetting(reminderSetting);
-      await loadReminderSettings();
+
+      log(
+        'CREATE REMINDER SETTING SUCCESS: Reminder setting created for habit $habitId.',
+        name: 'HABIT_VIEW_MODEL',
+      );
+
     } catch (e) {
       state = state.copyWith(
         status: HabitStatus.failure,
@@ -461,80 +486,20 @@ class HabitsViewModel extends StateNotifier<HabitsState> {
     }
   }
 
-  Future<void> updateReminderSetting({
-    required String reminderSettingId,
-    bool? isEnabled,
-    DateTime? time,
-    int? snoozeDuration,
-    bool? repeatDaily,
-    bool? isSoundEnabled,
-    bool? isVibrationEnabled,
-  }) async {
+  Future<ReminderSettingModel> loadCurrentReminderSetting(int habitId) async {
     try {
-      final updateData = <String, dynamic>{};
-      if (isEnabled != null) {
-        updateData['is_enabled'] = isEnabled;
-      }
-      if (time != null) {
-        updateData['time'] = time.toIso8601String();
-      }
-      if (snoozeDuration != null) {
-        updateData['snooze_duration'] = snoozeDuration;
-      }
-      if (repeatDaily != null) {
-        updateData['repeat_daily'] = repeatDaily;
-      }
-      if (isSoundEnabled != null) {
-        updateData['is_sound_enabled'] = isSoundEnabled;
-      }
-      if (isVibrationEnabled != null) {
-        updateData['is_vibration_enabled'] = isVibrationEnabled;
-      }
+      final reminderSetting = await _reminderSettingRepository.fetchReminderSettingsByHabit(habitId);
 
-      if (updateData.isEmpty) {
-        return;
-      }
-
-      await _reminderSettingRepository.updateReminderSetting(
-        reminderSettingId: reminderSettingId,
-        updates: updateData,
-      );
-
-      await loadReminderSettings();
+      return reminderSetting;
     } catch (e) {
-      state = state.copyWith(
-        status: HabitStatus.failure,
-        errorMessage: 'Failed to update reminder setting.',
-      );
       rethrow;
     }
   }
 
-  Future<void> loadReminderSettings() async {
+  Future<void> deleteReminderSetting(int habitId) async {
     try {
-      final reminderSettings = <ReminderSettingModel>[];
-      for (final habit in state.habits) {
-        final settings = await _reminderSettingRepository
-            .fetchReminderSettingsByHabit(habit.id);
-        reminderSettings.addAll(settings);
-      }
-
-      state = state.copyWith(
-        status: HabitStatus.success,
-        reminderSettings: reminderSettings,
-      );
-    } catch (e) {
-      state = state.copyWith(
-        status: HabitStatus.failure,
-        errorMessage: 'Failed to load reminder settings.',
-      );
-    }
-  }
-
-  Future<void> deleteReminderSetting(String reminderSettingId) async {
-    try {
-      await _reminderSettingRepository.deleteReminderSetting(reminderSettingId);
-      await loadReminderSettings();
+      await _reminderSettingRepository.deleteReminderSetting(habitId);
+      await loadCurrentReminderSetting(habitId);
     } catch (e) {
       state = state.copyWith(
         status: HabitStatus.failure,

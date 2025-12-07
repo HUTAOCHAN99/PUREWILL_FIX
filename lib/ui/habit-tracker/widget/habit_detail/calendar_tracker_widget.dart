@@ -1,10 +1,8 @@
-// lib\ui\habit-tracker\widget\habit_detail\calendar_tracker_widget.dart
 import 'package:flutter/material.dart';
 
 class CalendarTrackerWidget extends StatelessWidget {
   final List<DateTime> completionDates;
 
-  // Hapus 'const' dari constructor karena ada field yang non-constant
   CalendarTrackerWidget({
     super.key,
     required this.completionDates,
@@ -20,7 +18,6 @@ class CalendarTrackerWidget extends StatelessWidget {
       children: [
         const SizedBox(height: 16),
         
-        // Calendar Widget
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
@@ -37,7 +34,6 @@ class CalendarTrackerWidget extends StatelessWidget {
           ),
           child: Column(
             children: [
-              // Nama bulan sekarang
               Text(
                 _getMonthName(now.month),
                 style: const TextStyle(
@@ -48,7 +44,6 @@ class CalendarTrackerWidget extends StatelessWidget {
               ),
               const SizedBox(height: 16),
               
-              // Keterangan hari di paling atas
               _buildWeekDaysHeader(),
               const SizedBox(height: 8),
               
@@ -60,15 +55,12 @@ class CalendarTrackerWidget extends StatelessWidget {
     );
   }
 
-  // ... (sisanya tetap sama, semua method _buildWeekRow, _buildWeekDaysHeader, dll)
   Widget _buildCalendarGrid(DateTime today) {
     return Column(
       children: [
-        // Baris atas: 7 hari yang lalu
         _buildWeekRow(today, -6, 0),
         const SizedBox(height: 12),
         
-        // Baris bawah: 7 hari mendatang
         _buildWeekRow(today, 1, 7),
       ],
     );
@@ -145,10 +137,8 @@ class CalendarTrackerWidget extends StatelessWidget {
         completedDate.day == date.day);
     
     if (date.isBefore(today)) {
-      // Past dates
       return isCompleted ? 'completed' : 'missed';
     } else {
-      // Future dates
       return isCompleted ? 'completed' : 'pending';
     }
   }

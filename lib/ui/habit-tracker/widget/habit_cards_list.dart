@@ -1,4 +1,3 @@
-// lib\ui\habit-tracker\widget\habit_cards_list.dart
 import 'package:flutter/material.dart';
 import 'package:purewill/domain/model/daily_log_model.dart';
 import 'package:purewill/domain/model/habit_model.dart';
@@ -11,7 +10,7 @@ class HabitCardsList extends StatelessWidget {
   final Map<int, LogStatus> todayCompletionStatus;
   final List<HabitModel> habits;
   final void Function(HabitModel habit) onHabitTap;
-  final void Function(HabitModel habit) onCheckboxTap; // TAMBAH INI
+  final void Function(HabitModel habit) onCheckboxTap; 
   final Widget Function(String errorMessage)? buildErrorState;
   final Widget Function()? buildEmptyState;
 
@@ -21,7 +20,7 @@ class HabitCardsList extends StatelessWidget {
     required this.todayCompletionStatus,
     required this.habits,
     required this.onHabitTap,
-    required this.onCheckboxTap, // TAMBAH INI
+    required this.onCheckboxTap,
     this.buildErrorState,
     this.buildEmptyState,
   });

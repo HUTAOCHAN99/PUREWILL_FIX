@@ -29,7 +29,6 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
 
   Future<void> _signUp() async {
     try {
-          // 1. Coba login
           await ref
               .read(
                 authNotifierProvider.notifier,
@@ -41,16 +40,12 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
               );
           if (!mounted) return;
 
-          // 3. Tampilkan pesan sukses
           _showSnackBar("Registrasi Berhasil! Mengalihkan...");
 
-          // 4. Beri jeda 1-2 detik agar SnackBar terbaca
           await Future.delayed(const Duration(seconds: 1));
 
-          // 5. Cek 'mounted' LAGI (sangat penting setelah 'await')
           if (!mounted) return;
 
-          // 6. Baru navigasi
           Navigator.of(context).push(
           MaterialPageRoute(
             builder: (context) => VerificationScreen(
@@ -61,7 +56,6 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
         );
 
         } catch (e) {
-          // 7. JIKA GAGAL, tangkap error
           if (mounted) {
             _showSnackBar(
                 "Login Gagal: ${e.toString().replaceFirst('Exception: ', '')}");
@@ -80,12 +74,6 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // ref.listen<AuthState>(authNotifierProvider, (previous, next) {
-    //   if (next.status == AuthStatus.failure) {
-    //     throw Exception('Login Gagal: Email atau password salah.');
-    //   } else if (next.status == AuthStatus.success && next.user != null) {
-    //   }
-    // });
 
     final screenHeight = MediaQuery.of(context).size.height;
     final screenWidth = MediaQuery.of(context).size.width;
@@ -93,10 +81,8 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
     final isLoading = authState.status == AuthStatus.loading;
 
     return Scaffold(
-      // Tambahkan resizeToAvoidBottomInset untuk mencegah resize otomatis
       resizeToAvoidBottomInset: false,
       body: GestureDetector(
-        // Tambahkan GestureDetector untuk dismiss keyboard saat tap di luar
         onTap: () => FocusScope.of(context).unfocus(),
         child: Container(
           width: double.infinity,
@@ -112,7 +98,6 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
               padding: EdgeInsets.all(screenWidth * 0.06),
               child: Column(
                 children: [
-                  // Logo section
                   Container(
                     height: screenHeight * 0.25,
                     child: Column(
@@ -160,7 +145,6 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
 
                   SizedBox(height: screenHeight * 0.02),
 
-                  // Form section
                   Expanded(
                     child: SingleChildScrollView(
                       controller: _scrollController,
@@ -184,7 +168,6 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              // Header dengan icon
                               Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 crossAxisAlignment: CrossAxisAlignment.center,
@@ -246,7 +229,6 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
 
                               SizedBox(height: screenHeight * 0.02),
 
-                              // Full Name
                               Container(
                                 height: 40,
                                 decoration: BoxDecoration(
@@ -284,7 +266,6 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                                             height: 0,
                                           ),
                                         ),
-                                        // Auto scroll ketika keyboard muncul
                                         onTap: () {
                                           Future.delayed(
                                             const Duration(milliseconds: 300),
@@ -314,7 +295,6 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
 
                               SizedBox(height: 16),
 
-                              // Email
                               Container(
                                 height: 40,
                                 decoration: BoxDecoration(
@@ -352,7 +332,6 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                                             height: 0,
                                           ),
                                         ),
-                                        // Auto scroll ketika keyboard muncul
                                         onTap: () {
                                           Future.delayed(
                                             const Duration(milliseconds: 300),
@@ -381,7 +360,6 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
 
                               SizedBox(height: 16),
 
-                              // Password
                               Container(
                                 height: 40,
                                 decoration: BoxDecoration(
@@ -420,7 +398,6 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                                             height: 0,
                                           ),
                                         ),
-                                        // Auto scroll ketika keyboard muncul
                                         onTap: () {
                                           Future.delayed(
                                             const Duration(milliseconds: 300),
@@ -457,7 +434,6 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
 
                               SizedBox(height: 24),
 
-                              // Register button
                               SizedBox(
                                 width: double.infinity,
                                 child: ElevatedButton(
@@ -494,7 +470,6 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
 
                               SizedBox(height: 16),
 
-                              // Login link
                               Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
@@ -531,7 +506,6 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                     ),
                   ),
 
-                  // Terms & Help section
                   Column(
                     children: [
                       Container(

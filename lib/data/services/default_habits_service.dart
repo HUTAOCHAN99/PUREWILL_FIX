@@ -11,7 +11,7 @@ class DefaultHabitsService {
         frequency: 'daily',
         startDate: DateTime.now(),
         targetValue: 30,
-        unit: 'minutes', // TAMBAHAN
+        unit: 'minutes',
         isActive: true,
         status: 'neutral',
         isDefault: true,
@@ -23,7 +23,7 @@ class DefaultHabitsService {
         frequency: 'daily',
         startDate: DateTime.now(),
         targetValue: 20,
-        unit: 'pages', // TAMBAHAN
+        unit: 'pages',
         isActive: true,
         status: 'neutral',
         isDefault: true,
@@ -35,7 +35,7 @@ class DefaultHabitsService {
         frequency: 'daily',
         startDate: DateTime.now(),
         targetValue: 8,
-        unit: 'glasses', // TAMBAHAN
+        unit: 'glasses',
         isActive: true,
         status: 'neutral',
         isDefault: true,
@@ -47,7 +47,7 @@ class DefaultHabitsService {
         frequency: 'daily',
         startDate: DateTime.now(),
         targetValue: 1,
-        unit: 'hours', // TAMBAHAN
+        unit: 'hours',
         isActive: true,
         status: 'neutral',
         isDefault: true,
@@ -73,7 +73,6 @@ class DefaultHabitsService {
     };
   }
 
-  // Method untuk mendapatkan satuan berdasarkan nama habit default
   static String? getDefaultHabitUnit(String habitName) {
     final habits = getDefaultHabits();
     final habit = habits.firstWhere(

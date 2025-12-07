@@ -1,4 +1,3 @@
-// lib\ui\habit-tracker\screen\badge_xp_screen.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -34,23 +33,18 @@ class _BadgeXpScreenState extends ConsumerState<BadgeXpScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // 9 days streak alert
             _buildStreakAlert(),
             const SizedBox(height: 24),
 
-            // Level progress section
             _buildLevelProgress(),
             const SizedBox(height: 24),
 
-            // XP progress for next level
             _buildXpProgress(),
             const SizedBox(height: 24),
 
-            // Badge Collection
             _buildBadgeCollection(),
             const SizedBox(height: 24),
 
-            // Locked Badges
             _buildLockedBadges(),
           ],
         ),

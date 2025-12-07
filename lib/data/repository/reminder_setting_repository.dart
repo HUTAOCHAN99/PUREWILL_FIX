@@ -32,7 +32,7 @@ class ReminderSettingRepository {
     }
   }
 
-  Future<List<ReminderSettingModel>> fetchReminderSettingsByHabit(
+  Future<ReminderSettingModel> fetchReminderSettingsByHabit(
     int habitId,
   ) async {
     try {
@@ -40,11 +40,10 @@ class ReminderSettingRepository {
           .from(_reminderSettingTableName)
           .select('*')
           .eq('habit_id', habitId)
-          .order('time', ascending: true);
+          .order('time', ascending: true)
+          .single();
 
-      return response
-          .map((data) => ReminderSettingModel.fromJson(data))
-          .toList();
+      return ReminderSettingModel.fromJson(response);
     } catch (e, stackTrace) {
       log(
         'FETCH REMINDER SETTINGS FAILURE: Failed to fetch reminder settings for habit $habitId.',
@@ -81,20 +80,20 @@ class ReminderSettingRepository {
     }
   }
 
-  Future<void> deleteReminderSetting(String reminderSettingId) async {
+  Future<void> deleteReminderSetting(int habitId) async {
     try {
       await _supabaseClient
           .from(_reminderSettingTableName)
           .delete()
-          .eq('id', reminderSettingId);
+          .eq('habit_id', habitId);
 
       log(
-        'DELETE REMINDER SETTING SUCCESS: Reminder setting $reminderSettingId deleted.',
+        'DELETE REMINDER SETTING SUCCESS: Reminder setting $habitId deleted.',
         name: 'REMINDER_SETTING_REPO',
       );
     } catch (e, stackTrace) {
       log(
-        'DELETE REMINDER SETTING FAILURE: Failed to delete reminder setting $reminderSettingId.',
+        'DELETE REMINDER SETTING FAILURE: Failed to delete reminder setting $habitId.',
         error: e,
         stackTrace: stackTrace,
         name: 'REMINDER_SETTING_REPO',

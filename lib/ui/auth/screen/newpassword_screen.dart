@@ -69,10 +69,8 @@ class _NewPasswordScreenState extends ConsumerState<NewPasswordScreen> {
     final isLoading = authState.status == AuthStatus.loading;
 
     return Scaffold(
-      // Tambahkan resizeToAvoidBottomInset untuk mencegah resize otomatis
       resizeToAvoidBottomInset: false,
       body: GestureDetector(
-        // Tambahkan GestureDetector untuk dismiss keyboard saat tap di luar
         onTap: () => FocusScope.of(context).unfocus(),
         child: Container(
           width: double.infinity,
@@ -88,7 +86,6 @@ class _NewPasswordScreenState extends ConsumerState<NewPasswordScreen> {
               padding: EdgeInsets.all(screenWidth * 0.06),
               child: Column(
                 children: [
-                  // Logo section
                   Container(
                     height: screenHeight * 0.25,
                     child: Column(
@@ -136,17 +133,14 @@ class _NewPasswordScreenState extends ConsumerState<NewPasswordScreen> {
 
                   SizedBox(height: screenHeight * 0.02),
 
-                  // Form section
                   Expanded(
                     child: SingleChildScrollView(
                       controller: _scrollController,
-                      // Tambahkan physics untuk scroll yang lebih smooth
                       physics: const ClampingScrollPhysics(),
                       child: Form(
                         key: _formKey,
                         child: Column(
                           children: [
-                            // Container form
                             Container(
                               width: double.infinity,
                               padding: EdgeInsets.all(screenWidth * 0.05),
@@ -164,13 +158,11 @@ class _NewPasswordScreenState extends ConsumerState<NewPasswordScreen> {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  // Title section
                                   Row(
                                     mainAxisAlignment: MainAxisAlignment.center,
                                     crossAxisAlignment:
                                         CrossAxisAlignment.center,
                                     children: [
-                                      // Icon container
                                       Container(
                                         width: screenWidth * 0.15,
                                         height: screenWidth * 0.12,
@@ -210,7 +202,6 @@ class _NewPasswordScreenState extends ConsumerState<NewPasswordScreen> {
                                         ),
                                       ),
                                       SizedBox(width: 8),
-                                      // Text
                                       Column(
                                         mainAxisAlignment:
                                             MainAxisAlignment.center,
@@ -242,7 +233,6 @@ class _NewPasswordScreenState extends ConsumerState<NewPasswordScreen> {
 
                                   SizedBox(height: screenHeight * 0.02),
 
-                                  // Description text
                                   Center(
                                     child: Text(
                                       "Create your new password",
@@ -257,7 +247,6 @@ class _NewPasswordScreenState extends ConsumerState<NewPasswordScreen> {
 
                                   SizedBox(height: screenHeight * 0.02),
 
-                                  // New Password TextField
                                   Column(
                                     crossAxisAlignment:
                                         CrossAxisAlignment.start,
@@ -323,7 +312,6 @@ class _NewPasswordScreenState extends ConsumerState<NewPasswordScreen> {
                                                     height: 0,
                                                   ),
                                                 ),
-                                                // Auto scroll ketika keyboard muncul
                                                 onTap: () {
                                                   Future.delayed(
                                                     const Duration(
@@ -370,7 +358,6 @@ class _NewPasswordScreenState extends ConsumerState<NewPasswordScreen> {
 
                                   SizedBox(height: screenHeight * 0.02),
 
-                                  // Confirm Password TextField
                                   Column(
                                     crossAxisAlignment:
                                         CrossAxisAlignment.start,
@@ -412,11 +399,6 @@ class _NewPasswordScreenState extends ConsumerState<NewPasswordScreen> {
                                               child: TextFormField(
                                                 controller:
                                                     _confirmPasswordController,
-                                                // validator: (value) => _authService
-                                                //     .validateConfirmPassword(
-                                                //       _newPasswordController.text,
-                                                //       value,
-                                                //     ),
                                                 obscureText:
                                                     _obscureConfirmPassword,
                                                 style: const TextStyle(
@@ -441,7 +423,6 @@ class _NewPasswordScreenState extends ConsumerState<NewPasswordScreen> {
                                                     height: 0,
                                                   ),
                                                 ),
-                                                // Auto scroll ketika keyboard muncul
                                                 onTap: () {
                                                   Future.delayed(
                                                     const Duration(
@@ -488,7 +469,6 @@ class _NewPasswordScreenState extends ConsumerState<NewPasswordScreen> {
 
                                   SizedBox(height: screenHeight * 0.02),
 
-                                  // Reset Password button
                                   SizedBox(
                                     width: double.infinity,
                                     child: ElevatedButton(
