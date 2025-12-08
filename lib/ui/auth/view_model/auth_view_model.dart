@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/legacy.dart';
 import 'package:purewill/data/repository/auth_repository.dart';
+import 'package:purewill/data/repository/user_repository.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 enum AuthStatus { initial, success, loading, failure }
@@ -22,8 +23,9 @@ class AuthState {
 
 class AuthViewModel extends StateNotifier<AuthState> {
   final AuthRepository _repository;
+  final UserRepository _userRepository;
 
-  AuthViewModel(this._repository) : super(AuthState());
+  AuthViewModel(this._repository, this._userRepository) : super(AuthState());
 
   Future<void> login(String email, String password) async {
     try {
@@ -58,13 +60,11 @@ class AuthViewModel extends StateNotifier<AuthState> {
         password: password,
       );
 
-      if (user != null) {
-        state = state.copyWith(
-          status: AuthStatus.success,
-          errorMessage: null,
-          user: user,
-        );
-      }
+      state = state.copyWith(
+        status: AuthStatus.success,
+        errorMessage: null,
+        user: user,
+      );
     } on AuthException catch (e) {
       state = state.copyWith(
         status: AuthStatus.failure,
@@ -101,13 +101,17 @@ class AuthViewModel extends StateNotifier<AuthState> {
     try {
       state = state.copyWith(status: AuthStatus.loading, errorMessage: null);
       final user = await _repository.verifySignupOTP(email: email, otp: otp);
-      if (user != null) {
-        state = state.copyWith(
-          status: AuthStatus.success,
-          errorMessage: null,
-          user: user,
-        );
-      }
+
+      await _userRepository.createUserProfile(
+        userId: user!.id,
+        fullName: user.userMetadata!["full_name"],
+      );
+
+      state = state.copyWith(
+        status: AuthStatus.success,
+        errorMessage: null,
+        user: user,
+      );
     } on AuthException catch (e) {
       state = state.copyWith(
         status: AuthStatus.failure,
@@ -115,6 +119,7 @@ class AuthViewModel extends StateNotifier<AuthState> {
       );
     } catch (e) {
       state = state.copyWith(status: AuthStatus.failure, errorMessage: "error");
+      print(e.toString());
     }
   }
 

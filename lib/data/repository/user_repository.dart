@@ -8,6 +8,30 @@ class UserRepository {
 
   UserRepository(this._supabaseClient);
 
+  Future<void> createUserProfile({
+    required String userId,
+    required String fullName,
+  }) async {
+    try {
+      await _supabaseClient.from(_userTableName).insert({
+        'user_id': userId,
+        'full_name': fullName,
+      });
+      log(
+        'CREATE USER PROFILE SUCCESS: Profile created for user $userId.',
+        name: 'USER_REPO',
+      );
+    } catch (e, stackTrace) {
+      log(
+        'CREATE USER PROFILE FAILURE: Failed to create profile for user $userId.',
+        error: e,
+        stackTrace: stackTrace,
+        name: 'USER_REPO',
+      );
+      rethrow;
+    }
+  }
+
   Future<ProfileModel?> fetchUserProfile(String userId) async {
     try {
       final response = await _supabaseClient

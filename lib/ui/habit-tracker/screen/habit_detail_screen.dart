@@ -32,16 +32,12 @@ class _HabitDetailScreenState extends ConsumerState<HabitDetailScreen> {
   int _completedDays = 0;
 
   List<bool>? _weeklyStreak;
-// <<<<<<< HEAD
   List<double>? _weeklyPerformance;
+  int _habitLogStreak = 0;
   List<DateTime>? _completionDates;
   bool _isLoading = true;
   ReminderSettingModel? _reminderSetting;
 
-// =======
-  // List<DateTime>? _completionDates; 
-  
-// >>>>>>> f2d2932ae1d617906d117abaeeb90fd7045aea0c
   @override
   void initState() {
     super.initState();
@@ -87,6 +83,7 @@ class _HabitDetailScreenState extends ConsumerState<HabitDetailScreen> {
             endDate: endDate,
             habitId: habitId,
           );
+        
 
       DateTime today = DateUtils.dateOnly(now);
       int currentWeekday = today.weekday;
@@ -102,71 +99,41 @@ class _HabitDetailScreenState extends ConsumerState<HabitDetailScreen> {
         return !logDateOnly.isBefore(startDateWeek) &&
             !logDateOnly.isAfter(endDateWeek);
       }).toList();
-// <<<<<<< HEAD
-
-//       final completedDays = logsForThisWeek
-//           .where((log) => log.status == LogStatus.success)
-//           .length;
-// =======
       
       final completedDays = logsForThisWeek
         .where((log) => log.status == LogStatus.success)
         .length;
-// >>>>>>> f2d2932ae1d617906d117abaeeb90fd7045aea0c
 
-      List<bool> localWeeklyStreak = List.generate(7, (_) => false);
+      print("Habit logs for this week:");
+      print(logsForThisWeek);
+      print("Completed days this week:");
+      print(completedDays);
+
+      final streak =  await ref
+          .read(habitNotifierProvider.notifier)
+          .fetchHabitLogStreak(habitId: habitId);
+
+      // List<bool> localWeeklyStreak = ;
       List<double> localWeeklyPerformance = List.generate(7, (_) => 0.0);
 
-// <<<<<<< HEAD
-//       for (var log in logsForThisWeek) {
-//         DateTime logDateOnly = DateUtils.dateOnly(log.logDate);
-//         int dayIndex = logDateOnly.difference(startDateWeek).inDays;
-
-//         if (dayIndex >= 0 && dayIndex < 7) {
-//           localWeeklyStreak[dayIndex] = log.status == LogStatus.success;
-//           localWeeklyPerformance[dayIndex] = log.status == LogStatus.success
-//               ? 100.0
-//               : 0.0;
-//         }
-//       }
-
-//       final List<DateTime> localCompletionDates = habitLogForThisMonth.map((
-//         dailyLog,
-//       ) {
-//         return dailyLog.logDate;
-//       }).toList();
-
-// =======
       final List<DateTime> localCompletionDates = habitLogForThisMonth.map((dailyLog) {
         return dailyLog.logDate;
       }).toList();
 
-      print(localWeeklyStreak);
+      // print(localWeeklyStreak);
       print(localCompletionDates);
 
-// >>>>>>> f2d2932ae1d617906d117abaeeb90fd7045aea0c
       if (mounted) {
         setState(() {
-          _weeklyStreak = localWeeklyStreak;
+          // _weeklyStreak = localWeeklyStreak;
           _completionDates = localCompletionDates;
           _completedDays = completedDays;
           _isLoading = false;
+          _habitLogStreak = streak;
         });
       }
     } catch (e) {
       print('Error loading completion status: $e');
-// <<<<<<< HEAD
-//       if (mounted) {
-//         setState(() {
-//           _weeklyStreak = List.generate(7, (_) => false);
-//           _weeklyPerformance = List.generate(7, (_) => 0.0);
-//           _completionDates = [];
-//           _completedDays = 0;
-//           _isLoading = false;
-//         });
-//       }
-// =======
-// >>>>>>> f2d2932ae1d617906d117abaeeb90fd7045aea0c
     }
   }
 
@@ -176,17 +143,12 @@ class _HabitDetailScreenState extends ConsumerState<HabitDetailScreen> {
     final iconColor = HabitIconHelper.getHabitColor(widget.habit.name);
     final category = HabitIconHelper.getHabitCategory(widget.habit.name);
 
-// <<<<<<< HEAD
-//     if (_isLoading) {
-//       return const Scaffold(body: Center(child: CircularProgressIndicator()));
-// =======
     if (_weeklyStreak == null || _completionDates == null || _completedDays == null) {
       return const Scaffold(
         body: Center(
           child: CircularProgressIndicator(),
         ),
       );
-// >>>>>>> f2d2932ae1d617906d117abaeeb90fd7045aea0c
     }
 
     return Scaffold(
@@ -234,51 +196,24 @@ class _HabitDetailScreenState extends ConsumerState<HabitDetailScreen> {
                   ProgressWidget(
                     isCompleted: _isCompleted,
                     habitColor: iconColor,
-// <<<<<<< HEAD
-//                     habitName: "fd",
-//                     completedDays: _completedDays,
-// =======
                     habitName: widget.habit.name,
-                    completedDays: _completedDays!,
-// >>>>>>> f2d2932ae1d617906d117abaeeb90fd7045aea0c
+                    completedDays: _completedDays,
                     totalDays: 7,
                   ),
                   const SizedBox(height: 24),
 
                   WeeklyStreakWidget(
-// <<<<<<< HEAD
-//                     weeklyStreak:
-//                         _weeklyStreak != null && _weeklyStreak!.length == 7
-//                         ? _weeklyStreak!
-//                         : List.generate(7, (_) => false),
-// =======
-                    weeklyStreak: _weeklyStreak!.isEmpty
-                        ? List.generate(7, (_) => false)
-                        : _weeklyStreak!,
-// >>>>>>> f2d2932ae1d617906d117abaeeb90fd7045aea0c
+                    streak: _habitLogStreak,
                   ),
                   const SizedBox(height: 24),
 
-                  // PERUBAHAN PENTING: HANYA habitId
                   PerformanceChartWidget(
-// <<<<<<< HEAD
-//                     weeklyPerformance:
-//                         _weeklyPerformance != null &&
-//                             _weeklyPerformance!.length == 7
-//                         ? _weeklyPerformance!
-//                         : List.generate(7, (_) => 0.0),
-// =======
                     habitId: widget.habit.id,
-// >>>>>>> f2d2932ae1d617906d117abaeeb90fd7045aea0c
                   ),
                   const SizedBox(height: 24),
 
                   CalendarTrackerWidget(
-// <<<<<<< HEAD
-//                     completionDates: _completionDates ?? [],
-// =======
                     completionDates: _completionDates!,
-// >>>>>>> f2d2932ae1d617906d117abaeeb90fd7045aea0c
                   ),
                   const SizedBox(height: 16),
 
@@ -293,10 +228,6 @@ class _HabitDetailScreenState extends ConsumerState<HabitDetailScreen> {
     );
   }
 
-// <<<<<<< HEAD
-// =======
-  // ... method lainnya tetap sama
-// >>>>>>> f2d2932ae1d617906d117abaeeb90fd7045aea0c
   void _handleMenuAction(String value) {
     HabitActionsDropdown.handleMenuAction(
       value: value,
@@ -340,11 +271,6 @@ class _HabitDetailScreenState extends ConsumerState<HabitDetailScreen> {
   Future<void> _performDeleteHabit() async {
     try {
       final viewModel = ref.read(habitNotifierProvider.notifier);
-// <<<<<<< HEAD
-
-// =======
-      
-// >>>>>>> f2d2932ae1d617906d117abaeeb90fd7045aea0c
       if (widget.habit.isDefault) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -355,21 +281,11 @@ class _HabitDetailScreenState extends ConsumerState<HabitDetailScreen> {
         );
         return;
       }
-// <<<<<<< HEAD
-
-// =======
-      
-// >>>>>>> f2d2932ae1d617906d117abaeeb90fd7045aea0c
       await viewModel.deleteHabit(habitId: widget.habit.id);
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('"${widget.habit.name}" berhasil dihapus')),
       );
-// <<<<<<< HEAD
-
-// =======
-      
-// >>>>>>> f2d2932ae1d617906d117abaeeb90fd7045aea0c
       if (mounted) {
         Navigator.pop(context);
       }

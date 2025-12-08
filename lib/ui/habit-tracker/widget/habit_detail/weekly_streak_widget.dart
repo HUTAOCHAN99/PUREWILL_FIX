@@ -1,33 +1,16 @@
-// lib\ui\habit-tracker\widget\weekly_streak_widget.dart
 import 'package:flutter/material.dart';
 
 class WeeklyStreakWidget extends StatelessWidget {
-  final List<bool> weeklyStreak;
+  final int streak;
 
   const WeeklyStreakWidget({
     super.key,
-    required this.weeklyStreak,
+    required this.streak,
   });
-
-  // Method untuk menghitung streak berkelanjutan
-  int _calculateCurrentStreak(List<bool> streak) {
-    int currentStreak = 0;
-    
-    // Hitung dari hari terakhir ke belakang
-    for (int i = streak.length - 1; i >= 0; i--) {
-      if (streak[i]) {
-        currentStreak++;
-      } else {
-        break; // Berhenti ketika menemukan hari yang tidak completed
-      }
-    }
-    
-    return currentStreak;
-  }
 
   @override
   Widget build(BuildContext context) {
-    final currentStreak = _calculateCurrentStreak(weeklyStreak);
+    final currentStreak = streak;
     
     return Container(
       width: double.infinity,

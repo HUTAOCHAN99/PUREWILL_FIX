@@ -39,7 +39,6 @@ class AuthRepository {
       final AuthResponse response = await _supabaseClient.auth.signUp(
         email: email,
         password: password,
-        // Data user metadata yang benar
         data: {
           "full_name": fullname,
           "email": email, // tambah ini
@@ -98,6 +97,7 @@ class AuthRepository {
         token: otp,
         type: OtpType.signup,
       );
+
       return response.user;
     } on AuthException catch (e, stackTrace) {
       log(

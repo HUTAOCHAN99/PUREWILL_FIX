@@ -67,6 +67,27 @@ class DailyLogRepository {
     }
   }
 
+  Future<int> fetchHabitLogStreak(int habitId) async {
+    try {
+      final response = await _supabaseClient.rpc(
+        'get_current_habit_streak',
+        params: {'habit_id_input': habitId},
+      );
+
+      print("fetchHabitLogStreak response: $response");
+
+      return response;
+    } catch (e, stackTrace) {
+      log(
+        'FETCH HABIT STREAK FAILURE: Failed to fetch habit streak for habit $habitId.',
+        error: e,
+        stackTrace: stackTrace,
+        name: 'DAILY_LOG_REPO',
+      );
+      rethrow;
+    }
+  }
+
   Future<List<DailyLogModel>> fetchLogsByDateRange({
     required int habitId,
     required DateTime startDate,

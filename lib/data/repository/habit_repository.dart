@@ -1,9 +1,6 @@
 import 'dart:developer';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:purewill/data/services/default_habits_service.dart';
-import 'package:purewill/data/services/performance_service.dart';
 import 'package:purewill/domain/model/habit_model.dart';
-import 'package:purewill/ui/habit-tracker/habit_provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class HabitRepository {
@@ -47,7 +44,7 @@ class HabitRepository {
           .toList();
 
       print(response);
-      final userHabitNames = userHabits.map((h) => h.name).toSet();
+      userHabits.map((h) => h.name).toSet();
       final allHabits = [...userHabits];
 
       print('=== COMBINED HABITS ===');

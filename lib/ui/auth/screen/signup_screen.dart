@@ -15,10 +15,9 @@ class SignupScreen extends ConsumerStatefulWidget {
 
 class _SignupScreenState extends ConsumerState<SignupScreen> {
   bool _obscurePassword = true;
-  bool _isLoading = false;
-  final TextEditingController _fullNameController = TextEditingController();
-  final TextEditingController _emailController = TextEditingController();
-  final TextEditingController _passwordController = TextEditingController();
+  final TextEditingController _fullNameController = TextEditingController(text: 'example');
+  final TextEditingController _emailController = TextEditingController(text: 'mountdev10@gmail.com');
+  final TextEditingController _passwordController = TextEditingController(text: 'Rumah_12345');
   final ScrollController _scrollController = ScrollController();
 
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
@@ -71,7 +70,6 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
   try {
     // Tampilkan loading
     setState(() {
-      _isLoading = true;
     });
     
     // 1. Sign up user
@@ -114,7 +112,6 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
   } finally {
     if (mounted) {
       setState(() {
-        _isLoading = false;
       });
     }
 // >>>>>>> f2d2932ae1d617906d117abaeeb90fd7045aea0c

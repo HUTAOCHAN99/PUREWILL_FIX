@@ -355,6 +355,42 @@ class HabitsViewModel extends StateNotifier<HabitsState> {
     }
   }
 
+
+  Future<int> fetchHabitLogStreak({
+    required int habitId
+  }) async {
+    try {
+      final streak = await _dailyLogRepository.fetchHabitLogStreak(habitId);
+      return streak;
+    } catch (e, stackTrace) {
+      print(e);
+      print(stackTrace);
+      state = state.copyWith(
+        status: HabitStatus.failure,
+        errorMessage: 'Failed to fetch habit streak.',
+      );
+      rethrow;
+    }
+  }
+
+  Future<List<DailyLogModel>> fetchLogsByHabit({
+    required int habitId
+  }) async {
+    try {
+      final logs = await _dailyLogRepository.fetchLogsByHabit(habitId);
+
+      return logs;
+    } catch (e, stackTrace) {
+      print(e);
+      print(stackTrace);
+      state = state.copyWith(
+        status: HabitStatus.failure,
+        errorMessage: 'Failed to fetch log habit.',
+      );
+      rethrow;
+    }
+  }
+
   Future<void> updateHabits({
     required int habitId,
     String? newName,
