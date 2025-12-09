@@ -1,5 +1,6 @@
 import 'dart:developer';
 import 'package:purewill/domain/model/daily_log_model.dart';
+import 'package:purewill/domain/model/habit_model.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class DailyLogRepository {
@@ -7,6 +8,36 @@ class DailyLogRepository {
   static const String _logTableName = 'daily_logs';
 
   DailyLogRepository(this._supabaseClient);
+
+
+  Future<void> addLogsForNewHabit(HabitModel habit) async {
+    try {
+      final logData = {
+        'habit_id': habit.id,
+        'log_date': DateTime.now().toIso8601String().substring(0, 10),
+        'status': LogStatus.neutral.name,
+        'actual_value': 0,
+        'created_at': DateTime.now().toIso8601String(),
+      };
+
+      await _supabaseClient
+          .from(_logTableName)
+          .insert(logData);
+
+      log(
+        'ADD LOGS FOR NEW HABIT SUCCESS: Log added for new habit ${habit.id}.',
+        name: 'DAILY_LOG_REPO',
+      );
+    } catch (e, stackTrace) {
+      log(
+        'ADD LOGS FOR NEW HABIT FAILURE: Failed to add logs for new habit ${habit.id}.',
+        error: e,
+        stackTrace: stackTrace,
+        name: 'DAILY_LOG_REPO',
+      );
+      rethrow;
+    }
+  }
 
   Future<DailyLogModel> recordLog({
     required int habitId,
@@ -71,7 +102,7 @@ class DailyLogRepository {
     try {
       final response = await _supabaseClient.rpc(
         'get_current_habit_streak',
-        params: {'habit_id_input': habitId},
+        params: {'p_habit_id': habitId},
       );
 
       print("fetchHabitLogStreak response: $response");
@@ -181,6 +212,28 @@ class DailyLogRepository {
     } catch (e, stackTrace) {
       log(
         'DELETE LOG FAILURE: Failed to delete log for habit $habitId.',
+        error: e,
+        stackTrace: stackTrace,
+        name: 'DAILY_LOG_REPO',
+      );
+      rethrow;
+    }
+  }
+
+  Future<void> deleteLogsByHabit(int habitId) async {
+    try {
+      await _supabaseClient
+          .from(_logTableName)
+          .delete()
+          .eq('habit_id', habitId);
+
+      log(
+        'DELETE LOGS BY HABIT SUCCESS: Logs deleted for habit $habitId.',
+        name: 'DAILY_LOG_REPO',
+      );
+    } catch (e, stackTrace) {
+      log(
+        'DELETE LOGS BY HABIT FAILURE: Failed to delete logs for habit $habitId.',
         error: e,
         stackTrace: stackTrace,
         name: 'DAILY_LOG_REPO',

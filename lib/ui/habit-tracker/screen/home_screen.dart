@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:purewill/domain/model/habit_model.dart';
-import 'package:purewill/domain/model/plan_model.dart';
 import 'package:purewill/domain/model/profile_model.dart';
 import 'package:purewill/ui/auth/auth_provider.dart';
 import 'package:purewill/ui/auth/screen/login_screen.dart';
 import 'package:purewill/ui/habit-tracker/habit_provider.dart';
 import 'package:purewill/ui/habit-tracker/screen/membership_screen.dart';
-import 'package:purewill/ui/membership/plan_provider.dart'; 
+import 'package:purewill/ui/membership/plan_provider.dart';
 import 'package:purewill/ui/habit-tracker/widget/clean_bottom_navigation_bar.dart';
 import 'package:purewill/ui/habit-tracker/widget/habit_cards_list.dart';
 import 'package:purewill/ui/habit-tracker/widget/habit_header.dart';
@@ -16,13 +15,12 @@ import 'package:purewill/ui/habit-tracker/widget/progress_card.dart';
 import 'package:purewill/ui/habit-tracker/widget/premium_card_button.dart';
 import 'package:purewill/ui/habit-tracker/screen/habit_detail_screen.dart';
 import 'package:purewill/ui/habit-tracker/screen/add_habit_screen.dart';
+import 'package:purewill/ui/habit-tracker/screen/habit_screen.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-// Import untuk badge service
 import 'package:purewill/data/services/badge_service.dart';
 import 'package:purewill/data/services/badge_notification_service.dart';
 
-// Perlu LogStatus dari daily_log_model
 import 'package:purewill/domain/model/daily_log_model.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
@@ -34,30 +32,26 @@ class HomeScreen extends ConsumerStatefulWidget {
 class _HomeScreenState extends ConsumerState<HomeScreen> {
   int _currentIndex = 0;
   Map<int, LogStatus> _todayCompletionStatus = {};
-  
-  // Global instances (sesuai dengan main.dart)
+
   final badgeNotificationService = BadgeNotificationService();
   late BadgeService badgeService;
 
   @override
   void initState() {
     super.initState();
-    
-    // Initialize badge service
+
     badgeService = BadgeService(
       Supabase.instance.client,
       badgeNotificationService,
     );
-    
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       print('🏠 HomeScreen init: Loading data...');
-      
-      // Load habits data
-      ref.read(habitNotifierProvider.notifier).loadUserHabits();
+
+      ref.read(habitNotifierProvider.notifier).loadTodayUserHabits();
       _loadTodayCompletionStatus();
       ref.read(habitNotifierProvider.notifier).getCurrentUser();
-      
-      // LOAD PLAN DATA - dengan delay untuk memastikan auth selesai
+
       Future.delayed(const Duration(milliseconds: 300), () {
         print('🔄 HomeScreen: Loading plan data...');
         ref.read(planProvider.notifier).loadPlans();
@@ -81,21 +75,27 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   void _onNavBarTap(int index) {
-// <<<<<<< HEAD
-// =======
     print('NavBar tapped: index $index');
 
-// >>>>>>> f2d2932ae1d617906d117abaeeb90fd7045aea0c
-    if (index == 2) {
-      Navigator.of(context)
-          .push(MaterialPageRoute(builder: (context) => const AddHabitScreen()))
-          .then((_) {
-            if (mounted) {
-              setState(() {
-                _currentIndex = 0;
-              });
-            }
-          });
+    if (index == 1) {
+      // Navigate to Habit Screen
+      Navigator.of(
+        context,
+      ).push(MaterialPageRoute(builder: (context) => const HabitScreen()));
+    } else if (index == 2) {
+      // Navigate to Community (Komunitas)
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (context) => const AddHabitScreen(),
+        ), // You can replace with community screen
+      );
+    } else if (index == 3) {
+      // Navigate to Consultation (Konsultasi)
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (context) => const AddHabitScreen(),
+        ), // You can replace with consultation screen
+      );
     } else {
       setState(() {
         _currentIndex = index;
@@ -105,60 +105,56 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   void _showSnackBar(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        duration: const Duration(seconds: 2),
-      ),
+      SnackBar(content: Text(message), duration: const Duration(seconds: 2)),
     );
   }
 
   void _navigateToMembership() {
-    Navigator.of(context).push(
-      MaterialPageRoute(builder: (context) => const MembershipScreen()),
-    );
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (context) => const MembershipScreen()));
   }
 
   // Debug method (opsional, bisa dihapus jika tidak digunakan)
-  void _debugCheckPremiumStatus() async {
-    try {
-      final user = Supabase.instance.client.auth.currentUser;
-      if (user == null) {
-        print('❌ No user logged in');
-        return;
-      }
+  // void _debugCheckPremiumStatus() async {
+  //   try {
+  //     final user = Supabase.instance.client.auth.currentUser;
+  //     if (user == null) {
+  //       print('❌ No user logged in');
+  //       return;
+  //     }
 
-      print('🔍 DEBUG: Checking premium status');
-      print('User ID: ${user.id}');
-      print('User Email: ${user.email}');
-      
-      // Check langsung dari database
-      final profileResponse = await Supabase.instance.client
-          .from('profiles')
-          .select('is_premium_user, current_plan_id')
-          .eq('user_id', user.id)
-          .single();
-      
-      print('📊 Profile data: $profileResponse');
-      
-    } catch (e) {
-      print('❌ Debug error: $e');
-      _showSnackBar('Debug error: $e');
-    }
-  }
+  //     print('🔍 DEBUG: Checking premium status');
+  //     print('User ID: ${user.id}');
+  //     print('User Email: ${user.email}');
+
+  //     // Check langsung dari database
+  //     final profileResponse = await Supabase.instance.client
+  //         .from('profiles')
+  //         .select('is_premium_user, current_plan_id')
+  //         .eq('user_id', user.id)
+  //         .single();
+
+  //     print('📊 Profile data: $profileResponse');
+
+  //   } catch (e) {
+  //     print('❌ Debug error: $e');
+  //     _showSnackBar('Debug error: $e');
+  //   }
+  // }
 
   @override
   Widget build(BuildContext context) {
     final habitsState = ref.watch(habitNotifierProvider);
     final planState = ref.watch(planProvider);
-    
-    // DEBUG LOGS (opsional untuk development)
-    print('🏠 HomeScreen build() called');
-    print('   PlanState:');
-    print('   - isLoading: ${planState.isLoading}');
-    print('   - isUserPremium: ${planState.isUserPremium}');
-    print('   - currentPlan: ${planState.currentPlan?.name}');
-    print('   - error: ${planState.error}');
-    print('   - plans count: ${planState.plans.length}');
+
+    // print('🏠 HomeScreen build() called');
+    // print('   PlanState:');
+    // print('   - isLoading: ${planState.isLoading}');
+    // print('   - isUserPremium: ${planState.isUserPremium}');
+    // print('   - currentPlan: ${planState.currentPlan?.name}');
+    // print('   - error: ${planState.error}');
+    // print('   - plans count: ${planState.plans.length}');
 
     final List<HabitModel> userHabits = habitsState.habits;
     final ProfileModel? currentUser = habitsState.currentUser;
@@ -171,7 +167,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
     final totalHabits = userHabits.length;
     final progress = totalHabits > 0 ? completedToday / totalHabits : 0.0;
-    
+
     // Use data from planState
     final bool isPremiumUser = planState.isUserPremium ?? false;
     final currentPlan = planState.currentPlan;
@@ -186,57 +182,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               fit: BoxFit.cover,
             ),
           ),
-          child: const Center(
-            child: CircularProgressIndicator(),
-          ),
+          child: const Center(child: CircularProgressIndicator()),
         ),
-// <<<<<<< HEAD
-//         child: SafeArea(
-//           child: Column(
-//             children: [
-//               HabitHeader(
-//                 userEmail: userEmail,
-//                 userName: userName,
-//                 onLogout: _performLogout,
-//               ),
-//               Expanded(
-//                 child: SingleChildScrollView(
-//                   padding: const EdgeInsets.symmetric(
-//                     horizontal: 20,
-//                     vertical: 10,
-//                   ),
-//                   child: Column(
-//                     crossAxisAlignment: CrossAxisAlignment.start,
-//                     children: [
-//                       HabitWelcomeMessage(name: userName),
-//                       ProgressCard(
-//                         progress: progress,
-//                         completed: completedToday,
-//                         total: totalHabits,
-//                       ),
-//                       const SizedBox(height: 24),
-//                       const Text(
-//                         "Your Habits",
-//                         style: TextStyle(
-//                           fontSize: 18,
-//                           fontWeight: FontWeight.bold,
-//                           color: Colors.black87,
-//                         ),
-//                       ),
-//                       const SizedBox(height: 12),
-//                       HabitCardsList(
-//                         habitsState: habitsState,
-//                         todayCompletionStatus: _todayCompletionStatus,
-//                         habits: userHabits,
-//                         onHabitTap: _handleHabitTap,
-//                         onCheckboxTap: _handleCheckboxTap,
-//                       ),
-//                     ],
-// =======
       );
     }
 
-    // Show error if there's an error
     if (planState.error != null) {
       return Scaffold(
         body: Container(
@@ -258,7 +208,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     planState.error!,
                     textAlign: TextAlign.center,
                     style: const TextStyle(color: Colors.red),
-// >>>>>>> f2d2932ae1d617906d117abaeeb90fd7045aea0c
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -313,15 +262,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           completed: completedToday,
                           total: totalHabits,
                         ),
-                        
-                        // TOMBOL MEMBERSHIP
+
                         const SizedBox(height: 16),
                         PremiumCardButton(
                           isPremiumUser: isPremiumUser,
                           currentPlan: currentPlan,
                           onTap: _navigateToMembership,
                         ),
-                        
+
                         const SizedBox(height: 24),
                         const Text(
                           "Your Habits",
@@ -353,7 +301,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         currentIndex: _currentIndex,
         onTap: _onNavBarTap,
       ),
-      
+
       floatingActionButton: FloatingActionButton(
         onPressed: _addHabit,
         child: const Icon(Icons.add),
@@ -363,9 +311,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   void _addHabit() {
-    Navigator.of(context).push(
-      MaterialPageRoute(builder: (context) => const AddHabitScreen()),
-    );
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (context) => const AddHabitScreen()));
   }
 
   void _handleHabitTap(HabitModel habit) {
@@ -382,7 +330,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   void _handleCheckboxTap(HabitModel habit) async {
     try {
-      final currentStatus = _todayCompletionStatus[habit.id] == LogStatus.success;
+      final currentStatus =
+          _todayCompletionStatus[habit.id] == LogStatus.success;
       final newStatus = !currentStatus;
 
       setState(() {
@@ -391,36 +340,20 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             : LogStatus.neutral;
       });
 
-// <<<<<<< HEAD
-//       await ref
-//           .read(habitNotifierProvider.notifier)
-//           .toggleHabitCompletion(habit);
-//     } catch (e) {
-//       final previousStatus =
-//           _todayCompletionStatus[habit.id] == LogStatus.success;
-// =======
-      // Update ke backend
       await ref
           .read(habitNotifierProvider.notifier)
           .toggleHabitCompletion(habit);
-
-      // TRIGGER BADGE CHECK ketika habit completed
       if (newStatus) {
         final user = Supabase.instance.client.auth.currentUser;
         if (user != null) {
-          // Tunggu sebentar lalu check badges
           await Future.delayed(const Duration(milliseconds: 500));
           await badgeService.checkAllBadges(user.id);
-          
-          // Tampilkan konfirmasi
           _showSnackBar('Habit completed!');
         }
       }
-
     } catch (e) {
-      // Jika error, kembalikan status sebelumnya
-      final previousStatus = _todayCompletionStatus[habit.id] == LogStatus.success;
-// >>>>>>> f2d2932ae1d617906d117abaeeb90fd7045aea0c
+      final previousStatus =
+          _todayCompletionStatus[habit.id] == LogStatus.success;
       setState(() {
         _todayCompletionStatus[habit.id] = previousStatus
             ? LogStatus.neutral

@@ -1,5 +1,6 @@
 import 'dart:developer';
 
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/legacy.dart';
 import 'package:purewill/data/repository/category_repository.dart';
 import 'package:purewill/data/repository/target_unit_repository.dart';
@@ -36,10 +37,7 @@ class HabitsState {
     this.categories = const [],
     this.currentUser,
     this.currentHabitDetail,
-// <<<<<<< HEAD
     this.currentReminderSetting,
-// =======
-// >>>>>>> f2d2932ae1d617906d117abaeeb90fd7045aea0c
   });
 
   HabitsState copyWith({
@@ -52,10 +50,6 @@ class HabitsState {
     List<ReminderSettingModel>? reminderSettings,
     ProfileModel? currentUser,
     HabitModel? currentHabitDetail,
-// <<<<<<< HEAD
-//     ReminderSettingModel? currentReminderSetting,
-// =======
-// >>>>>>> f2d2932ae1d617906d117abaeeb90fd7045aea0c
   }) {
     return HabitsState(
       status: status ?? this.status,
@@ -117,6 +111,21 @@ class HabitsViewModel extends StateNotifier<HabitsState> {
       state = state.copyWith(
         status: HabitStatus.failure,
         errorMessage: 'Failed to load habits.',
+      );
+    }
+  }
+
+
+  Future<void> loadTodayUserHabits() async {
+    state = state.copyWith(status: HabitStatus.loading, errorMessage: null);
+
+    try {
+      final habits = await _habitRepository.fetchTodayUserHabits(_currentUserId);
+      state = state.copyWith(status: HabitStatus.success, habits: habits);
+    } catch (e) {
+      state = state.copyWith(
+        status: HabitStatus.failure,
+        errorMessage: 'Failed to load today habits.',
       );
     }
   }
@@ -281,6 +290,8 @@ class HabitsViewModel extends StateNotifier<HabitsState> {
     int? categoryId,
     String? notes,
     int? targetValue,
+    bool? reminderEnabled,
+    TimeOfDay? reminderTime,
   }) async {
     try {
       final newHabit = HabitModel(
@@ -294,10 +305,33 @@ class HabitsViewModel extends StateNotifier<HabitsState> {
         categoryId: categoryId,
         targetValue: targetValue,
         status: 'neutral',
+        notes: notes,
       );
 
-      await _habitRepository.createHabit(newHabit);
-      await loadUserHabits();
+      final habit = await _habitRepository.createHabit(newHabit);
+      await _dailyLogRepository.addLogsForNewHabit(habit);
+      await _reminderSettingRepository.createReminderSetting(
+        ReminderSettingModel(
+          id: '',
+          habitId: habit.id,
+          isEnabled: reminderEnabled ?? false,
+          time: reminderTime != null
+              ? DateTime(
+                  startDate.year,
+                  startDate.month,
+                  startDate.day,
+                  reminderTime.hour,
+                  reminderTime.minute,
+                )
+              : DateTime.now(),
+          snoozeDuration: 5,
+          repeatDaily: true,
+          isSoundEnabled: true,
+          isVibrationEnabled: true,
+          createdAt: DateTime.now(),
+        ),
+      );
+      await loadTodayUserHabits();
     } catch (e) {
       state = state.copyWith(
         status: HabitStatus.failure,
@@ -321,6 +355,8 @@ class HabitsViewModel extends StateNotifier<HabitsState> {
 
   Future<void> deleteHabit({required int habitId}) async {
     try {
+      await _reminderSettingRepository.deleteAllReminderSettingsForHabit(habitId);
+      await _dailyLogRepository.deleteLogsByHabit(habitId);
       await _habitRepository.deleteHabit(habitId);
     } catch (e) {
       state = state.copyWith(
@@ -361,6 +397,7 @@ class HabitsViewModel extends StateNotifier<HabitsState> {
   }) async {
     try {
       final streak = await _dailyLogRepository.fetchHabitLogStreak(habitId);
+      print("habit streak: $streak");
       return streak;
     } catch (e, stackTrace) {
       print(e);

@@ -55,15 +55,7 @@ class ReminderSettingRepository {
           .order('time', ascending: true)
           .single();
 
-// <<<<<<< HEAD
       return ReminderSettingModel.fromJson(response);
-// =======
-      // debugPrint('📦 FETCH REMINDERS RESPONSE: ${response.length} items');
-
-      // return response
-      //     .map((data) => ReminderSettingModel.fromJson(data))
-      //     .toList();
-// >>>>>>> f2d2932ae1d617906d117abaeeb90fd7045aea0c
     } catch (e, stackTrace) {
       log(
         'FETCH REMINDER SETTINGS FAILURE: Failed to fetch reminder settings for habit $habitId.',
@@ -82,7 +74,6 @@ class ReminderSettingRepository {
     try {
       debugPrint('📦 UPDATING REMINDER: $reminderSettingId');
 
-      // Clean updates
       final cleanUpdates = Map<String, dynamic>.from(updates);
       cleanUpdates.remove('id');
       cleanUpdates.remove('created_at');

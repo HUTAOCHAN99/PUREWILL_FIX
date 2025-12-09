@@ -30,11 +30,8 @@ class HabitDetailScreen extends ConsumerStatefulWidget {
 class _HabitDetailScreenState extends ConsumerState<HabitDetailScreen> {
   late bool _isCompleted;
   int _completedDays = 0;
-
-  List<bool>? _weeklyStreak;
-  List<double>? _weeklyPerformance;
   int _habitLogStreak = 0;
-  List<DateTime>? _completionDates;
+  List<DailyLogModel>? _habitLogForThisMonth;
   bool _isLoading = true;
   ReminderSettingModel? _reminderSetting;
 
@@ -83,51 +80,21 @@ class _HabitDetailScreenState extends ConsumerState<HabitDetailScreen> {
             endDate: endDate,
             habitId: habitId,
           );
-        
-
-      DateTime today = DateUtils.dateOnly(now);
-      int currentWeekday = today.weekday;
-      DateTime startDateWeek = today.subtract(
-        Duration(days: currentWeekday - 1),
-      );
-      DateTime endDateWeek = startDateWeek.add(const Duration(days: 6));
-
-      final List<DailyLogModel> logsForThisWeek = habitLogForThisMonth.where((
-        dailyLog,
-      ) {
-        DateTime logDateOnly = DateUtils.dateOnly(dailyLog.logDate);
-        return !logDateOnly.isBefore(startDateWeek) &&
-            !logDateOnly.isAfter(endDateWeek);
-      }).toList();
-      
-      final completedDays = logsForThisWeek
-        .where((log) => log.status == LogStatus.success)
-        .length;
-
-      print("Habit logs for this week:");
-      print(logsForThisWeek);
-      print("Completed days this week:");
-      print(completedDays);
 
       final streak =  await ref
           .read(habitNotifierProvider.notifier)
           .fetchHabitLogStreak(habitId: habitId);
 
-      // List<bool> localWeeklyStreak = ;
-      List<double> localWeeklyPerformance = List.generate(7, (_) => 0.0);
-
       final List<DateTime> localCompletionDates = habitLogForThisMonth.map((dailyLog) {
         return dailyLog.logDate;
       }).toList();
 
-      // print(localWeeklyStreak);
       print(localCompletionDates);
 
       if (mounted) {
         setState(() {
-          // _weeklyStreak = localWeeklyStreak;
-          _completionDates = localCompletionDates;
-          _completedDays = completedDays;
+          _habitLogForThisMonth = habitLogForThisMonth;
+          _completedDays = 2;
           _isLoading = false;
           _habitLogStreak = streak;
         });
@@ -143,7 +110,7 @@ class _HabitDetailScreenState extends ConsumerState<HabitDetailScreen> {
     final iconColor = HabitIconHelper.getHabitColor(widget.habit.name);
     final category = HabitIconHelper.getHabitCategory(widget.habit.name);
 
-    if (_weeklyStreak == null || _completionDates == null || _completedDays == null) {
+    if (_isLoading) {
       return const Scaffold(
         body: Center(
           child: CircularProgressIndicator(),
@@ -213,7 +180,7 @@ class _HabitDetailScreenState extends ConsumerState<HabitDetailScreen> {
                   const SizedBox(height: 24),
 
                   CalendarTrackerWidget(
-                    completionDates: _completionDates!,
+                    habitLogForThisMonth: _habitLogForThisMonth!,
                   ),
                   const SizedBox(height: 16),
 

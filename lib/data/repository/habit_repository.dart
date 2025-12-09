@@ -12,7 +12,7 @@ class HabitRepository {
   Future<HabitModel> createHabit(HabitModel habit) async {
     try {
       final habitData = habit.toJson();
-
+      print(habitData);
       final response = await _supabaseClient
           .from(_habitTableName)
           .insert(habitData)
@@ -80,6 +80,29 @@ class HabitRepository {
       }
 
       return defaultHabits;
+    }
+  }
+
+
+  Future<List<HabitModel>> fetchTodayUserHabits(String userId) async {
+    try {
+      final response = await _supabaseClient
+          .from(_habitTableName)
+          .select('*')
+          .gt('start_date', DateTime.now().subtract(Duration(days: 1)).toIso8601String().substring(0, 10))
+          .eq('user_id', userId)
+          .eq('is_active', true)
+          .order('start_date', ascending: true);
+
+      return response.map((data) => HabitModel.fromJson(data)).toList();
+    } catch (e, stackTrace) {
+      log(
+        'FETCH TODAY\'S HABITS FAILURE: Failed to fetch today\'s habits for user $userId.',
+        error: e,
+        stackTrace: stackTrace,
+        name: 'HABIT_REPO',
+      );
+      rethrow;
     }
   }
 
