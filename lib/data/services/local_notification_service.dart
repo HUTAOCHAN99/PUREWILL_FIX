@@ -150,18 +150,18 @@ class LocalNotificationService {
     required bool repeatDaily,
   }) async {
     try {
-      debugPrint('🎯 ========== SCHEDULING REMINDER ==========');
-      debugPrint('   - Notification ID: $id');
-      debugPrint('   - Habit: $title');
-      debugPrint('   - Time: ${time.hour}:${time.minute}');
-      debugPrint('   - Habit ID: $habitId');
-      debugPrint('   - Repeat Daily: $repeatDaily');
+      // debugPrint('🎯 ========== SCHEDULING REMINDER ==========');
+      // debugPrint('   - Notification ID: $id');
+      // debugPrint('   - Habit: $title');
+      // debugPrint('   - Time: ${time.hour}:${time.minute}');
+      // debugPrint('   - Habit ID: $habitId');
+      // debugPrint('   - Repeat Daily: $repeatDaily');
 
       // Get current time dengan detail
       final now = DateTime.now();
-      debugPrint('   - Device Now: $now');
-      debugPrint('   - Device Time: ${_formatTime(now)}');
-      debugPrint('   - Timezone: ${now.timeZoneName} (UTC${now.timeZoneOffset.isNegative ? '' : '+'}${now.timeZoneOffset.inHours})');
+      // debugPrint('   - Device Now: $now');
+      // debugPrint('   - Device Time: ${_formatTime(now)}');
+      // debugPrint('   - Timezone: ${now.timeZoneName} (UTC${now.timeZoneOffset.isNegative ? '' : '+'}${now.timeZoneOffset.inHours})');
 
       // Calculate scheduled time
       var scheduledTime = DateTime(
@@ -185,22 +185,22 @@ class LocalNotificationService {
 //             'Daily Habit Reminders',
 //             channelDescription: 'Daily reminders for your habits',
 // =======
-      debugPrint('   - Raw Scheduled: $scheduledTime');
+      // debugPrint('   - Raw Scheduled: $scheduledTime');
 
       // If time already passed today, schedule for tomorrow
       if (scheduledTime.isBefore(now)) {
         scheduledTime = scheduledTime.add(const Duration(days: 1));
-        debugPrint('   ⏰ Time passed today, scheduling for TOMORROW');
+        // debugPrint('   ⏰ Time passed today, scheduling for TOMORROW');
       } else {
-        debugPrint('   ⏰ Time is in the future, scheduling for TODAY');
+        // debugPrint('   ⏰ Time is in the future, scheduling for TODAY');
       }
 
-      debugPrint('   - Final Scheduled: $scheduledTime');
-      debugPrint('   - Time Difference: ${scheduledTime.difference(now)}');
+      // debugPrint('   - Final Scheduled: $scheduledTime');
+      // debugPrint('   - Time Difference: ${scheduledTime.difference(now)}');
 
       // Convert to timezone format
       final tzScheduledTime = tz.TZDateTime.from(scheduledTime, tz.local);
-      debugPrint('   - TZ Scheduled: $tzScheduledTime');
+      // debugPrint('   - TZ Scheduled: $tzScheduledTime');
 
       // Notification details
       const AndroidNotificationDetails androidDetails =
@@ -208,44 +208,22 @@ class LocalNotificationService {
             _habitChannelId,
             'Habit Reminders',
             channelDescription: 'Notifications for your habit reminders',
-// >>>>>>> f2d2932ae1d617906d117abaeeb90fd7045aea0c
             importance: Importance.high,
             priority: Priority.high,
             enableVibration: true,
             playSound: true,
-// <<<<<<< HEAD
-// =======
-            timeoutAfter: 0, // Never timeout
-// >>>>>>> f2d2932ae1d617906d117abaeeb90fd7045aea0c
+            timeoutAfter: 0,
           );
 
       const DarwinNotificationDetails iosDetails = DarwinNotificationDetails(
         sound: 'default',
       );
 
-// <<<<<<< HEAD
-//       const LinuxNotificationDetails linuxDetails = LinuxNotificationDetails();
-
-// =======
-// >>>>>>> f2d2932ae1d617906d117abaeeb90fd7045aea0c
       const NotificationDetails notificationDetails = NotificationDetails(
         android: androidDetails,
         iOS: iosDetails,
       );
 
-// <<<<<<< HEAD
-//       await _notificationsPlugin.zonedSchedule(
-//         id,
-//         title,
-//         body,
-//         scheduledDate,
-//         notificationDetails,
-//         androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-//         matchDateTimeComponents: DateTimeComponents.time,
-//         payload: habitId,
-//       );
-// =======
-      // Schedule the notification - FIXED: Remove undefined parameters
       if (repeatDaily) {
         debugPrint('   🔄 Scheduling as DAILY REPEATING');
         await _notificationsPlugin.zonedSchedule(
@@ -270,9 +248,8 @@ class LocalNotificationService {
           payload: 'habit_$habitId',
         );
       }
-// >>>>>>> f2d2932ae1d617906d117abaeeb90fd7045aea0c
 
-      debugPrint('✅ NOTIFICATION SCHEDULED SUCCESSFULLY');
+      // debugPrint('✅ NOTIFICATION SCHEDULED SUCCESSFULLY');
 
       // Immediate verification
       await _verifyScheduledNotification(id);
@@ -291,43 +268,14 @@ class LocalNotificationService {
     }
   }
 
-// <<<<<<< HEAD
-//   Future<void> scheduleOneTimeReminder({
-//     required int id,
-//     required String title,
-//     required String body,
-//     required DateTime scheduledTime,
-//     required String habitId,
-//   }) async {
-//     try {
-//       final tz.TZDateTime scheduledDate = tz.TZDateTime.from(
-//         scheduledTime,
-//         tz.local,
-//       );
-
-//       const AndroidNotificationDetails androidDetails =
-//           AndroidNotificationDetails(
-//             'one_time_habit_channel',
-//             'One-time Habit Reminders',
-//             channelDescription: 'One-time reminders for your habits',
-//             importance: Importance.high,
-//             priority: Priority.high,
-//           );
-
-//       const DarwinNotificationDetails iosDetails = DarwinNotificationDetails();
-
-//       const LinuxNotificationDetails linuxDetails = LinuxNotificationDetails();
-
-// =======
   // Helper method untuk format time
   String _formatTime(DateTime dateTime) {
     return '${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}:${dateTime.second.toString().padLeft(2, '0')}';
   }
 
-  // Show immediate test notification dengan lebih banyak info
   Future<void> showTestNotification(String habitName) async {
     try {
-      debugPrint('🎪 ========== TEST NOTIFICATION ==========');
+      // debugPrint('🎪 ========== TEST NOTIFICATION ==========');
       
       const AndroidNotificationDetails androidDetails =
           AndroidNotificationDetails(
@@ -352,9 +300,9 @@ class LocalNotificationService {
 
       final notificationId = DateTime.now().millisecondsSinceEpoch.remainder(100000);
       
-      debugPrint('   - Test ID: $notificationId');
-      debugPrint('   - Habit: $habitName');
-      debugPrint('   - Time: ${DateTime.now()}');
+      // debugPrint('   - Test ID: $notificationId');
+      // debugPrint('   - Habit: $habitName');
+      // debugPrint('   - Time: ${DateTime.now()}');
 
       await _notificationsPlugin.show(
         notificationId,

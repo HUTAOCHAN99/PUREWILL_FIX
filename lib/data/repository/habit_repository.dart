@@ -83,13 +83,18 @@ class HabitRepository {
     }
   }
 
-
   Future<List<HabitModel>> fetchTodayUserHabits(String userId) async {
     try {
+      // 1. Definisikan batas awal dan akhir hari ini (dalam format ISO 8601 UTC)
+      final todayStart ='${DateTime.now().toIso8601String().substring(0, 10)} 00:00:00+00';
+      final tomorrowStart = '${DateTime.now().add(Duration(days: 1)).toIso8601String().substring(0, 10)} 00:00:00+00';
+
+      // 2. Kueri Supabase menggunakan rentang
       final response = await _supabaseClient
           .from(_habitTableName)
           .select('*')
-          .gt('start_date', DateTime.now().subtract(Duration(days: 1)).toIso8601String().substring(0, 10))
+          .gte('start_date', todayStart)
+          .lt('start_date', tomorrowStart)
           .eq('user_id', userId)
           .eq('is_active', true)
           .order('start_date', ascending: true);

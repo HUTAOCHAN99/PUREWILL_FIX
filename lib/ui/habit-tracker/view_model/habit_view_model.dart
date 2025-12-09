@@ -21,6 +21,7 @@ class HabitsState {
   final HabitStatus status;
   final String? errorMessage;
   final List<HabitModel> habits;
+  final List<HabitModel> todayHabit;
   final List<DailyLogModel> dailyLogs;
   final List<TargetUnitModel> targetUnits;
   final List<CategoryModel> categories;
@@ -32,6 +33,7 @@ class HabitsState {
     this.status = HabitStatus.initial,
     this.errorMessage,
     this.habits = const [],
+    this.todayHabit = const [],
     this.dailyLogs = const [],
     this.targetUnits = const [],
     this.categories = const [],
@@ -44,6 +46,7 @@ class HabitsState {
     HabitStatus? status,
     String? errorMessage,
     List<HabitModel>? habits,
+    List<HabitModel>? todayHabit,
     List<DailyLogModel>? dailyLogs,
     List<TargetUnitModel>? targetUnits,
     List<CategoryModel>? caregories,
@@ -55,6 +58,7 @@ class HabitsState {
       status: status ?? this.status,
       errorMessage: errorMessage ?? this.errorMessage,
       habits: habits ?? this.habits,
+      todayHabit: todayHabit ?? this.todayHabit,
       dailyLogs: dailyLogs ?? this.dailyLogs,
       targetUnits: targetUnits ?? this.targetUnits,
       categories: caregories ?? categories,
@@ -115,13 +119,21 @@ class HabitsViewModel extends StateNotifier<HabitsState> {
     }
   }
 
-
   Future<void> loadTodayUserHabits() async {
+    print("memuat data habit punya user hari ini...");
     state = state.copyWith(status: HabitStatus.loading, errorMessage: null);
-
     try {
-      final habits = await _habitRepository.fetchTodayUserHabits(_currentUserId);
-      state = state.copyWith(status: HabitStatus.success, habits: habits);
+      final habits = await _habitRepository.fetchTodayUserHabits(
+        _currentUserId,
+      );
+
+      debugPrint("habits hari ini:");
+      for (var habit in habits) {
+        debugPrint("- ${habit.name} (id: ${habit.id})");
+      }
+
+
+      state = state.copyWith(status: HabitStatus.success, todayHabit: habits);
     } catch (e) {
       state = state.copyWith(
         status: HabitStatus.failure,
@@ -224,7 +236,7 @@ class HabitsViewModel extends StateNotifier<HabitsState> {
         );
       }
 
-      await loadUserHabits();
+      await loadTodayUserHabits();
     } catch (e, stackTrace) {
       print(e);
       print(stackTrace);
@@ -355,7 +367,9 @@ class HabitsViewModel extends StateNotifier<HabitsState> {
 
   Future<void> deleteHabit({required int habitId}) async {
     try {
-      await _reminderSettingRepository.deleteAllReminderSettingsForHabit(habitId);
+      await _reminderSettingRepository.deleteAllReminderSettingsForHabit(
+        habitId,
+      );
       await _dailyLogRepository.deleteLogsByHabit(habitId);
       await _habitRepository.deleteHabit(habitId);
     } catch (e) {
@@ -391,10 +405,7 @@ class HabitsViewModel extends StateNotifier<HabitsState> {
     }
   }
 
-
-  Future<int> fetchHabitLogStreak({
-    required int habitId
-  }) async {
+  Future<int> fetchHabitLogStreak({required int habitId}) async {
     try {
       final streak = await _dailyLogRepository.fetchHabitLogStreak(habitId);
       print("habit streak: $streak");
@@ -410,9 +421,7 @@ class HabitsViewModel extends StateNotifier<HabitsState> {
     }
   }
 
-  Future<List<DailyLogModel>> fetchLogsByHabit({
-    required int habitId
-  }) async {
+  Future<List<DailyLogModel>> fetchLogsByHabit({required int habitId}) async {
     try {
       final logs = await _dailyLogRepository.fetchLogsByHabit(habitId);
 
@@ -531,24 +540,28 @@ class HabitsViewModel extends StateNotifier<HabitsState> {
         createdAt: DateTime.now(), // TAMBAHKAN INI
       );
 
-      final reminderSettingBefore = await _reminderSettingRepository.fetchReminderSettingsByHabit(habitId);
+      final reminderSettingBefore = await _reminderSettingRepository
+          .fetchReminderSettingsByHabit(habitId);
 
       if (reminderSettingBefore.id.isNotEmpty) {
-        await _reminderSettingRepository.updateReminderSetting(reminderSettingId: reminderSettingBefore.id, updates: {
-          'is_enabled': isEnabled,
-          'time': time.toIso8601String(),
-          'snooze_duration': snoozeDuration,
-          'repeat_daily': repeatDaily,
-          'is_sound_enabled': isSoundEnabled,
-          'is_vibration_enabled': isVibrationEnabled,
-        });
+        await _reminderSettingRepository.updateReminderSetting(
+          reminderSettingId: reminderSettingBefore.id,
+          updates: {
+            'is_enabled': isEnabled,
+            'time': time.toIso8601String(),
+            'snooze_duration': snoozeDuration,
+            'repeat_daily': repeatDaily,
+            'is_sound_enabled': isSoundEnabled,
+            'is_vibration_enabled': isVibrationEnabled,
+          },
+        );
         await loadCurrentReminderSetting(habitId);
         log(
-        'UPDATE REMINDER SETTING SUCCESS: Reminder setting created for habit $habitId.',
-        name: 'HABIT_VIEW_MODEL',
-      );
+          'UPDATE REMINDER SETTING SUCCESS: Reminder setting created for habit $habitId.',
+          name: 'HABIT_VIEW_MODEL',
+        );
         return;
-      } 
+      }
 
       await _reminderSettingRepository.createReminderSetting(reminderSetting);
 
@@ -556,7 +569,6 @@ class HabitsViewModel extends StateNotifier<HabitsState> {
         'CREATE REMINDER SETTING SUCCESS: Reminder setting created for habit $habitId.',
         name: 'HABIT_VIEW_MODEL',
       );
-
     } catch (e) {
       state = state.copyWith(
         status: HabitStatus.failure,
@@ -568,7 +580,8 @@ class HabitsViewModel extends StateNotifier<HabitsState> {
 
   Future<ReminderSettingModel> loadCurrentReminderSetting(int habitId) async {
     try {
-      final reminderSetting = await _reminderSettingRepository.fetchReminderSettingsByHabit(habitId);
+      final reminderSetting = await _reminderSettingRepository
+          .fetchReminderSettingsByHabit(habitId);
 
       return reminderSetting;
     } catch (e) {

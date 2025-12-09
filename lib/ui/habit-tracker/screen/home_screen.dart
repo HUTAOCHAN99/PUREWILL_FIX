@@ -5,7 +5,9 @@ import 'package:purewill/domain/model/profile_model.dart';
 import 'package:purewill/ui/auth/auth_provider.dart';
 import 'package:purewill/ui/auth/screen/login_screen.dart';
 import 'package:purewill/ui/habit-tracker/habit_provider.dart';
+import 'package:purewill/ui/habit-tracker/screen/community_selection_screen.dart';
 import 'package:purewill/ui/habit-tracker/screen/membership_screen.dart';
+import 'package:purewill/ui/habit-tracker/view_model/habit_view_model.dart';
 import 'package:purewill/ui/membership/plan_provider.dart';
 import 'package:purewill/ui/habit-tracker/widget/clean_bottom_navigation_bar.dart';
 import 'package:purewill/ui/habit-tracker/widget/habit_cards_list.dart';
@@ -17,10 +19,8 @@ import 'package:purewill/ui/habit-tracker/screen/habit_detail_screen.dart';
 import 'package:purewill/ui/habit-tracker/screen/add_habit_screen.dart';
 import 'package:purewill/ui/habit-tracker/screen/habit_screen.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-
 import 'package:purewill/data/services/badge_service.dart';
 import 'package:purewill/data/services/badge_notification_service.dart';
-
 import 'package:purewill/domain/model/daily_log_model.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
@@ -46,14 +46,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      print('🏠 HomeScreen init: Loading data...');
-
       ref.read(habitNotifierProvider.notifier).loadTodayUserHabits();
       _loadTodayCompletionStatus();
       ref.read(habitNotifierProvider.notifier).getCurrentUser();
-
       Future.delayed(const Duration(milliseconds: 300), () {
-        print('🔄 HomeScreen: Loading plan data...');
         ref.read(planProvider.notifier).loadPlans();
       });
     });
@@ -78,23 +74,20 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     print('NavBar tapped: index $index');
 
     if (index == 1) {
-      // Navigate to Habit Screen
       Navigator.of(
         context,
       ).push(MaterialPageRoute(builder: (context) => const HabitScreen()));
     } else if (index == 2) {
-      // Navigate to Community (Komunitas)
       Navigator.of(context).push(
         MaterialPageRoute(
-          builder: (context) => const AddHabitScreen(),
-        ), // You can replace with community screen
+          builder: (context) => const CommunitySelectionScreen(),
+        ), 
       );
     } else if (index == 3) {
-      // Navigate to Consultation (Konsultasi)
       Navigator.of(context).push(
         MaterialPageRoute(
           builder: (context) => const AddHabitScreen(),
-        ), // You can replace with consultation screen
+        ), 
       );
     } else {
       setState(() {
@@ -115,48 +108,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     ).push(MaterialPageRoute(builder: (context) => const MembershipScreen()));
   }
 
-  // Debug method (opsional, bisa dihapus jika tidak digunakan)
-  // void _debugCheckPremiumStatus() async {
-  //   try {
-  //     final user = Supabase.instance.client.auth.currentUser;
-  //     if (user == null) {
-  //       print('❌ No user logged in');
-  //       return;
-  //     }
-
-  //     print('🔍 DEBUG: Checking premium status');
-  //     print('User ID: ${user.id}');
-  //     print('User Email: ${user.email}');
-
-  //     // Check langsung dari database
-  //     final profileResponse = await Supabase.instance.client
-  //         .from('profiles')
-  //         .select('is_premium_user, current_plan_id')
-  //         .eq('user_id', user.id)
-  //         .single();
-
-  //     print('📊 Profile data: $profileResponse');
-
-  //   } catch (e) {
-  //     print('❌ Debug error: $e');
-  //     _showSnackBar('Debug error: $e');
-  //   }
-  // }
-
   @override
   Widget build(BuildContext context) {
     final habitsState = ref.watch(habitNotifierProvider);
     final planState = ref.watch(planProvider);
 
-    // print('🏠 HomeScreen build() called');
-    // print('   PlanState:');
-    // print('   - isLoading: ${planState.isLoading}');
-    // print('   - isUserPremium: ${planState.isUserPremium}');
-    // print('   - currentPlan: ${planState.currentPlan?.name}');
-    // print('   - error: ${planState.error}');
-    // print('   - plans count: ${planState.plans.length}');
+    if (habitsState.status == HabitStatus.loading) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
 
-    final List<HabitModel> userHabits = habitsState.habits;
+    final List<HabitModel> userHabits = habitsState.todayHabit;
     final ProfileModel? currentUser = habitsState.currentUser;
     final String userName = currentUser?.fullName ?? "User";
     final String userEmail = currentUser?.email ?? "email@example.com";
@@ -168,11 +129,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final totalHabits = userHabits.length;
     final progress = totalHabits > 0 ? completedToday / totalHabits : 0.0;
 
-    // Use data from planState
     final bool isPremiumUser = planState.isUserPremium ?? false;
     final currentPlan = planState.currentPlan;
 
-    // Show loading if plans are loading
     if (planState.isLoading) {
       return Scaffold(
         body: Container(
@@ -226,7 +185,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       body: RefreshIndicator(
         onRefresh: () async {
           print('🔄 Pull to refresh triggered');
-          await ref.read(habitNotifierProvider.notifier).loadUserHabits();
+          await ref.read(habitNotifierProvider.notifier).loadTodayUserHabits();
           await ref.read(planProvider.notifier).refresh();
           await _loadTodayCompletionStatus();
         },

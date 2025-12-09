@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:purewill/ui/habit-tracker/screen/community_selection_screen.dart';
 
 class CleanBottomNavigationBar extends StatelessWidget {
   final int currentIndex;

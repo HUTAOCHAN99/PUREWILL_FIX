@@ -20,19 +20,19 @@ class HabitScreen extends ConsumerStatefulWidget {
 
 class _HabitScreenState extends ConsumerState<HabitScreen> {
   Map<int, LogStatus> _todayCompletionStatus = {};
-  
+
   final badgeNotificationService = BadgeNotificationService();
   late BadgeService badgeService;
 
   @override
   void initState() {
     super.initState();
-    
+
     badgeService = BadgeService(
       Supabase.instance.client,
       badgeNotificationService,
     );
-    
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       print('📋 HabitScreen init: Loading data...');
       ref.read(habitNotifierProvider.notifier).loadUserHabits();
@@ -57,10 +57,7 @@ class _HabitScreenState extends ConsumerState<HabitScreen> {
 
   void _showSnackBar(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        duration: const Duration(seconds: 2),
-      ),
+      SnackBar(content: Text(message), duration: const Duration(seconds: 2)),
     );
   }
 
@@ -73,10 +70,7 @@ class _HabitScreenState extends ConsumerState<HabitScreen> {
       appBar: AppBar(
         title: const Text(
           'My Habits',
-          style: TextStyle(
-            fontWeight: FontWeight.w600,
-            color: Colors.black87,
-          ),
+          style: TextStyle(fontWeight: FontWeight.w600, color: Colors.black87),
         ),
         backgroundColor: const Color.fromRGBO(176, 230, 216, 1),
         foregroundColor: Colors.black,
@@ -153,7 +147,10 @@ class _HabitScreenState extends ConsumerState<HabitScreen> {
                           ),
                           _buildStatCard(
                             'Active Habits',
-                            userHabits.where((h) => h.isActive).length.toString(),
+                            userHabits
+                                .where((h) => h.isActive)
+                                .length
+                                .toString(),
                             Icons.play_circle,
                             Colors.orange,
                           ),
@@ -185,9 +182,11 @@ class _HabitScreenState extends ConsumerState<HabitScreen> {
                           habits: userHabits,
                           onHabitTap: _handleHabitTap,
                           onCheckboxTap: _handleCheckboxTap,
-                          isPremiumUser: false, // You can update this based on your premium logic
+                          isPremiumUser:
+                              false, // You can update this based on your premium logic
                           buildEmptyState: () => _buildCustomEmptyState(),
-                          buildErrorState: (errorMessage) => _buildCustomErrorState(errorMessage),
+                          buildErrorState: (errorMessage) =>
+                              _buildCustomErrorState(errorMessage),
                         ),
                         const SizedBox(height: 20),
                       ],
@@ -209,7 +208,12 @@ class _HabitScreenState extends ConsumerState<HabitScreen> {
     );
   }
 
-  Widget _buildStatCard(String title, String value, IconData icon, Color color) {
+  Widget _buildStatCard(
+    String title,
+    String value,
+    IconData icon,
+    Color color,
+  ) {
     return Expanded(
       child: Container(
         padding: const EdgeInsets.all(12),
@@ -217,18 +221,11 @@ class _HabitScreenState extends ConsumerState<HabitScreen> {
         decoration: BoxDecoration(
           color: color.withOpacity(0.1),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: color.withOpacity(0.3),
-            width: 1,
-          ),
+          border: Border.all(color: color.withOpacity(0.3), width: 1),
         ),
         child: Column(
           children: [
-            Icon(
-              icon,
-              color: color,
-              size: 24,
-            ),
+            Icon(icon, color: color, size: 24),
             const SizedBox(height: 8),
             Text(
               value,
@@ -241,10 +238,7 @@ class _HabitScreenState extends ConsumerState<HabitScreen> {
             const SizedBox(height: 4),
             Text(
               title,
-              style: TextStyle(
-                fontSize: 12,
-                color: Colors.grey.shade600,
-              ),
+              style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
               textAlign: TextAlign.center,
             ),
           ],
@@ -301,10 +295,7 @@ class _HabitScreenState extends ConsumerState<HabitScreen> {
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color.fromRGBO(176, 230, 216, 1),
               foregroundColor: Colors.black87,
-              padding: const EdgeInsets.symmetric(
-                horizontal: 24,
-                vertical: 12,
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
@@ -331,11 +322,7 @@ class _HabitScreenState extends ConsumerState<HabitScreen> {
       ),
       child: Column(
         children: [
-          Icon(
-            Icons.error_outline,
-            color: Colors.red.shade400,
-            size: 64,
-          ),
+          Icon(Icons.error_outline, color: Colors.red.shade400, size: 64),
           const SizedBox(height: 16),
           const Text(
             'Failed to load habits',
@@ -366,10 +353,7 @@ class _HabitScreenState extends ConsumerState<HabitScreen> {
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.red.shade400,
               foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(
-                horizontal: 24,
-                vertical: 12,
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
@@ -387,9 +371,9 @@ class _HabitScreenState extends ConsumerState<HabitScreen> {
   }
 
   void _addHabit() {
-    Navigator.of(context).push(
-      MaterialPageRoute(builder: (context) => const AddHabitScreen()),
-    );
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (context) => const AddHabitScreen()));
   }
 
   void _handleHabitTap(HabitModel habit) {
@@ -406,7 +390,8 @@ class _HabitScreenState extends ConsumerState<HabitScreen> {
 
   void _handleCheckboxTap(HabitModel habit) async {
     try {
-      final currentStatus = _todayCompletionStatus[habit.id] == LogStatus.success;
+      final currentStatus =
+          _todayCompletionStatus[habit.id] == LogStatus.success;
       final newStatus = !currentStatus;
 
       setState(() {
@@ -418,7 +403,7 @@ class _HabitScreenState extends ConsumerState<HabitScreen> {
       await ref
           .read(habitNotifierProvider.notifier)
           .toggleHabitCompletion(habit);
-      
+
       if (newStatus) {
         final user = Supabase.instance.client.auth.currentUser;
         if (user != null) {
@@ -427,9 +412,9 @@ class _HabitScreenState extends ConsumerState<HabitScreen> {
           _showSnackBar('Habit completed!');
         }
       }
-
     } catch (e) {
-      final previousStatus = _todayCompletionStatus[habit.id] == LogStatus.success;
+      final previousStatus =
+          _todayCompletionStatus[habit.id] == LogStatus.success;
       setState(() {
         _todayCompletionStatus[habit.id] = previousStatus
             ? LogStatus.neutral

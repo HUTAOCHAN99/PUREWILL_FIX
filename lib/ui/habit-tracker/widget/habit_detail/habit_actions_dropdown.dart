@@ -144,9 +144,9 @@ class HabitActionsDropdown extends StatelessWidget {
     );
   }
 
-  static void _showComingSoonSnackBar(BuildContext context, String feature) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('$feature - Coming Soon')),
-    );
-  }
+  // static void _showComingSoonSnackBar(BuildContext context, String feature) {
+  //   ScaffoldMessenger.of(context).showSnackBar(
+  //     SnackBar(content: Text('$feature - Coming Soon')),
+  //   );
+  // }
 }

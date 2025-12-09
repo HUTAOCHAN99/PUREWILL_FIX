@@ -10,11 +10,7 @@ class HabitCardsList extends StatelessWidget {
   final Map<int, LogStatus> todayCompletionStatus;
   final List<HabitModel> habits;
   final void Function(HabitModel habit) onHabitTap;
-// <<<<<<< HEAD
-//   final void Function(HabitModel habit) onCheckboxTap; 
-// =======
   final void Function(HabitModel habit) onCheckboxTap;
-// >>>>>>> f2d2932ae1d617906d117abaeeb90fd7045aea0c
   final Widget Function(String errorMessage)? buildErrorState;
   final Widget Function()? buildEmptyState;
   final bool isPremiumUser;
@@ -49,7 +45,7 @@ class HabitCardsList extends StatelessWidget {
             _defaultErrorState(habitsState.errorMessage ?? 'Unknown error');
 
       case HabitStatus.success:
-        if (habitsState.habits.isEmpty) {
+        if (habitsState.todayHabit.isEmpty) {
           return buildEmptyState?.call() ?? _defaultEmptyState();
         }
 
@@ -59,14 +55,9 @@ class HabitCardsList extends StatelessWidget {
 
         return Column(
           children: sortedHabits.map((habit) {
-            // Gunakan todayCompletionStatus untuk status checkbox
             final todayStatus =
                 todayCompletionStatus[habit.id] ?? LogStatus.neutral;
-
-            // Tentukan kategori berdasarkan categoryId
             final categoryName = _determineCategory(habit);
-
-            // Dapatkan icon dan warna dari habit_icon_helper berdasarkan kategori
             final iconData = HabitIconHelper.getHabitIcon(categoryName);
             final color = HabitIconHelper.getHabitColor(categoryName);
 
@@ -89,9 +80,7 @@ class HabitCardsList extends StatelessWidget {
     }
   }
 
-  // Method untuk menentukan kategori habit
   String _determineCategory(HabitModel habit) {
-    // Prioritas 1: Jika habit punya categoryId, mapping ke nama kategori
     if (habit.categoryId != null) {
       final categoryName = _mapCategoryIdToName(habit.categoryId!);
       print(
@@ -100,7 +89,6 @@ class HabitCardsList extends StatelessWidget {
       return categoryName;
     }
 
-    // Prioritas 2: Gunakan habit_icon_helper untuk menentukan kategori dari nama habit
     final categoryFromName = HabitIconHelper.getHabitCategory(habit.name);
     print(
       'Habit ${habit.name}: no categoryId, using name -> $categoryFromName',
@@ -108,7 +96,6 @@ class HabitCardsList extends StatelessWidget {
     return categoryFromName;
   }
 
-  // Mapping categoryId ke nama kategori
   String _mapCategoryIdToName(int categoryId) {
     switch (categoryId) {
       case 1:
