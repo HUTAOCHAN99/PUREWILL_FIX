@@ -1,8 +1,4 @@
-// <<<<<<< HEAD
-// import 'package:flutter/material.dart';
-// =======
 import 'package:flutter/material.dart' hide Badge;
-// >>>>>>> f2d2932ae1d617906d117abaeeb90fd7045aea0c
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:purewill/domain/model/badge_model.dart' as models;
 import 'package:purewill/ui/badge/providers/badge_provider.dart';
@@ -135,21 +131,6 @@ class _ErrorState extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-// <<<<<<< HEAD
-//             _buildStreakAlert(),
-//             const SizedBox(height: 24),
-
-//             _buildLevelProgress(),
-//             const SizedBox(height: 24),
-
-//             _buildXpProgress(),
-//             const SizedBox(height: 24),
-
-//             _buildBadgeCollection(),
-//             const SizedBox(height: 24),
-
-//             _buildLockedBadges(),
-// =======
             const Icon(Icons.error_outline, color: Colors.red, size: 64),
             const SizedBox(height: 16),
             const Text(
@@ -169,7 +150,7 @@ class _ErrorState extends StatelessWidget {
             const SizedBox(height: 16),
             ElevatedButton(
               onPressed: () {
-                ref.refresh(badgesProvider);
+                // ref.refresh(badgesProvider);
                 ref.invalidate(userProfileProvider);
               },
               style: ElevatedButton.styleFrom(
@@ -178,7 +159,6 @@ class _ErrorState extends StatelessWidget {
               ),
               child: const Text('Retry'),
             ),
-// >>>>>>> f2d2932ae1d617906d117abaeeb90fd7045aea0c
           ],
         ),
       ),

@@ -1,24 +1,28 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'dart:ui';
 import 'package:purewill/domain/model/habit_model.dart';
 import 'package:purewill/domain/model/daily_log_model.dart';
 import 'package:purewill/ui/habit-tracker/habit_provider.dart';
+import 'package:purewill/ui/habit-tracker/screen/community_selection_screen.dart';
+import 'package:purewill/ui/habit-tracker/screen/consultation_screen.dart';
+import 'package:purewill/ui/habit-tracker/screen/home_screen.dart';
 import 'package:purewill/ui/habit-tracker/widget/habit_cards_list.dart';
+import 'package:purewill/ui/habit-tracker/widget/clean_bottom_navigation_bar.dart';
 import 'package:purewill/ui/habit-tracker/screen/habit_detail_screen.dart';
 import 'package:purewill/ui/habit-tracker/screen/add_habit_screen.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-
 import 'package:purewill/data/services/badge_service.dart';
 import 'package:purewill/data/services/badge_notification_service.dart';
 
 class HabitScreen extends ConsumerStatefulWidget {
   const HabitScreen({super.key});
-
   @override
   ConsumerState<HabitScreen> createState() => _HabitScreenState();
 }
 
 class _HabitScreenState extends ConsumerState<HabitScreen> {
+  int _currentIndex = 1; 
   Map<int, LogStatus> _todayCompletionStatus = {};
 
   final badgeNotificationService = BadgeNotificationService();
@@ -34,7 +38,6 @@ class _HabitScreenState extends ConsumerState<HabitScreen> {
     );
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      print('📋 HabitScreen init: Loading data...');
       ref.read(habitNotifierProvider.notifier).loadUserHabits();
       _loadTodayCompletionStatus();
     });
@@ -61,149 +64,218 @@ class _HabitScreenState extends ConsumerState<HabitScreen> {
     );
   }
 
+  void _onNavBarTap(int index) {
+    print('NavBar tapped: index $index');
+
+    if (index == 0) {
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(
+          builder: (context) => const HomeScreen(),
+        ), 
+      );
+    } else if (index == 1) {
+      return;
+    } else if (index == 2) {
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(
+          builder: (context) => const CommunitySelectionScreen(),
+        ), 
+      );
+    } else if (index == 3) {
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(
+          builder: (context) => const ConsultationScreen(),
+        ), 
+      );
+    } else {
+      setState(() {
+        _currentIndex = index;
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final habitsState = ref.watch(habitNotifierProvider);
     final List<HabitModel> userHabits = habitsState.habits;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text(
-          'My Habits',
-          style: TextStyle(fontWeight: FontWeight.w600, color: Colors.black87),
-        ),
-        backgroundColor: const Color.fromRGBO(176, 230, 216, 1),
-        foregroundColor: Colors.black,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.add),
-            onPressed: _addHabit,
-            tooltip: 'Add New Habit',
+      body: Stack(
+        children: [
+          Positioned.fill(
+            child: Image.asset('assets/images/home/bg.png', fit: BoxFit.cover),
           ),
-        ],
-      ),
-      body: RefreshIndicator(
-        onRefresh: () async {
-          print('🔄 HabitScreen: Pull to refresh triggered');
-          await ref.read(habitNotifierProvider.notifier).loadUserHabits();
-          await _loadTodayCompletionStatus();
-        },
-        child: Container(
-          decoration: const BoxDecoration(
-            image: DecorationImage(
-              image: AssetImage('assets/images/home/bg.png'),
-              fit: BoxFit.cover,
+          Positioned.fill(
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 8.0, sigmaY: 8.0),
+              child: Container(color: Colors.black.withOpacity(0.1)),
             ),
           ),
-          child: SafeArea(
-            child: Column(
-              children: [
-                // Header Statistics
-                Container(
-                  margin: const EdgeInsets.all(20),
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.9),
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.1),
-                        blurRadius: 10,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Habit Overview',
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black87,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceAround,
+          SafeArea(
+            child: RefreshIndicator(
+              onRefresh: () async {
+                print('🔄 HabitScreen: Pull to refresh triggered');
+                await ref.read(habitNotifierProvider.notifier).loadUserHabits();
+                await _loadTodayCompletionStatus();
+              },
+              child: CustomScrollView(
+                slivers: [
+                  SliverAppBar(
+                    backgroundColor: Colors.transparent,
+                    elevation: 0,
+                    floating: true,
+                    snap: true,
+                    automaticallyImplyLeading: false,
+                    flexibleSpace: Container(
+                      padding: const EdgeInsets.all(20),
+                      child: Row(
                         children: [
-                          _buildStatCard(
-                            'Total Habits',
-                            userHabits.length.toString(),
-                            Icons.list_alt,
-                            Colors.blue,
+                          IconButton(
+                            icon: const Icon(
+                              Icons.arrow_back,
+                              color: Colors.black87,
+                            ),
+                            onPressed: () => Navigator.of(context).pop(),
                           ),
-                          _buildStatCard(
-                            'Completed Today',
-                            _getCompletedTodayCount().toString(),
-                            Icons.check_circle,
-                            Colors.green,
+                          const Text(
+                            'My Habits',
+                            style: TextStyle(
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.black87,
+                            ),
                           ),
-                          _buildStatCard(
-                            'Active Habits',
-                            userHabits
-                                .where((h) => h.isActive)
-                                .length
-                                .toString(),
-                            Icons.play_circle,
-                            Colors.orange,
+                          const Spacer(),
+                          IconButton(
+                            icon: const Icon(Icons.add, color: Colors.black87),
+                            onPressed: _addHabit,
                           ),
                         ],
                       ),
-                    ],
-                  ),
-                ),
-
-                // Habits List
-                Expanded(
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          "All Habits",
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.black87,
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        HabitCardsList(
-                          habitsState: habitsState,
-                          todayCompletionStatus: _todayCompletionStatus,
-                          habits: userHabits,
-                          onHabitTap: _handleHabitTap,
-                          onCheckboxTap: _handleCheckboxTap,
-                          isPremiumUser:
-                              false, // You can update this based on your premium logic
-                          buildEmptyState: () => _buildCustomEmptyState(),
-                          buildErrorState: (errorMessage) =>
-                              _buildCustomErrorState(errorMessage),
-                        ),
-                        const SizedBox(height: 20),
-                      ],
                     ),
                   ),
-                ),
-              ],
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      child: Column(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(20),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.9),
+                              borderRadius: BorderRadius.circular(16),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.1),
+                                  blurRadius: 10,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text(
+                                  'Habit Overview',
+                                  style: TextStyle(
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.black87,
+                                  ),
+                                ),
+                                const SizedBox(height: 12),
+                                Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceAround,
+                                  children: [
+                                    _buildStatCard(
+                                      'Total Habits',
+                                      userHabits.length.toString(),
+                                      Icons.list_alt,
+                                      Colors.blue,
+                                    ),
+                                    _buildStatCard(
+                                      'Completed Today',
+                                      _getCompletedTodayCount().toString(),
+                                      Icons.check_circle,
+                                      Colors.green,
+                                    ),
+                                    _buildStatCard(
+                                      'Active Habits',
+                                      userHabits
+                                          .where((h) => h.isActive)
+                                          .length
+                                          .toString(),
+                                      Icons.play_circle,
+                                      Colors.orange,
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+
+                          const SizedBox(height: 24),
+
+                          // Habits List Section
+                          Container(
+                            padding: const EdgeInsets.all(20),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.9),
+                              borderRadius: BorderRadius.circular(16),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.1),
+                                  blurRadius: 10,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text(
+                                  "All Habits",
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.black87,
+                                  ),
+                                ),
+                                const SizedBox(height: 12),
+                                HabitCardsList(
+                                  habitsState: habitsState,
+                                  todayCompletionStatus: _todayCompletionStatus,
+                                  habits: userHabits,
+                                  onHabitTap: _handleHabitTap,
+                                  onCheckboxTap: _handleCheckboxTap,
+                                  isPremiumUser: false,
+                                  buildEmptyState: () =>
+                                      _buildCustomEmptyState(),
+                                  buildErrorState: (errorMessage) =>
+                                      _buildCustomErrorState(errorMessage),
+                                ),
+                              ],
+                            ),
+                          ),
+
+                          // Bottom padding to prevent content from being hidden behind bottom nav
+                          const SizedBox(height: 100),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
-        ),
+        ],
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _addHabit,
-        backgroundColor: const Color.fromRGBO(176, 230, 216, 1),
-        foregroundColor: Colors.black87,
-        child: const Icon(Icons.add),
-        heroTag: "habit_screen_fab",
+
+      // Bottom Navigation Bar
+      bottomNavigationBar: CleanBottomNavigationBar(
+        currentIndex: _currentIndex,
+        onTap: _onNavBarTap,
       ),
     );
   }

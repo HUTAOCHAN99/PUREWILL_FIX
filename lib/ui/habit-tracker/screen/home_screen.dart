@@ -18,6 +18,7 @@ import 'package:purewill/ui/habit-tracker/widget/premium_card_button.dart';
 import 'package:purewill/ui/habit-tracker/screen/habit_detail_screen.dart';
 import 'package:purewill/ui/habit-tracker/screen/add_habit_screen.dart';
 import 'package:purewill/ui/habit-tracker/screen/habit_screen.dart';
+import 'package:purewill/ui/habit-tracker/screen/consultation_screen.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:purewill/data/services/badge_service.dart';
 import 'package:purewill/data/services/badge_notification_service.dart';
@@ -76,18 +77,18 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     if (index == 1) {
       Navigator.of(
         context,
-      ).push(MaterialPageRoute(builder: (context) => const HabitScreen()));
+      ).pushReplacement(MaterialPageRoute(builder: (context) => const HabitScreen()));
     } else if (index == 2) {
-      Navigator.of(context).push(
+      // Navigate to Community (Komunitas)
+      Navigator.of(context).pushReplacement(
         MaterialPageRoute(
           builder: (context) => const CommunitySelectionScreen(),
-        ), 
+        ),
       );
     } else if (index == 3) {
-      Navigator.of(context).push(
-        MaterialPageRoute(
-          builder: (context) => const AddHabitScreen(),
-        ), 
+      // Navigate to Consultation (Konsultasi)
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (context) => const ConsultationScreen()),
       );
     } else {
       setState(() {

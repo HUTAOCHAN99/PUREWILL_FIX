@@ -104,9 +104,7 @@ class DailyLogRepository {
         'get_current_habit_streak',
         params: {'p_habit_id': habitId},
       );
-
-      print("fetchHabitLogStreak response: $response");
-
+      
       return response;
     } catch (e, stackTrace) {
       log(

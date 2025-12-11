@@ -31,6 +31,7 @@ class _HabitDetailScreenState extends ConsumerState<HabitDetailScreen> {
   late bool _isCompleted;
   int _completedDays = 0;
   int _habitLogStreak = 0;
+  int _possibleDays = 0;
   List<DailyLogModel>? _habitLogForThisMonth;
   bool _isLoading = true;
   ReminderSettingModel? _reminderSetting;
@@ -44,6 +45,7 @@ class _HabitDetailScreenState extends ConsumerState<HabitDetailScreen> {
           widget.completionStatus[widget.habit.id] == LogStatus.success;
       _loadHabitLogForThisMonth(habitId);
       _loadReminderSetting(habitId);
+      _countPossibleDays(widget.habit.startDate, widget.habit.endDate);
     });
   }
 
@@ -67,6 +69,78 @@ class _HabitDetailScreenState extends ConsumerState<HabitDetailScreen> {
     }
   }
 
+  void _countPossibleDays(DateTime habitStartDate, DateTime? habitEndDate) {
+    print("habit start date: $habitStartDate");
+    print("habit end date: $habitEndDate");
+
+    final localHabitStart = habitStartDate;
+
+    final effectiveHabitStartDate = DateTime(
+      localHabitStart.year,
+      localHabitStart.month,
+      localHabitStart.day,
+    );
+
+    // print("local habit start date: $effectiveHabitStartDate");
+
+    DateTime? effectiveHabitEndDate;
+    if (habitEndDate != null) {
+      final localHabitEnd = habitEndDate;
+      effectiveHabitEndDate = DateTime(
+        localHabitEnd.year,
+        localHabitEnd.month,
+        localHabitEnd.day,
+      );
+
+      // print("local habit end date: $effectiveHabitEndDate");
+    }
+
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+
+    final startOfWeek = today.subtract(Duration(days: today.weekday - 1));
+    // print("start of week: $startOfWeek");
+    final endOfWeekExclusive = startOfWeek.add(const Duration(days: 7));
+    // print("end of week exclusive: $endOfWeekExclusive");
+
+    DateTime effectiveEndExclusive;
+
+    if (effectiveHabitEndDate == null) {
+      effectiveEndExclusive = endOfWeekExclusive;
+    } else {
+      final habitEndDateExclusive = effectiveHabitEndDate.add(
+        const Duration(days: 1),
+      );
+
+      // print("habit end date exclusive: $habitEndDateExclusive");
+
+      effectiveEndExclusive = habitEndDateExclusive.isBefore(endOfWeekExclusive)
+          ? habitEndDateExclusive
+          : endOfWeekExclusive;
+    }
+
+    final effectiveStartForTarget = effectiveHabitStartDate.isAfter(startOfWeek)
+        ? effectiveHabitStartDate
+        : startOfWeek;
+
+    // print("effective start for target: $effectiveStartForTarget");
+    // print("effective end exclusive: $effectiveEndExclusive");
+
+    final difference = effectiveEndExclusive.difference(
+      effectiveStartForTarget,
+    );
+
+    // print("difference: $difference");
+
+    final possibleDaysTarget = difference.inDays;
+
+    // print("possible days target: $possibleDaysTarget");
+
+    setState(() {
+      _possibleDays = possibleDaysTarget;
+    });
+  }
+
   Future<void> _loadHabitLogForThisMonth(int habitId) async {
     try {
       DateTime now = DateTime.now();
@@ -81,20 +155,26 @@ class _HabitDetailScreenState extends ConsumerState<HabitDetailScreen> {
             habitId: habitId,
           );
 
-      final streak =  await ref
+      final streak = await ref
           .read(habitNotifierProvider.notifier)
           .fetchHabitLogStreak(habitId: habitId);
 
-      final List<DateTime> localCompletionDates = habitLogForThisMonth.map((dailyLog) {
+      final List<DateTime> localCompletionDates = habitLogForThisMonth.map((
+        dailyLog,
+      ) {
         return dailyLog.logDate;
       }).toList();
+
+      final completeDays = localCompletionDates.length;
+
+      // final List<DateTime> habitLogFor
 
       print(localCompletionDates);
 
       if (mounted) {
         setState(() {
           _habitLogForThisMonth = habitLogForThisMonth;
-          _completedDays = 2;
+          _completedDays = completeDays;
           _isLoading = false;
           _habitLogStreak = streak;
         });
@@ -111,11 +191,7 @@ class _HabitDetailScreenState extends ConsumerState<HabitDetailScreen> {
     final category = HabitIconHelper.getHabitCategory(widget.habit.name);
 
     if (_isLoading) {
-      return const Scaffold(
-        body: Center(
-          child: CircularProgressIndicator(),
-        ),
-      );
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
     return Scaffold(
@@ -165,18 +241,14 @@ class _HabitDetailScreenState extends ConsumerState<HabitDetailScreen> {
                     habitColor: iconColor,
                     habitName: widget.habit.name,
                     completedDays: _completedDays,
-                    totalDays: 7,
+                    totalDays: _possibleDays,
                   ),
                   const SizedBox(height: 24),
 
-                  WeeklyStreakWidget(
-                    streak: _habitLogStreak,
-                  ),
+                  WeeklyStreakWidget(streak: _habitLogStreak),
                   const SizedBox(height: 24),
 
-                  PerformanceChartWidget(
-                    habitId: widget.habit.id,
-                  ),
+                  PerformanceChartWidget(habitId: widget.habit.id),
                   const SizedBox(height: 24),
 
                   CalendarTrackerWidget(
@@ -220,7 +292,10 @@ class _HabitDetailScreenState extends ConsumerState<HabitDetailScreen> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => ReminderSettingScreen(habit: widget.habit, reminderSetting: _reminderSetting),
+        builder: (context) => ReminderSettingScreen(
+          habit: widget.habit,
+          reminderSetting: _reminderSetting,
+        ),
       ),
     );
   }

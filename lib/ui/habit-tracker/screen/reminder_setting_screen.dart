@@ -3,51 +3,25 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:purewill/data/services/local_notification_service.dart';
-import 'package:purewill/data/services/reminder_sync_service.dart';
 import 'package:purewill/domain/model/habit_model.dart';
 import 'package:purewill/data/repository/reminder_setting_repository.dart';
 import 'package:purewill/domain/model/reminder_setting_model.dart';
-import 'package:purewill/ui/habit-tracker/habit_provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-
-// <<<<<<< HEAD
-// class ReminderSettingScreen extends ConsumerStatefulWidget {
-// =======
-// Import components dan controller
 import '../controller/reminder_setting_controller.dart';
-import '../components/reminder_setting_components.dart' as components;
 
 class ReminderSettingScreen extends ConsumerStatefulWidget {
-// >>>>>>> f2d2932ae1d617906d117abaeeb90fd7045aea0c
   final HabitModel habit;
   final ReminderSettingModel? reminderSetting;
-  const ReminderSettingScreen({super.key, required this.habit, this.reminderSetting});
+  const ReminderSettingScreen({
+    super.key,
+    required this.habit,
+    this.reminderSetting,
+  });
   @override
-  // ConsumerState<ReminderSettingScreen> createState() => _ReminderSettingScreenState();
-  ConsumerState<ReminderSettingScreen> createState() => _ReminderSettingScreenState();
+  ConsumerState<ReminderSettingScreen> createState() =>
+      _ReminderSettingScreenState();
 }
 
-// <<<<<<< HEAD
-// class _ReminderSettingScreenState extends ConsumerState<ReminderSettingScreen> {
-//   late final ReminderSettingRepository _repository;
-//   late final LocalNotificationService _notificationService;
-//   bool _isLoading = true;
-//   bool _hasChanges = false;
-
-//   final List<int> _snoozeOptions = [10, 30];
-//   int _selectedSnoozeIndex = 0;
-//   int _customSnoozeMinutes = 5;
-//   bool _useCustomSnooze = false;
-  
-//   TimeOfDay _selectedTime = TimeOfDay.now();
-  
-//   bool _pushNotification = true;
-//   bool _emailNotification = false;
-  
-//   bool _repeatDaily = true;
-//   bool _soundEnabled = true;
-//   bool _vibrationEnabled = false;
-// =======
 class _ReminderSettingScreenState extends ConsumerState<ReminderSettingScreen> {
   late ReminderSettingController _controller;
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
@@ -55,33 +29,10 @@ class _ReminderSettingScreenState extends ConsumerState<ReminderSettingScreen> {
   // Variabel untuk live clock
   DateTime _currentTime = DateTime.now();
   late Timer _timer;
-// >>>>>>> f2d2932ae1d617906d117abaeeb90fd7045aea0c
 
   @override
   void initState() {
     super.initState();
-// <<<<<<< HEAD
-    
-//     _notificationService = LocalNotificationService();
-//     if (widget.reminderSetting != null) {
-//       _initializeFormFromModel(widget.reminderSetting!);
-//       _isLoading = false;
-//     } else {
-//       // If no existing setting, create a default one
-//       final reminderSetting = ReminderSettingModel(
-//         id: '',
-//         habitId: widget.habit.id,
-//         isEnabled: true,
-//         time: DateTime.now(),
-//         snoozeDuration: 10,
-//         repeatDaily: true,
-//         isSoundEnabled: true,
-//         isVibrationEnabled: false,
-//       );
-//       _initializeFormFromModel(reminderSetting);
-//       _isLoading = false;
-//     }
-// =======
     _initializeController();
     _startLiveClock();
   }
@@ -98,7 +49,6 @@ class _ReminderSettingScreenState extends ConsumerState<ReminderSettingScreen> {
     if (mounted) setState(() {});
   }
 
-  // Method untuk live clock
   void _startLiveClock() {
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (mounted) {
@@ -107,7 +57,6 @@ class _ReminderSettingScreenState extends ConsumerState<ReminderSettingScreen> {
         });
       }
     });
-// >>>>>>> f2d2932ae1d617906d117abaeeb90fd7045aea0c
   }
 
   String _formatTime(DateTime dateTime) {
@@ -121,7 +70,7 @@ class _ReminderSettingScreenState extends ConsumerState<ReminderSettingScreen> {
   @override
   void dispose() {
     _controller.removeListener(_onControllerUpdate);
-    _timer.cancel(); // Cancel timer saat dispose
+    _timer.cancel();
     super.dispose();
   }
 
@@ -137,106 +86,11 @@ class _ReminderSettingScreenState extends ConsumerState<ReminderSettingScreen> {
   }
 
   Future<void> _saveSettings() async {
-// <<<<<<< HEAD
-//     debugPrint('💾 === SAVE SETTINGS START ===');
-//     debugPrint('🔍 Habit ID sebelum save: ${widget.habit.id}');
-//     debugPrint('🔍 ReminderSetting ID: ${widget.reminderSetting!.id}');
-    
-//     // 🚨 VALIDASI KRITIS
-//     if (widget.habit.id <= 0) {
-//       debugPrint('❌ CRITICAL ERROR: Invalid habit ID: ${widget.habit.id}');
-//       if (mounted) {
-//         ScaffoldMessenger.of(context).showSnackBar(
-//           const SnackBar(content: Text('❌ ERROR: Invalid habit data. Please save habit first.')),
-//         );
-//       }
-//       return;
-//     }
-
-//     setState(() {
-//       _isLoading = true;
-//     });
-
-//     try {
-//       final snoozeDuration = _useCustomSnooze 
-//           ? _customSnoozeMinutes 
-//           : _snoozeOptions[_selectedSnoozeIndex];
-
-//       // Create DateTime with selected time
-//       final now = DateTime.now();
-//       final scheduledDateTime = DateTime(
-//         now.year,
-//         now.month,
-//         now.day,
-//         _selectedTime.hour,
-//         _selectedTime.minute,
-//       );
-
-//       final updatedSetting = ReminderSettingModel(
-//         id: widget.reminderSetting!.id,
-//         habitId: widget.habit.id,
-//         isEnabled: true,
-//         time: scheduledDateTime,
-//         snoozeDuration: snoozeDuration,
-//         repeatDaily: _repeatDaily,
-//         isSoundEnabled: _soundEnabled,
-//         isVibrationEnabled: _vibrationEnabled,
-//       );
-
-//       debugPrint('📦 ReminderSetting to save:');
-//       debugPrint('   - Habit ID: ${updatedSetting.habitId}');
-//       debugPrint('   - Time: ${updatedSetting.time}');
-//       debugPrint('   - Snooze: ${updatedSetting.snoozeDuration}min');
-//       debugPrint('   - Repeat Daily: ${updatedSetting.repeatDaily}');
-
-  
-//       await ref.read(habitNotifierProvider.notifier).saveReminderSetting(habitId: updatedSetting.habitId, isEnabled: updatedSetting.isEnabled, time: updatedSetting.time, snoozeDuration: snoozeDuration, repeatDaily: updatedSetting.repeatDaily, isSoundEnabled: updatedSetting.isSoundEnabled, isVibrationEnabled: updatedSetting.isVibrationEnabled);
-
-//       // Schedule notification jika push notification diaktifkan
-//       if (_pushNotification) {
-//         debugPrint('🔔 Scheduling notification...');
-//         await _scheduleNotification();
-//       } else {
-//         // Cancel existing notifications jika push notification dimatikan
-//         debugPrint('🔕 Cancelling notifications...');
-//         await _notificationService.cancelNotification(widget.habit.id);
-//       }
-
-//       // Check pending notifications for debugging
-//       await _checkPendingNotifications();
-
-//       if (mounted) {
-//         ScaffoldMessenger.of(context).showSnackBar(
-//           const SnackBar(content: Text('✅ Settings saved successfully!')),
-//         );
-//       }
-
-//       setState(() {
-//         _hasChanges = false;
-//       });
-      
-//       debugPrint('💾 === SAVE SETTINGS SUCCESS ===');
-//     } catch (e, stackTrace) {
-//       debugPrint('❌ SAVE SETTINGS ERROR: $e');
-//       debugPrint('📋 StackTrace: $stackTrace');
-//       if (mounted) {
-//         ScaffoldMessenger.of(context).showSnackBar(
-//           SnackBar(content: Text('❌ Failed to save settings: $e')),
-//         );
-//       }
-//     } finally {
-//       if (mounted) {
-//         setState(() {
-//           _isLoading = false;
-//         });
-//       }
-// =======
     try {
       await _controller.saveSettings();
       _showSnackBar('Reminder settings saved successfully!');
     } catch (e) {
       _showSnackBar('Failed to save settings: $e', isError: true);
-// >>>>>>> f2d2932ae1d617906d117abaeeb90fd7045aea0c
     }
   }
 

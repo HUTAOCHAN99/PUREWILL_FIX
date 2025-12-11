@@ -1,5 +1,7 @@
-// lib\ui\habit-tracker\screen\community_selection_screen.dart
 import 'package:flutter/material.dart';
+import 'package:purewill/ui/habit-tracker/screen/consultation_screen.dart';
+import 'package:purewill/ui/habit-tracker/screen/habit_screen.dart';
+import 'package:purewill/ui/habit-tracker/screen/home_screen.dart';
 import 'package:purewill/ui/habit-tracker/widget/clean_bottom_navigation_bar.dart';
 import 'package:purewill/ui/habit-tracker/widget/community/community_confirmation_dialog.dart';
 
@@ -11,7 +13,7 @@ class CommunitySelectionScreen extends StatefulWidget {
 }
 
 class _CommunitySelectionScreenState extends State<CommunitySelectionScreen> {
-  int _currentIndex = 3; // Index untuk tab komunitas
+  int _currentIndex = 2; // Index untuk tab komunitas
   
   final List<Community> communities = [
     Community(
@@ -95,23 +97,28 @@ class _CommunitySelectionScreenState extends State<CommunitySelectionScreen> {
       communities.where((c) => !c.isJoined).toList();
 
   void _onNavBarTap(int index) {
-    // Jika user menekan tab komunitas lagi, scroll ke atas
-    if (index == _currentIndex) {
-      // TODO: Implement scroll to top jika ada ScrollController
-    } else {
-      // Navigasi ke tab lain
-      if (index == 0) {
-        Navigator.of(context).pop(); // Kembali ke home screen
-      } else if (index == 1) {
-        // Navigasi ke konsultasi
-        // Navigator.pushNamed(context, '/konsultasi');
-        _showComingSoon('Konsultasi');
-      } else if (index == 2) {
-        // Navigasi ke add habit
-        // Navigator.pushNamed(context, '/add-habit');
-        _showComingSoon('Add Habit');
-      }
-    }
+
+    if (index == 0) {
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(
+          builder: (context) => const HomeScreen(),
+        ), 
+      );
+    } else if (index == 1) {
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(
+          builder: (context) => const HabitScreen(),
+        ), 
+      );
+    } else if (index == 2) {
+      return;
+    } else if (index == 3) {
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(
+          builder: (context) => const ConsultationScreen(),
+        ), 
+      );
+    } 
   }
 
   void _showConfirmationDialog(BuildContext context, Community community) {
@@ -133,7 +140,7 @@ class _CommunitySelectionScreenState extends State<CommunitySelectionScreen> {
       }
     });
 
-    Navigator.pop(context); // Tutup dialog
+    Navigator.pop(context);
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
