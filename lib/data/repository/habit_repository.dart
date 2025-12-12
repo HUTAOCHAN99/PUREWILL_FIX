@@ -12,7 +12,7 @@ class HabitRepository {
   Future<HabitModel> createHabit(HabitModel habit) async {
     try {
       final habitData = habit.toJson();
-      print(habitData);
+      // print(habitData);
       final response = await _supabaseClient
           .from(_habitTableName)
           .insert(habitData)
@@ -43,24 +43,24 @@ class HabitRepository {
           .map((data) => HabitModel.fromJson(data))
           .toList();
 
-      print(response);
+      // print(response);
       userHabits.map((h) => h.name).toSet();
       final allHabits = [...userHabits];
 
-      print('=== COMBINED HABITS ===');
-      print('User habits: ${userHabits.length}');
-      print('Total habits: ${allHabits.length}');
+      // print('=== COMBINED HABITS ===');
+      // print('User habits: ${userHabits.length}');
+      // print('Total habits: ${allHabits.length}');
 
-      for (var habit in allHabits) {
-        print(
-          'Habit: ${habit.name}, Target: ${habit.targetValue}, Unit: ${habit.unit}, IsDefault: ${habit.isDefault}, Habit id: ${habit.id}, Status: ${habit.status}',
-        );
-      }
-      print('========================');
+      // for (var habit in allHabits) {
+        // print(
+        //   'Habit: ${habit.name}, Target: ${habit.targetValue}, Unit: ${habit.unit}, IsDefault: ${habit.isDefault}, Habit id: ${habit.id}, Status: ${habit.status}',
+        // );
+      // }
+      // print('========================');
 
       return allHabits;
     } catch (e, stackTrace) {
-      print(e.toString());
+      // print(e.toString());
       log(
         'FETCH HABITS FAILURE: Failed to fetch habits for user $userId.',
         error: e,
@@ -69,17 +69,56 @@ class HabitRepository {
       );
 
       // Fallback: return default habits jika error
-      print('=== USING DEFAULT HABITS AS FALLBACK ===');
+      // print('=== USING DEFAULT HABITS AS FALLBACK ===');
       final defaultHabits = DefaultHabitsService.getDefaultHabits();
 
       // Debug print untuk default habits
-      for (var habit in defaultHabits) {
-        print(
-          'Default Habit: ${habit.name}, Target: ${habit.targetValue}, Unit: ${habit.unit}',
-        );
-      }
+      // for (var habit in defaultHabits) {
+      //   // print(
+      //     'Default Habit: ${habit.name}, Target: ${habit.targetValue}, Unit: ${habit.unit}',
+      //   );
+      // }
 
       return defaultHabits;
+    }
+  }
+
+  Future<void> initializeDefaultHabitsForUser(String userId) async {
+    try {
+      final defaultHabits = DefaultHabitsService.getDefaultHabits();
+
+      for (var habit in defaultHabits) {
+        final habitToCreate = HabitModel(
+          id: 0, 
+          userId: userId,
+          frequency: habit.frequency,
+          name: habit.name,
+          notes: habit.notes,
+          categoryId: habit.categoryId,
+          targetValue: habit.targetValue,
+          unit: habit.unit,
+          startDate: DateTime.now(),
+          endDate: null,
+          isActive: true,
+          isDefault: true,
+          status: 'active',
+        );
+
+        await createHabit(habitToCreate);
+      }
+
+      log(
+        'INITIALIZE DEFAULT HABITS SUCCESS: Default habits initialized for user $userId.',
+        name: 'HABIT_REPO',
+      );
+    } catch (e, stackTrace) {
+      log(
+        'INITIALIZE DEFAULT HABITS FAILURE: Failed to initialize default habits for user $userId.',
+        error: e,
+        stackTrace: stackTrace,
+        name: 'HABIT_REPO',
+      );
+      rethrow;
     }
   }
 

@@ -44,6 +44,11 @@ class CleanBottomNavigationBar extends StatelessWidget {
             label: 'Habit',
           ),
           BottomNavigationBarItem(
+            icon: Icon(Icons.local_fire_department_outlined),
+            activeIcon: Icon(Icons.local_fire_department),
+            label: 'NoFap',
+          ),
+          BottomNavigationBarItem(
             icon: Icon(Icons.people_outline),
             activeIcon: Icon(Icons.people),
             label: 'Komunitas',

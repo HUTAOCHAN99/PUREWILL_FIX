@@ -124,7 +124,7 @@ Future<Badge> _calculateBadgeProgress(Badge badge, int profileId, String userId,
         break;
     }
   } catch (e) {
-    debugPrint('Error calculating progress for badge ${badge.id}: $e');
+    // debugPrint('Error calculating progress for badge ${badge.id}: $e');
   }
   
   return badge.copyWith(progress: progress);
@@ -160,7 +160,7 @@ Future<int> _calculateHabitStreak(int habitId, SupabaseClient supabase) async {
     
     return streak;
   } catch (e) {
-    debugPrint('Error calculating streak: $e');
+    // debugPrint('Error calculating streak: $e');
     return 0;
   }
 }
@@ -200,7 +200,7 @@ Future<int> _getPerfectWeeksCount(String userId, SupabaseClient supabase) async 
     
     return perfectWeeks;
   } catch (e) {
-    debugPrint('Error calculating perfect weeks: $e');
+    // debugPrint('Error calculating perfect weeks: $e');
     return 0;
   }
 }

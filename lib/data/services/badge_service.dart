@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+// import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:purewill/data/services/badge_notification_service.dart';
 
@@ -16,8 +16,8 @@ class BadgeService {
   // Check all badges periodically atau manual trigger - REAL WORKING VERSION
   Future<void> checkAllBadges(String userId) async {
     try {
-      debugPrint('🎯 === REAL BADGE CHECK STARTED ===');
-      debugPrint('👤 User ID: $userId');
+      // debugPrint('🎯 === REAL BADGE CHECK STARTED ===');
+      // debugPrint('👤 User ID: $userId');
 
       // Get user's profile ID
       final profileResponse = await _supabase
@@ -27,7 +27,7 @@ class BadgeService {
           .single();
       
       final profileId = profileResponse['id'] as int;
-      debugPrint('📋 Profile ID: $profileId');
+      // debugPrint('📋 Profile ID: $profileId');
 
       // Check jika ada daily logs success
       final successLogs = await _supabase
@@ -36,59 +36,59 @@ class BadgeService {
           .eq('status', 'success')
           .limit(1);
       
-      debugPrint('📊 Success logs found: ${successLogs.isNotEmpty}');
+      // debugPrint('📊 Success logs found: ${successLogs.isNotEmpty}');
 
       List<Map<String, dynamic>> newlyEarnedBadges = [];
 
       // Check different badge types dengan logging detail
-      debugPrint('🔍 Checking first habit completion...');
+      // debugPrint('🔍 Checking first habit completion...');
       final firstHabitBadge = await _checkFirstHabitCompletion(profileId, userId);
       if (firstHabitBadge != null) {
         newlyEarnedBadges.add(firstHabitBadge);
-        debugPrint('✅ First habit badge qualified');
+        // debugPrint('✅ First habit badge qualified');
       }
 
-      debugPrint('🔍 Checking habit count badges...');
+      // debugPrint('🔍 Checking habit count badges...');
       final habitCountBadges = await _checkHabitCountBadges(profileId, userId);
       newlyEarnedBadges.addAll(habitCountBadges);
-      debugPrint('✅ Habit count badges found: ${habitCountBadges.length}');
+      // debugPrint('✅ Habit count badges found: ${habitCountBadges.length}');
 
-      debugPrint('🔍 Checking streak badges...');
+      // debugPrint('🔍 Checking streak badges...');
       final streakBadges = await _checkStreakBadges(profileId, userId);
       newlyEarnedBadges.addAll(streakBadges);
-      debugPrint('✅ Streak badges found: ${streakBadges.length}');
+      // debugPrint('✅ Streak badges found: ${streakBadges.length}');
 
-      debugPrint('🔍 Checking morning completion badges...');
+      // debugPrint('🔍 Checking morning completion badges...');
       final morningBadges = await _checkMorningCompletionBadges(profileId, userId);
       newlyEarnedBadges.addAll(morningBadges);
-      debugPrint('✅ Morning badges found: ${morningBadges.length}');
+      // debugPrint('✅ Morning badges found: ${morningBadges.length}');
 
-      debugPrint('🔍 Checking category variety badges...');
+      // debugPrint('🔍 Checking category variety badges...');
       final categoryBadges = await _checkCategoryVarietyBadges(profileId, userId);
       newlyEarnedBadges.addAll(categoryBadges);
-      debugPrint('✅ Category badges found: ${categoryBadges.length}');
+      // debugPrint('✅ Category badges found: ${categoryBadges.length}');
 
-      debugPrint('🔍 Checking perfect week badges...');
+      // debugPrint('🔍 Checking perfect week badges...');
       final perfectWeekBadges = await _checkPerfectWeekBadges(profileId, userId);
       newlyEarnedBadges.addAll(perfectWeekBadges);
-      debugPrint('✅ Perfect week badges found: ${perfectWeekBadges.length}');
+      // debugPrint('✅ Perfect week badges found: ${perfectWeekBadges.length}');
 
-      debugPrint('🔍 Checking consistency badges...');
+      // debugPrint('🔍 Checking consistency badges...');
       final consistencyBadges = await _checkConsistencyBadges(profileId, userId);
       newlyEarnedBadges.addAll(consistencyBadges);
-      debugPrint('✅ Consistency badges found: ${consistencyBadges.length}');
+      // debugPrint('✅ Consistency badges found: ${consistencyBadges.length}');
 
-      debugPrint('🔍 Checking time of day badges...');
+      // debugPrint('🔍 Checking time of day badges...');
       final timeOfDayBadges = await _checkTimeOfDayBadges(profileId, userId);
       newlyEarnedBadges.addAll(timeOfDayBadges);
-      debugPrint('✅ Time of day badges found: ${timeOfDayBadges.length}');
+      // debugPrint('✅ Time of day badges found: ${timeOfDayBadges.length}');
 
       // Show notifications for newly earned badges
       if (newlyEarnedBadges.isNotEmpty) {
-        debugPrint('🎉 ${newlyEarnedBadges.length} new badges earned!');
+        // debugPrint('🎉 ${newlyEarnedBadges.length} new badges earned!');
         
         for (final badge in newlyEarnedBadges) {
-          debugPrint('📢 Showing notification for: ${badge['name']}');
+          // debugPrint('📢 Showing notification for: ${badge['name']}');
           await _badgeNotificationService.showFloatingBadge(
             badgeName: badge['name'] as String,
             badgeDescription: badge['description'] as String,
@@ -101,14 +101,14 @@ class BadgeService {
         
         await _updateUserXP(userId, newlyEarnedBadges.length * 10);
       } else {
-        debugPrint('ℹ️ No new badges earned this time');
+        // debugPrint('ℹ️ No new badges earned this time');
       }
 
-      debugPrint('✅ === REAL BADGE CHECK COMPLETED ===');
+      // debugPrint('✅ === REAL BADGE CHECK COMPLETED ===');
 
     } catch (e, stack) {
-      debugPrint('❌ Error checking badges: $e');
-      debugPrint('Stack trace: $stack');
+      // debugPrint('❌ Error checking badges: $e');
+      // debugPrint('Stack trace: $stack');
     }
   }
 
@@ -124,7 +124,7 @@ class BadgeService {
           .maybeSingle();
 
       if (existingBadge != null) {
-        debugPrint('ℹ️ First habit badge already earned');
+        // debugPrint('ℹ️ First habit badge already earned');
         return null;
       }
 
@@ -144,15 +144,15 @@ class BadgeService {
             .eq('id', 21)
             .single();
         
-        debugPrint('🎯 First habit completion badge earned!');
+        // debugPrint('🎯 First habit completion badge earned!');
         return badgeDetails;
       } else {
-        debugPrint('ℹ️ No completed habits found for first badge');
+        // debugPrint('ℹ️ No completed habits found for first badge');
       }
       return null;
     } catch (e, stack) {
-      debugPrint('❌ Error checking first habit completion: $e');
-      debugPrint('Stack trace: $stack');
+      // debugPrint('❌ Error checking first habit completion: $e');
+      // debugPrint('Stack trace: $stack');
       return null;
     }
   }
@@ -163,7 +163,7 @@ class BadgeService {
     
     try {
       final currentStreak = await _calculateCurrentStreak(userId);
-      debugPrint('📊 Current streak: $currentStreak days');
+      // debugPrint('📊 Current streak: $currentStreak days');
 
       // Get all badges dan filter manual
       final allBadges = await _supabase
@@ -177,7 +177,7 @@ class BadgeService {
         return triggerType == 'STREAK' || triggerType == 'streak';
       }).toList();
 
-      debugPrint('📋 Found ${streakBadges.length} streak badges to check');
+      // debugPrint('📋 Found ${streakBadges.length} streak badges to check');
 
       for (final badge in streakBadges) {
         final badgeId = badge['id'] as int;
@@ -194,16 +194,16 @@ class BadgeService {
         if (hasBadge == null && currentStreak >= triggerValue) {
           await _awardBadge(profileId, badgeId);
           earnedBadges.add(badge);
-          debugPrint('🏆 Streak badge $badgeId earned for $currentStreak days!');
+          // debugPrint('🏆 Streak badge $badgeId earned for $currentStreak days!');
         } else if (hasBadge != null) {
-          debugPrint('ℹ️ Streak badge $badgeId already earned');
+          // debugPrint('ℹ️ Streak badge $badgeId already earned');
         } else {
-          debugPrint('ℹ️ Streak badge $badgeId not qualified (need $triggerValue, have $currentStreak)');
+          // debugPrint('ℹ️ Streak badge $badgeId not qualified (need $triggerValue, have $currentStreak)');
         }
       }
     } catch (e, stack) {
-      debugPrint('❌ Error checking streak badges: $e');
-      debugPrint('Stack trace: $stack');
+      // debugPrint('❌ Error checking streak badges: $e');
+      // debugPrint('Stack trace: $stack');
     }
     
     return earnedBadges;
@@ -221,7 +221,7 @@ class BadgeService {
           .eq('is_active', true);
 
       final currentCount = habitCount.length;
-      debugPrint('📊 Current active habits: $currentCount');
+      // debugPrint('📊 Current active habits: $currentCount');
       
       // Get all badges dan filter manual
       final allBadges = await _supabase
@@ -234,7 +234,7 @@ class BadgeService {
         return triggerType == 'habit_count' || triggerType == 'META_HABITS';
       }).toList();
 
-      debugPrint('📋 Found ${countBadges.length} habit count badges to check');
+      // debugPrint('📋 Found ${countBadges.length} habit count badges to check');
 
       for (final badge in countBadges) {
         final badgeId = badge['id'] as int;
@@ -250,16 +250,16 @@ class BadgeService {
         if (hasBadge == null && currentCount >= triggerValue) {
           await _awardBadge(profileId, badgeId);
           earnedBadges.add(badge);
-          debugPrint('📊 Habit count badge $badgeId earned for $currentCount habits!');
+          // debugPrint('📊 Habit count badge $badgeId earned for $currentCount habits!');
         } else if (hasBadge != null) {
-          debugPrint('ℹ️ Habit count badge $badgeId already earned');
+          // debugPrint('ℹ️ Habit count badge $badgeId already earned');
         } else {
-          debugPrint('ℹ️ Habit count badge $badgeId not qualified (need $triggerValue, have $currentCount)');
+          // debugPrint('ℹ️ Habit count badge $badgeId not qualified (need $triggerValue, have $currentCount)');
         }
       }
     } catch (e, stack) {
-      debugPrint('❌ Error checking habit count badges: $e');
-      debugPrint('Stack trace: $stack');
+      // debugPrint('❌ Error checking habit count badges: $e');
+      // debugPrint('Stack trace: $stack');
     }
     
     return earnedBadges;
@@ -284,7 +284,7 @@ class BadgeService {
         }
       }
 
-      debugPrint('🌅 Morning completions (before 8 AM): $morningCount');
+      // debugPrint('🌅 Morning completions (before 8 AM): $morningCount');
 
       // Query badges dengan trigger_type morning_completion
       final morningBadges = await _supabase
@@ -293,7 +293,7 @@ class BadgeService {
           .eq('trigger_type', 'morning_completion')
           .order('trigger_value', ascending: true);
 
-      debugPrint('📋 Found ${morningBadges.length} morning completion badges to check');
+      // debugPrint('📋 Found ${morningBadges.length} morning completion badges to check');
 
       for (final badge in morningBadges) {
         final badgeId = badge['id'] as int;
@@ -309,16 +309,16 @@ class BadgeService {
         if (hasBadge == null && morningCount >= triggerValue) {
           await _awardBadge(profileId, badgeId);
           earnedBadges.add(badge);
-          debugPrint('🌅 Morning completion badge $badgeId earned for $morningCount completions!');
+          // debugPrint('🌅 Morning completion badge $badgeId earned for $morningCount completions!');
         } else if (hasBadge != null) {
-          debugPrint('ℹ️ Morning badge $badgeId already earned');
+          // debugPrint('ℹ️ Morning badge $badgeId already earned');
         } else {
-          debugPrint('ℹ️ Morning badge $badgeId not qualified (need $triggerValue, have $morningCount)');
+          // debugPrint('ℹ️ Morning badge $badgeId not qualified (need $triggerValue, have $morningCount)');
         }
       }
     } catch (e, stack) {
-      debugPrint('❌ Error checking morning completion badges: $e');
-      debugPrint('Stack trace: $stack');
+      // debugPrint('❌ Error checking morning completion badges: $e');
+      // debugPrint('Stack trace: $stack');
     }
     
     return earnedBadges;
@@ -341,7 +341,7 @@ class BadgeService {
           .toSet();
 
       final categoryCount = uniqueCategories.length;
-      debugPrint('🏷️ Unique categories used: $categoryCount');
+      // debugPrint('🏷️ Unique categories used: $categoryCount');
 
       // Get all badges dan filter manual
       final allBadges = await _supabase
@@ -354,7 +354,7 @@ class BadgeService {
         return triggerType == 'category_variety' || triggerType == 'META_HABITS';
       }).toList();
 
-      debugPrint('📋 Found ${categoryBadges.length} category badges to check');
+      // debugPrint('📋 Found ${categoryBadges.length} category badges to check');
 
       for (final badge in categoryBadges) {
         final badgeId = badge['id'] as int;
@@ -370,16 +370,16 @@ class BadgeService {
         if (hasBadge == null && categoryCount >= triggerValue) {
           await _awardBadge(profileId, badgeId);
           earnedBadges.add(badge);
-          debugPrint('🏷️ Category variety badge $badgeId earned for $categoryCount categories!');
+          // debugPrint('🏷️ Category variety badge $badgeId earned for $categoryCount categories!');
         } else if (hasBadge != null) {
-          debugPrint('ℹ️ Category badge $badgeId already earned');
+          // debugPrint('ℹ️ Category badge $badgeId already earned');
         } else {
-          debugPrint('ℹ️ Category badge $badgeId not qualified (need $triggerValue, have $categoryCount)');
+          // debugPrint('ℹ️ Category badge $badgeId not qualified (need $triggerValue, have $categoryCount)');
         }
       }
     } catch (e, stack) {
-      debugPrint('❌ Error checking category variety badges: $e');
-      debugPrint('Stack trace: $stack');
+      // debugPrint('❌ Error checking category variety badges: $e');
+      // debugPrint('Stack trace: $stack');
     }
     
     return earnedBadges;
@@ -391,7 +391,7 @@ class BadgeService {
     
     try {
       final perfectWeeks = await _getPerfectWeeksCount(userId);
-      debugPrint('⭐ Perfect weeks completed: $perfectWeeks');
+      // debugPrint('⭐ Perfect weeks completed: $perfectWeeks');
 
       // Get all badges dan filter manual
       final allBadges = await _supabase
@@ -404,7 +404,7 @@ class BadgeService {
         return triggerType == 'perfect_week' || triggerType == 'CONSISTENCY';
       }).toList();
 
-      debugPrint('📋 Found ${perfectWeekBadges.length} perfect week badges to check');
+      // debugPrint('📋 Found ${perfectWeekBadges.length} perfect week badges to check');
 
       for (final badge in perfectWeekBadges) {
         final badgeId = badge['id'] as int;
@@ -420,16 +420,16 @@ class BadgeService {
         if (hasBadge == null && perfectWeeks >= triggerValue) {
           await _awardBadge(profileId, badgeId);
           earnedBadges.add(badge);
-          debugPrint('⭐ Perfect week badge $badgeId earned for $perfectWeeks weeks!');
+          // debugPrint('⭐ Perfect week badge $badgeId earned for $perfectWeeks weeks!');
         } else if (hasBadge != null) {
-          debugPrint('ℹ️ Perfect week badge $badgeId already earned');
+          // debugPrint('ℹ️ Perfect week badge $badgeId already earned');
         } else {
-          debugPrint('ℹ️ Perfect week badge $badgeId not qualified (need $triggerValue, have $perfectWeeks)');
+          // debugPrint('ℹ️ Perfect week badge $badgeId not qualified (need $triggerValue, have $perfectWeeks)');
         }
       }
     } catch (e, stack) {
-      debugPrint('❌ Error checking perfect week badges: $e');
-      debugPrint('Stack trace: $stack');
+      // debugPrint('❌ Error checking perfect week badges: $e');
+      // debugPrint('Stack trace: $stack');
     }
     
     return earnedBadges;
@@ -446,7 +446,7 @@ class BadgeService {
           .eq('status', 'success');
 
       final completionCount = totalCompletions.length;
-      debugPrint('📈 Total habit completions: $completionCount');
+      // debugPrint('📈 Total habit completions: $completionCount');
 
       final consistencyBadges = await _supabase
           .from('badges')
@@ -454,7 +454,7 @@ class BadgeService {
           .eq('trigger_type', 'TOTAL')
           .order('trigger_value', ascending: true);
 
-      debugPrint('📋 Found ${consistencyBadges.length} consistency badges to check');
+      // debugPrint('📋 Found ${consistencyBadges.length} consistency badges to check');
 
       for (final badge in consistencyBadges) {
         final badgeId = badge['id'] as int;
@@ -470,16 +470,16 @@ class BadgeService {
         if (hasBadge == null && completionCount >= triggerValue) {
           await _awardBadge(profileId, badgeId);
           earnedBadges.add(badge);
-          debugPrint('📈 Consistency badge $badgeId earned for $completionCount completions!');
+          // debugPrint('📈 Consistency badge $badgeId earned for $completionCount completions!');
         } else if (hasBadge != null) {
-          debugPrint('ℹ️ Consistency badge $badgeId already earned');
+          // debugPrint('ℹ️ Consistency badge $badgeId already earned');
         } else {
-          debugPrint('ℹ️ Consistency badge $badgeId not qualified (need $triggerValue, have $completionCount)');
+          // debugPrint('ℹ️ Consistency badge $badgeId not qualified (need $triggerValue, have $completionCount)');
         }
       }
     } catch (e, stack) {
-      debugPrint('❌ Error checking consistency badges: $e');
-      debugPrint('Stack trace: $stack');
+      // debugPrint('❌ Error checking consistency badges: $e');
+      // debugPrint('Stack trace: $stack');
     }
     
     return earnedBadges;
@@ -509,8 +509,8 @@ class BadgeService {
         }
       }
 
-      debugPrint('🐦 Early bird completions: $earlyBirdCount');
-      debugPrint('🦉 Night owl completions: $nightOwlCount');
+      // debugPrint('🐦 Early bird completions: $earlyBirdCount');
+      // debugPrint('🦉 Night owl completions: $nightOwlCount');
 
       // Early Bird badge (ID 13)
       final hasEarlyBird = await _supabase
@@ -528,11 +528,11 @@ class BadgeService {
             .eq('id', 13)
             .single();
         earnedBadges.add(badgeDetails);
-        debugPrint('🐦 Early Bird badge earned!');
+        // debugPrint('🐦 Early Bird badge earned!');
       } else if (hasEarlyBird != null) {
-        debugPrint('ℹ️ Early Bird badge already earned');
+        // debugPrint('ℹ️ Early Bird badge already earned');
       } else {
-        debugPrint('ℹ️ Early Bird badge not qualified (need 1, have $earlyBirdCount)');
+        // debugPrint('ℹ️ Early Bird badge not qualified (need 1, have $earlyBirdCount)');
       }
 
       // Night Owl badge (ID 14)
@@ -551,15 +551,15 @@ class BadgeService {
             .eq('id', 14)
             .single();
         earnedBadges.add(badgeDetails);
-        debugPrint('🦉 Night Owl badge earned!');
+        // debugPrint('🦉 Night Owl badge earned!');
       } else if (hasNightOwl != null) {
-        debugPrint('ℹ️ Night Owl badge already earned');
+        // debugPrint('ℹ️ Night Owl badge already earned');
       } else {
-        debugPrint('ℹ️ Night Owl badge not qualified (need 1, have $nightOwlCount)');
+        // debugPrint('ℹ️ Night Owl badge not qualified (need 1, have $nightOwlCount)');
       }
     } catch (e, stack) {
-      debugPrint('❌ Error checking time of day badges: $e');
-      debugPrint('Stack trace: $stack');
+      // debugPrint('❌ Error checking time of day badges: $e');
+      // debugPrint('Stack trace: $stack');
     }
     
     return earnedBadges;
@@ -601,17 +601,17 @@ class BadgeService {
           })
           .eq('user_id', userId);
 
-      debugPrint('📈 User XP updated: +$xpEarned XP, Level $newLevel ($newXP/$newXPToNextLevel XP)');
+      // debugPrint('📈 User XP updated: +$xpEarned XP, Level $newLevel ($newXP/$newXPToNextLevel XP)');
     } catch (e, stack) {
-      debugPrint('❌ Error updating user XP: $e');
-      debugPrint('Stack trace: $stack');
+      // debugPrint('❌ Error updating user XP: $e');
+      // debugPrint('Stack trace: $stack');
     }
   }
 
   // Manual trigger untuk badge tertentu
   Future<void> manuallyAwardBadge(String userId, int badgeId) async {
     try {
-      debugPrint('🎯 Manually awarding badge $badgeId to user $userId');
+      // debugPrint('🎯 Manually awarding badge $badgeId to user $userId');
       
       final profileResponse = await _supabase
           .from('profiles')
@@ -629,7 +629,7 @@ class BadgeService {
           .maybeSingle();
 
       if (badgeExists == null) {
-        debugPrint('❌ Badge $badgeId does not exist');
+        // debugPrint('❌ Badge $badgeId does not exist');
         return;
       }
 
@@ -651,10 +651,10 @@ class BadgeService {
       // Update XP
       await _updateUserXP(userId, 10);
       
-      debugPrint('✅ Badge $badgeId manually awarded!');
+      // debugPrint('✅ Badge $badgeId manually awarded!');
     } catch (e, stack) {
-      debugPrint('❌ Error manually awarding badge: $e');
-      debugPrint('Stack trace: $stack');
+      // debugPrint('❌ Error manually awarding badge: $e');
+      // debugPrint('Stack trace: $stack');
     }
   }
 
@@ -670,11 +670,11 @@ class BadgeService {
           .maybeSingle();
 
       if (existingBadge != null) {
-        debugPrint('ℹ️ Badge $badgeId already awarded to profile $profileId');
+        // debugPrint('ℹ️ Badge $badgeId already awarded to profile $profileId');
         return;
       }
 
-      debugPrint('🏆 Awarding badge $badgeId to profile $profileId...');
+      // debugPrint('🏆 Awarding badge $badgeId to profile $profileId...');
 
       // Insert new badge
       final response = await _supabase
@@ -686,11 +686,11 @@ class BadgeService {
           })
           .select();
       
-      debugPrint('✅ Badge $badgeId awarded to profile $profileId');
-      debugPrint('📝 Insert response: $response');
+      // debugPrint('✅ Badge $badgeId awarded to profile $profileId');
+      // debugPrint('📝 Insert response: $response');
     } catch (e, stack) {
-      debugPrint('❌ Error awarding badge: $e');
-      debugPrint('Stack trace: $stack');
+      // debugPrint('❌ Error awarding badge: $e');
+      // debugPrint('Stack trace: $stack');
     }
   }
 
@@ -717,11 +717,11 @@ class BadgeService {
         }
       }
       
-      debugPrint('📈 Max streak across all habits: $maxStreak days');
+      // debugPrint('📈 Max streak across all habits: $maxStreak days');
       return maxStreak;
     } catch (e, stack) {
-      debugPrint('❌ Error calculating current streak: $e');
-      debugPrint('Stack trace: $stack');
+      // debugPrint('❌ Error calculating current streak: $e');
+      // debugPrint('Stack trace: $stack');
       return 0;
     }
   }
@@ -756,8 +756,8 @@ class BadgeService {
       
       return streak;
     } catch (e, stack) {
-      debugPrint('❌ Error calculating habit streak: $e');
-      debugPrint('Stack trace: $stack');
+      // debugPrint('❌ Error calculating habit streak: $e');
+      // debugPrint('Stack trace: $stack');
       return 0;
     }
   }
@@ -799,8 +799,8 @@ class BadgeService {
       
       return perfectWeeks;
     } catch (e, stack) {
-      debugPrint('❌ Error calculating perfect weeks: $e');
-      debugPrint('Stack trace: $stack');
+      // debugPrint('❌ Error calculating perfect weeks: $e');
+      // debugPrint('Stack trace: $stack');
       return 0;
     }
   }
@@ -830,8 +830,8 @@ class BadgeService {
         progressType: badgeDetails['trigger_type'] as String,
       );
     } catch (e, stack) {
-      debugPrint('❌ Error showing badge progress: $e');
-      debugPrint('Stack trace: $stack');
+      // debugPrint('❌ Error showing badge progress: $e');
+      // debugPrint('Stack trace: $stack');
     }
   }
 
@@ -930,8 +930,8 @@ class BadgeService {
       
       return profile;
     } catch (e, stack) {
-      debugPrint('❌ Error getting user profile: $e');
-      debugPrint('Stack trace: $stack');
+      // debugPrint('❌ Error getting user profile: $e');
+      // debugPrint('Stack trace: $stack');
       return null;
     }
   }
@@ -958,8 +958,8 @@ class BadgeService {
 
       return userBadges;
     } catch (e, stack) {
-      debugPrint('❌ Error getting user badges: $e');
-      debugPrint('Stack trace: $stack');
+      // debugPrint('❌ Error getting user badges: $e');
+      // debugPrint('Stack trace: $stack');
       return [];
     }
   }
@@ -974,8 +974,8 @@ class BadgeService {
 
       return badges;
     } catch (e, stack) {
-      debugPrint('❌ Error getting all badges: $e');
-      debugPrint('Stack trace: $stack');
+      // debugPrint('❌ Error getting all badges: $e');
+      // debugPrint('Stack trace: $stack');
       return [];
     }
   }
@@ -986,7 +986,7 @@ class BadgeService {
       final badges = await getUserBadges(userId);
       return badges.length;
     } catch (e) {
-      debugPrint('❌ Error getting badge count: $e');
+      // debugPrint('❌ Error getting badge count: $e');
       return 0;
     }
   }

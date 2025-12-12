@@ -14,12 +14,12 @@ class BadgeNotificationService {
   // Initialize khusus untuk badge notifications
   Future<void> initialize({Function(String?)? onBadgeNotificationTap}) async {
     if (_isInitialized) {
-      debugPrint('ℹ️ BadgeNotificationService already initialized');
+      // debugPrint('ℹ️ BadgeNotificationService already initialized');
       return;
     }
 
     try {
-      debugPrint('🔄 Initializing BadgeNotificationService...');
+      // debugPrint('🔄 Initializing BadgeNotificationService...');
 
       // Android setup
       const AndroidInitializationSettings androidSettings = 
@@ -41,8 +41,8 @@ class BadgeNotificationService {
       await _notificationsPlugin.initialize(
         settings,
         onDidReceiveNotificationResponse: (NotificationResponse response) {
-          debugPrint('🎯 Badge notification tapped: ${response.payload}');
-          debugPrint('📱 Notification ID: ${response.id}');
+          // debugPrint('🎯 Badge notification tapped: ${response.payload}');
+          // debugPrint('📱 Notification ID: ${response.id}');
           onBadgeNotificationTap?.call(response.payload);
         },
       );
@@ -51,7 +51,7 @@ class BadgeNotificationService {
       await _createBadgeNotificationChannel();
 
       // Test basic notification capability
-      debugPrint('🧪 Testing notification capability...');
+      // debugPrint('🧪 Testing notification capability...');
       try {
         await _notificationsPlugin.show(
           111111,
@@ -65,49 +65,49 @@ class BadgeNotificationService {
             ),
           ),
         );
-        debugPrint('✅ Basic notification test PASSED');
+        // debugPrint('✅ Basic notification test PASSED');
       } catch (e) {
-        debugPrint('❌ Basic notification test FAILED: $e');
+        // debugPrint('❌ Basic notification test FAILED: $e');
       }
 
       _isInitialized = true;
-      debugPrint('✅ BadgeNotificationService initialized successfully');
+      // debugPrint('✅ BadgeNotificationService initialized successfully');
     } catch (e, stack) {
-      debugPrint('❌ Error initializing BadgeNotificationService: $e');
-      debugPrint('Stack trace: $stack');
+      // debugPrint('❌ Error initializing BadgeNotificationService: $e');
+      // debugPrint('Stack trace: $stack');
       _isInitialized = false;
     }
   }
 
   // Check permissions untuk Android dan iOS
-  Future<void> _checkPermissions() async {
-    try {
-      // Check Android permissions (Android 13+)
-      final AndroidFlutterLocalNotificationsPlugin? androidPlugin = 
-          _notificationsPlugin.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
+  // Future<void> _checkPermissions() async {
+  //   try {
+  //     // Check Android permissions (Android 13+)
+  //     final AndroidFlutterLocalNotificationsPlugin? androidPlugin = 
+  //         _notificationsPlugin.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
       
-      if (androidPlugin != null) {
-        // Untuk Android, permission biasanya sudah termasuk dalam initialize
-        debugPrint('🤖 Android notification setup completed');
-      }
+  //     if (androidPlugin != null) {
+  //       // Untuk Android, permission biasanya sudah termasuk dalam initialize
+        // debugPrint('🤖 Android notification setup completed');
+  //     }
 
-      // Check iOS permissions
-      final IOSFlutterLocalNotificationsPlugin? iosPlugin = 
-          _notificationsPlugin.resolvePlatformSpecificImplementation<IOSFlutterLocalNotificationsPlugin>();
+  //     // Check iOS permissions
+  //     final IOSFlutterLocalNotificationsPlugin? iosPlugin = 
+  //         _notificationsPlugin.resolvePlatformSpecificImplementation<IOSFlutterLocalNotificationsPlugin>();
       
-      if (iosPlugin != null) {
-        final bool? granted = await iosPlugin.requestPermissions(
-          alert: true,
-          badge: true,
-          sound: true,
-        );
-        debugPrint('📱 iOS notification permission: $granted');
-      }
+  //     if (iosPlugin != null) {
+  //       final bool? granted = await iosPlugin.requestPermissions(
+  //         alert: true,
+  //         badge: true,
+  //         sound: true,
+  //       );
+        // debugPrint('📱 iOS notification permission: $granted');
+  //     }
 
-    } catch (e) {
-      debugPrint('❌ Error checking permissions: $e');
-    }
-  }
+  //   } catch (e) {
+      // debugPrint('❌ Error checking permissions: $e');
+  //   }
+  // }
 
   // Create dedicated channel untuk badge notifications
   Future<void> _createBadgeNotificationChannel() async {
@@ -128,9 +128,9 @@ class BadgeNotificationService {
           .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
           ?.createNotificationChannel(badgeChannel);
 
-      debugPrint('📢 Notification channel created: badge_achievements_channel');
+      // debugPrint('📢 Notification channel created: badge_achievements_channel');
     } catch (e) {
-      debugPrint('❌ Error creating notification channel: $e');
+      // debugPrint('❌ Error creating notification channel: $e');
     }
   }
 
@@ -143,11 +143,11 @@ class BadgeNotificationService {
   }) async {
     try {
       if (!_isInitialized) {
-        debugPrint('⚠️ Service not initialized, initializing now...');
+        // debugPrint('⚠️ Service not initialized, initializing now...');
         await initialize();
       }
 
-      debugPrint('🎯 Preparing to show badge: $badgeName');
+      // debugPrint('🎯 Preparing to show badge: $badgeName');
 
       // Android details dengan setting yang lebih eksplisit
       final AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
@@ -195,7 +195,7 @@ class BadgeNotificationService {
 
       final int notificationId = DateTime.now().millisecondsSinceEpoch.remainder(100000);
 
-      debugPrint('📢 Showing notification with ID: $notificationId');
+      // debugPrint('📢 Showing notification with ID: $notificationId');
 
       // Show notification
       await _notificationsPlugin.show(
@@ -206,11 +206,11 @@ class BadgeNotificationService {
         payload: 'badge_$badgeId',
       );
 
-      debugPrint('✅ Floating badge notification shown: $badgeName (ID: $badgeId)');
+      // debugPrint('✅ Floating badge notification shown: $badgeName (ID: $badgeId)');
 
-    } catch (e, stack) {
-      debugPrint('❌ Error showing badge notification: $e');
-      debugPrint('Stack trace: $stack');
+    } catch (e) {
+      // debugPrint('❌ Error showing badge notification: $e');
+      // debugPrint('Stack trace: $stack');
     }
   }
 
@@ -218,7 +218,7 @@ class BadgeNotificationService {
   Future<void> showMultipleBadges(List<Map<String, dynamic>> badges) async {
     if (badges.isEmpty) return;
 
-    debugPrint('🔄 Showing ${badges.length} badge notifications...');
+    // debugPrint('🔄 Showing ${badges.length} badge notifications...');
 
     // Show first badge immediately
     final firstBadge = badges.first;
@@ -239,7 +239,7 @@ class BadgeNotificationService {
       );
     }
 
-    debugPrint('✅ All ${badges.length} badge notifications shown');
+    // debugPrint('✅ All ${badges.length} badge notifications shown');
   }
 
   // Method untuk progress badge (hampir dapat achievement)
@@ -257,7 +257,7 @@ class BadgeNotificationService {
       final progressPercent = (currentProgress / targetProgress * 100).toInt();
       final progressText = '$currentProgress/$targetProgress ($progressPercent%)';
 
-      debugPrint('📊 Showing progress notification: $badgeName - $progressText');
+      // debugPrint('📊 Showing progress notification: $badgeName - $progressText');
 
       final AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
         'badge_achievements_channel',
@@ -302,16 +302,16 @@ class BadgeNotificationService {
         payload: 'progress_$badgeName',
       );
 
-      debugPrint('📊 Progress notification shown for: $badgeName');
-    } catch (e, stack) {
-      debugPrint('❌ Error showing progress notification: $e');
-      debugPrint('Stack trace: $stack');
+      // debugPrint('📊 Progress notification shown for: $badgeName');
+    } catch (e) {
+      // debugPrint('❌ Error showing progress notification: $e');
+      // debugPrint('Stack trace: $stack');
     }
   }
 
   // Enhanced test method dengan multiple scenarios
   Future<void> showTestBadge() async {
-    debugPrint('🧪 Showing test badge notification...');
+    // debugPrint('🧪 Showing test badge notification...');
     
     // Test 1: Basic floating badge
     await showFloatingBadge(
@@ -346,9 +346,9 @@ class BadgeNotificationService {
           ),
         ),
       );
-      debugPrint('✅ Basic test notification sent');
+      // debugPrint('✅ Basic test notification sent');
     } catch (e) {
-      debugPrint('❌ Basic test notification failed: $e');
+      // debugPrint('❌ Basic test notification failed: $e');
     }
   }
 
@@ -379,9 +379,9 @@ class BadgeNotificationService {
   Future<void> cancelBadgeNotification(int id) async {
     try {
       await _notificationsPlugin.cancel(id);
-      debugPrint('🗑️ Canceled notification with ID: $id');
+      // debugPrint('🗑️ Canceled notification with ID: $id');
     } catch (e) {
-      debugPrint('❌ Error canceling notification: $e');
+      // debugPrint('❌ Error canceling notification: $e');
     }
   }
 
@@ -389,9 +389,9 @@ class BadgeNotificationService {
   Future<void> cancelAllBadgeNotifications() async {
     try {
       await _notificationsPlugin.cancelAll();
-      debugPrint('🗑️ Canceled all badge notifications');
+      // debugPrint('🗑️ Canceled all badge notifications');
     } catch (e) {
-      debugPrint('❌ Error canceling all notifications: $e');
+      // debugPrint('❌ Error canceling all notifications: $e');
     }
   }
 
@@ -399,12 +399,12 @@ class BadgeNotificationService {
   Future<void> debugPendingNotifications() async {
     try {
       final pending = await _notificationsPlugin.pendingNotificationRequests();
-      debugPrint('📋 Pending notifications: ${pending.length}');
-      for (final notification in pending) {
-        debugPrint('   - ID: ${notification.id}, Title: ${notification.title}');
-      }
+      // debugPrint('📋 Pending notifications: ${pending.length}');
+      // for (final notification in pending) {
+        // debugPrint('   - ID: ${notification.id}, Title: ${notification.title}');
+      // }
     } catch (e) {
-      debugPrint('❌ Error getting pending notifications: $e');
+      // debugPrint('❌ Error getting pending notifications: $e');
     }
   }
 
@@ -417,6 +417,6 @@ class BadgeNotificationService {
   // Cleanup
   void dispose() {
     _isInitialized = false;
-    debugPrint('♻️ BadgeNotificationService disposed');
+    // debugPrint('♻️ BadgeNotificationService disposed');
   }
 }

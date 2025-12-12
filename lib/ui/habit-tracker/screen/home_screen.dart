@@ -19,6 +19,7 @@ import 'package:purewill/ui/habit-tracker/screen/habit_detail_screen.dart';
 import 'package:purewill/ui/habit-tracker/screen/add_habit_screen.dart';
 import 'package:purewill/ui/habit-tracker/screen/habit_screen.dart';
 import 'package:purewill/ui/habit-tracker/screen/consultation_screen.dart';
+import 'package:purewill/ui/habit-tracker/screen/nofap_screen.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:purewill/data/services/badge_service.dart';
 import 'package:purewill/data/services/badge_notification_service.dart';
@@ -75,18 +76,24 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     print('NavBar tapped: index $index');
 
     if (index == 1) {
-      Navigator.of(
-        context,
-      ).pushReplacement(MaterialPageRoute(builder: (context) => const HabitScreen()));
+      // Navigate to Habit Screen
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (context) => const HabitScreen()),
+      );
     } else if (index == 2) {
-      // Navigate to Community (Komunitas)
+      // Navigate to NoFap Screen
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (context) => const NoFapScreen()),
+      );
+    } else if (index == 3) {
+      // Navigate to Community Screen
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(
           builder: (context) => const CommunitySelectionScreen(),
         ),
       );
-    } else if (index == 3) {
-      // Navigate to Consultation (Konsultasi)
+    } else if (index == 4) {
+      // Navigate to Consultation Screen
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(builder: (context) => const ConsultationScreen()),
       );
@@ -185,7 +192,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     return Scaffold(
       body: RefreshIndicator(
         onRefresh: () async {
-          print('🔄 Pull to refresh triggered');
           await ref.read(habitNotifierProvider.notifier).loadTodayUserHabits();
           await ref.read(planProvider.notifier).refresh();
           await _loadTodayCompletionStatus();
@@ -290,25 +296,32 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   void _handleCheckboxTap(HabitModel habit) async {
     try {
-      final currentStatus =
-          _todayCompletionStatus[habit.id] == LogStatus.success;
-      final newStatus = !currentStatus;
+
+      final currentStatus = _todayCompletionStatus[habit.id];
 
       setState(() {
-        _todayCompletionStatus[habit.id] = newStatus
-            ? LogStatus.success
-            : LogStatus.neutral;
+        _todayCompletionStatus[habit.id] = currentStatus == LogStatus.success 
+            ? LogStatus.failed
+            : currentStatus == LogStatus.failed
+                ? LogStatus.neutral
+                : LogStatus.success;
       });
 
       await ref
           .read(habitNotifierProvider.notifier)
           .toggleHabitCompletion(habit);
-      if (newStatus) {
-        final user = Supabase.instance.client.auth.currentUser;
-        if (user != null) {
-          await Future.delayed(const Duration(milliseconds: 500));
+    
+      final user = Supabase.instance.client.auth.currentUser;
+      if (user != null) {
+        final newStatus = _todayCompletionStatus[habit.id];
+        
+        if (newStatus == LogStatus.success) {
+          _showSnackBar('Habit completed successfully!');
           await badgeService.checkAllBadges(user.id);
-          _showSnackBar('Habit completed!');
+        } else if (newStatus == LogStatus.failed) {
+          _showSnackBar('Habit marked as failed.');
+        } else if (newStatus == LogStatus.neutral) {
+          _showSnackBar('Habit reset to neutral.');
         }
       }
     } catch (e) {

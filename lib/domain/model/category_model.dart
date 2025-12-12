@@ -10,8 +10,8 @@ class CategoryModel {
   });
 
   factory CategoryModel.fromJson(Map<String, dynamic> json) {
-    print('=== PARSING CATEGORY JSON ===');
-    print('Raw JSON: $json');
+    // print('=== PARSING CATEGORY JSON ===');
+    // print('Raw JSON: $json');
     
     DateTime parseCreatedAt(dynamic date) {
       if (date is String) {
@@ -26,7 +26,7 @@ class CategoryModel {
       createdAt: parseCreatedAt(json['created_at']),
     );
 
-    print('Parsed Category: ${category.id} - ${category.name}');
+    // print('Parsed Category: ${category.id} - ${category.name}');
     return category;
   }
 

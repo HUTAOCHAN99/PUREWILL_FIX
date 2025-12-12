@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:purewill/ui/habit-tracker/screen/community_selection_screen.dart';
 import 'package:purewill/ui/habit-tracker/screen/home_screen.dart';
+import 'package:purewill/ui/habit-tracker/screen/nofap_screen.dart';
 import 'dart:ui';
 import 'package:purewill/ui/habit-tracker/widget/clean_bottom_navigation_bar.dart';
 import 'package:purewill/ui/habit-tracker/screen/habit_screen.dart';
@@ -14,7 +15,7 @@ class ConsultationScreen extends ConsumerStatefulWidget {
 }
 
 class _ConsultationScreenState extends ConsumerState<ConsultationScreen> {
-  int _currentIndex = 3;
+  int _currentIndex = 4;
 
   @override
   void initState() {
@@ -78,22 +79,29 @@ class _ConsultationScreenState extends ConsumerState<ConsultationScreen> {
     print('NavBar tapped: index $index');
 
     if (index == 0) {
-       Navigator.of(context).pushReplacement(
-        MaterialPageRoute(
-          builder: (context) => const HomeScreen(),
-        ), 
+      // Navigate to Home Screen
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (context) => const HomeScreen()),
       );
     } else if (index == 1) {
-      Navigator.of(
-        context,
-      ).pushReplacement(MaterialPageRoute(builder: (context) => const HabitScreen()));
+      // Navigate to Habit Screen
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (context) => const HabitScreen()),
+      );
     } else if (index == 2) {
+      // Navigate to NoFap Screen
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (context) => const NoFapScreen()),
+      );
+    } else if (index == 3) {
+      // Navigate to Community Screen
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(
           builder: (context) => const CommunitySelectionScreen(),
         ),
       );
-    } else if (index == 3) {
+    } else if (index == 4) {
+      // Already on Consultation Screen, do nothing
       return;
     }
   }

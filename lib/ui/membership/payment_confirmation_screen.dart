@@ -30,8 +30,6 @@ class PaymentConfirmationScreen extends ConsumerStatefulWidget {
 class _PaymentConfirmationScreenState extends ConsumerState<PaymentConfirmationScreen> {
   int _currentIndex = 0;
   bool _isProcessing = false;
-  // Hapus atau gunakan _isSuccess jika diperlukan
-  // bool _isSuccess = false; // Di-comment karena tidak digunakan
   String? _errorMessage;
   String? _selectedPaymentMethod;
   final List<PaymentMethod> _paymentMethods = [
@@ -103,10 +101,8 @@ class _PaymentConfirmationScreenState extends ConsumerState<PaymentConfirmationS
     });
 
     try {
-      // Simulasi proses pembayaran
       await Future.delayed(const Duration(seconds: 2));
 
-      // Simulasi 95% success rate
       final random = Random().nextDouble();
       if (random < 0.95) {
         setState(() {

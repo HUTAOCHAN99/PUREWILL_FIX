@@ -25,8 +25,8 @@ class _AuthWrapperState extends ConsumerState<AuthWrapper> {
       final AuthChangeEvent event = data.event;
       final Session? session = data.session;
       
-      print('Auth state changed: $event');
-      print('Session: ${session != null ? "Active" : "None"}');
+      // print('Auth state changed: $event');
+      // print('Session: ${session != null ? "Active" : "None"}');
       
       if (event == AuthChangeEvent.signedOut) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -46,7 +46,7 @@ class _AuthWrapperState extends ConsumerState<AuthWrapper> {
     final supabaseClient = ref.read(supabaseClientProvider);
     final currentUser = supabaseClient.auth.currentUser;
 
-    print('AuthWrapper - Current User: ${currentUser?.email}');
+    // print('AuthWrapper - Current User: ${currentUser?.email}');
 
     if (currentUser != null) {
       return HomeScreen();

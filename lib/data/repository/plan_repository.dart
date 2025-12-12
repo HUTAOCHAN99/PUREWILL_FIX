@@ -20,13 +20,13 @@ class PlanRepository {
           .eq('is_active', true)
           .order('price', ascending: true);
 
-      if (response == null) return [];
+      // if (response == null) return [];
 
       return (response as List)
           .map((json) => PlanModel.fromJson(json))
           .toList();
     } catch (e) {
-      print('Error getting plans: $e');
+      // print('Error getting plans: $e');
       return _getDefaultPlans();
     }
   }
@@ -39,10 +39,10 @@ class PlanRepository {
           .eq('id', planId)
           .single();
 
-      if (response == null) return null;
+      // if (response == null) return null;
       return PlanModel.fromJson(response);
     } catch (e) {
-      print('Error getting plan: $e');
+      // print('Error getting plan: $e');
       return null;
     }
   }
@@ -50,7 +50,7 @@ class PlanRepository {
   // Metode baru: Cek apakah user premium
   Future<bool> isUserPremium(String userId) async {
     try {
-      print('🔍 Checking premium status for user: $userId');
+      // print('🔍 Checking premium status for user: $userId');
 
       // Query langsung dari profiles
       final response = await supabase
@@ -62,13 +62,13 @@ class PlanRepository {
       final isPremium = response['is_premium_user'] ?? false;
       final planId = response['current_plan_id'];
 
-      print(
-        '📊 Premium check - is_premium_user: $isPremium, current_plan_id: $planId',
-      );
+      // print(
+        // '📊 Premium check - is_premium_user: $isPremium, current_plan_id: $planId',
+      // );
 
       return isPremium;
     } catch (e) {
-      print('❌ Error checking premium status: $e');
+      // print('❌ Error checking premium status: $e');
       return false;
     }
   }
@@ -100,7 +100,7 @@ class PlanRepository {
 
       return ProfileModel.fromJson(response);
     } catch (e) {
-      print('Error getting user profile with premium: $e');
+      // print('Error getting user profile with premium: $e');
       return null;
     }
   }
@@ -109,11 +109,11 @@ class PlanRepository {
     try {
       final user = supabase.auth.currentUser;
       if (user == null) {
-        print('❌ No user logged in');
+        // print('❌ No user logged in');
         return null;
       }
 
-      print('🔍 Getting current plan for user: ${user.id}');
+      // print('🔍 Getting current plan for user: ${user.id}');
 
       // Query 1: Coba dengan join langsung
       final response = await supabase
@@ -126,16 +126,16 @@ class PlanRepository {
           .eq('status', 'active')
           .maybeSingle();
 
-      print('📊 Query 1 result: $response');
+      // print('📊 Query 1 result: $response');
 
       if (response != null && response['plans'] != null) {
         final planData = response['plans'] as Map<String, dynamic>;
-        print('✅ Found plan: ${planData['name']}');
+        // print('✅ Found plan: ${planData['name']}');
         return PlanModel.fromJson(planData);
       }
 
       // Query 2: Coba dengan profiles.current_plan_id
-      print('🔄 Trying fallback query...');
+      // print('🔄 Trying fallback query...');
       final profileResponse = await supabase
           .from('profiles')
           .select('current_plan_id')
@@ -143,19 +143,19 @@ class PlanRepository {
           .single();
 
       final planId = profileResponse['current_plan_id'];
-      print('📊 Profile current_plan_id: $planId');
+      // print('📊 Profile current_plan_id: $planId');
 
       if (planId != null) {
         final plan = await getPlanById(planId as int);
-        print('✅ Found plan via profile: ${plan?.name}');
+        // print('✅ Found plan via profile: ${plan?.name}');
         return plan;
       }
 
-      print('⚠️ No active plan found');
+      // print('⚠️ No active plan found');
       return null;
     } catch (e) {
-      print('❌ Error in getCurrentUserPlan: $e');
-      print('Stack trace: ${e.toString()}');
+      // print('❌ Error in getCurrentUserPlan: $e');
+      // print('Stack trace: ${e.toString()}');
       return null;
     }
   }
@@ -211,11 +211,11 @@ class PlanRepository {
           })
           .eq('user_id', user.id);
 
-      print(
-        '✅ User ${user.id} upgraded to ${isPremium ? 'PREMIUM' : 'FREE'} plan',
-      );
+      // print(
+        // '✅ User ${user.id} upgraded to ${isPremium ? 'PREMIUM' : 'FREE'} plan',
+      // );
     } catch (e) {
-      print('Error subscribing to plan: $e');
+      // print('Error subscribing to plan: $e');
       rethrow;
     }
   }
@@ -245,9 +245,9 @@ class PlanRepository {
           })
           .eq('user_id', user.id);
 
-      print('❌ User ${user.id} subscription cancelled, set to FREE plan');
+      // print('❌ User ${user.id} subscription cancelled, set to FREE plan');
     } catch (e) {
-      print('Error cancelling subscription: $e');
+      // print('Error cancelling subscription: $e');
       rethrow;
     }
   }
@@ -273,7 +273,7 @@ class PlanRepository {
 
       return true; // Lifetime subscription
     } catch (e) {
-      print('Error checking subscription active: $e');
+      // print('Error checking subscription active: $e');
       return false;
     }
   }
@@ -294,9 +294,9 @@ class PlanRepository {
           })
           .eq('user_id', user.id);
 
-      print('🔄 Synced premium status for user ${user.id}: $isActive');
+      // print('🔄 Synced premium status for user ${user.id}: $isActive');
     } catch (e) {
-      print('Error syncing premium status: $e');
+      // print('Error syncing premium status: $e');
     }
   }
 
@@ -304,20 +304,20 @@ class PlanRepository {
   Future<bool> processPayment(int planId, String paymentMethod) async {
     try {
       // Simulasi proses pembayaran
-      print('💰 Processing payment for plan $planId with $paymentMethod');
+      // print('💰 Processing payment for plan $planId with $paymentMethod');
       await Future.delayed(const Duration(seconds: 2));
       
       // Simulasi 95% success rate
       final random = Random().nextDouble();
       if (random < 0.95) {
-        print('✅ Payment successful');
+        // print('✅ Payment successful');
         return true;
       } else {
-        print('❌ Payment failed');
+        // print('❌ Payment failed');
         throw Exception('Payment failed. Please try again.');
       }
     } catch (e) {
-      print('Error processing payment: $e');
+      // print('Error processing payment: $e');
       rethrow;
     }
   }

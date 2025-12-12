@@ -13,7 +13,7 @@ class BadgeTriggerService {
     try {
       if (userId.isEmpty) return;
 
-      debugPrint('🏆 Habit completed, checking badges for user: $userId');
+      // debugPrint('🏆 Habit completed, checking badges for user: $userId');
       
       // Tunggu sebentar untuk memastikan data tersimpan
       await Future.delayed(const Duration(milliseconds: 500));
@@ -22,8 +22,8 @@ class BadgeTriggerService {
       await _badgeService.checkAllBadges(userId);
       
     } catch (e, stack) {
-      debugPrint('❌ Error triggering badge check: $e');
-      debugPrint('Stack trace: $stack');
+      // debugPrint('❌ Error triggering badge check: $e');
+      // debugPrint('Stack trace: $stack');
     }
   }
 
@@ -32,7 +32,7 @@ class BadgeTriggerService {
     try {
       if (userId.isEmpty) return;
 
-      debugPrint('🏆 New habit created, checking badges for user: $userId');
+      // debugPrint('🏆 New habit created, checking badges for user: $userId');
       
       // Tunggu sebentar
       await Future.delayed(const Duration(milliseconds: 500));
@@ -41,8 +41,8 @@ class BadgeTriggerService {
       await _badgeService.checkAllBadges(userId);
       
     } catch (e, stack) {
-      debugPrint('❌ Error triggering badge check: $e');
-      debugPrint('Stack trace: $stack');
+      // debugPrint('❌ Error triggering badge check: $e');
+      // debugPrint('Stack trace: $stack');
     }
   }
 
@@ -51,14 +51,14 @@ class BadgeTriggerService {
     try {
       if (userId.isEmpty) return;
 
-      debugPrint('🌅 Morning completion detected, checking badges for user: $userId');
+      // debugPrint('🌅 Morning completion detected, checking badges for user: $userId');
       
       await Future.delayed(const Duration(milliseconds: 500));
       await _badgeService.checkAllBadges(userId);
       
     } catch (e, stack) {
-      debugPrint('❌ Error checking morning completion badges: $e');
-      debugPrint('Stack trace: $stack');
+      // debugPrint('❌ Error checking morning completion badges: $e');
+      // debugPrint('Stack trace: $stack');
     }
   }
 
@@ -67,7 +67,7 @@ class BadgeTriggerService {
     try {
       if (userId.isEmpty) return;
 
-      debugPrint('🔥 Streak changed, checking badges for user: $userId');
+      // debugPrint('🔥 Streak changed, checking badges for user: $userId');
       
       // Tunggu sebentar
       await Future.delayed(const Duration(milliseconds: 500));
@@ -76,8 +76,8 @@ class BadgeTriggerService {
       await _badgeService.checkAllBadges(userId);
       
     } catch (e, stack) {
-      debugPrint('❌ Error checking streak badges: $e');
-      debugPrint('Stack trace: $stack');
+      // debugPrint('❌ Error checking streak badges: $e');
+      // debugPrint('Stack trace: $stack');
     }
   }
 
@@ -86,14 +86,14 @@ class BadgeTriggerService {
     try {
       if (userId.isEmpty) return;
 
-      debugPrint('🏷️ Category added, checking badges for user: $userId');
+      // debugPrint('🏷️ Category added, checking badges for user: $userId');
       
       await Future.delayed(const Duration(milliseconds: 500));
       await _badgeService.checkAllBadges(userId);
       
     } catch (e, stack) {
-      debugPrint('❌ Error checking category badges: $e');
-      debugPrint('Stack trace: $stack');
+      // debugPrint('❌ Error checking category badges: $e');
+      // debugPrint('Stack trace: $stack');
     }
   }
 
@@ -101,22 +101,22 @@ class BadgeTriggerService {
   Future<void> manualTrigger(String userId) async {
     try {
       if (userId.isEmpty) {
-        debugPrint('⚠️ No user ID provided, cannot trigger badge check');
+        // debugPrint('⚠️ No user ID provided, cannot trigger badge check');
         return;
       }
 
-      debugPrint('🔄 Manually triggering badge check for user: $userId');
+      // debugPrint('🔄 Manually triggering badge check for user: $userId');
       
       // Jalankan badge check
       await _badgeService.checkAllBadges(userId);
       
       // Tampilkan summary
       final badges = await _badgeService.getUserBadges(userId);
-      debugPrint('📊 User has ${badges.length} total badges');
+      // debugPrint('📊 User has ${badges.length} total badges');
       
     } catch (e, stack) {
-      debugPrint('❌ Error in manual trigger: $e');
-      debugPrint('Stack trace: $stack');
+      // debugPrint('❌ Error in manual trigger: $e');
+      // debugPrint('Stack trace: $stack');
     }
   }
 
@@ -126,7 +126,7 @@ class BadgeTriggerService {
       final badges = await _badgeService.getUserBadges(userId);
       return badges.any((badge) => badge['badge_id'] == badgeId);
     } catch (e) {
-      debugPrint('❌ Error checking if user has badge: $e');
+      // debugPrint('❌ Error checking if user has badge: $e');
       return false;
     }
   }
@@ -224,8 +224,8 @@ class BadgeTriggerService {
         'percentage': percentage,
       };
     } catch (e, stack) {
-      debugPrint('❌ Error getting badge progress: $e');
-      debugPrint('Stack trace: $stack');
+      // debugPrint('❌ Error getting badge progress: $e');
+      // debugPrint('Stack trace: $stack');
       return {
         'badge': null, 
         'progress': {'current': 0, 'target': 1}, 
@@ -262,7 +262,7 @@ class BadgeTriggerService {
       
       return streak;
     } catch (e) {
-      debugPrint('Error calculating habit streak: $e');
+      // debugPrint('Error calculating habit streak: $e');
       return 0;
     }
   }
@@ -271,10 +271,10 @@ class BadgeTriggerService {
   Future<void> resetUserBadges(String userId) async {
     try {
       await _resetUserBadgesInSupabase(userId);
-      debugPrint('🔄 Reset all badges for user: $userId');
+      // debugPrint('🔄 Reset all badges for user: $userId');
     } catch (e, stack) {
-      debugPrint('❌ Error resetting badges: $e');
-      debugPrint('Stack trace: $stack');
+      // debugPrint('❌ Error resetting badges: $e');
+      // debugPrint('Stack trace: $stack');
     }
   }
 
@@ -294,10 +294,10 @@ class BadgeTriggerService {
           .delete()
           .eq('profile_id', profileId);
 
-      debugPrint('✅ User badges reset for profile $profileId');
+      // debugPrint('✅ User badges reset for profile $profileId');
     } catch (e, stack) {
-      debugPrint('❌ Error resetting user badges in Supabase: $e');
-      debugPrint('Stack trace: $stack');
+      // debugPrint('❌ Error resetting user badges in Supabase: $e');
+      // debugPrint('Stack trace: $stack');
     }
   }
 }

@@ -25,7 +25,7 @@ class PremiumStatusService {
 
       if (isActive != currentIsPremium) {
         await _planRepository.syncPremiumStatus();
-        print('🔄 Premium status updated: $currentIsPremium -> $isActive');
+        // print('🔄 Premium status updated: $currentIsPremium -> $isActive');
       }
 
     } catch (e) {

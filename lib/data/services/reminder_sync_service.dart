@@ -30,13 +30,13 @@ class ReminderSyncService {
           .from('reminder_settings')
           .stream(primaryKey: ['id'])
           .listen((event) {
-            debugPrint('🔄 Realtime update received for reminders');
+            // debugPrint('🔄 Realtime update received for reminders');
             _handleReminderUpdates(event);
           });
 
-      debugPrint('✅ Realtime subscription for reminders started');
+      // debugPrint('✅ Realtime subscription for reminders started');
     } catch (e) {
-      debugPrint('❌ Failed to setup realtime subscription: $e');
+      // debugPrint('❌ Failed to setup realtime subscription: $e');
     }
   }
 
@@ -66,7 +66,7 @@ class ReminderSyncService {
   // Reschedule all reminders from database
   Future<void> rescheduleAllReminders() async {
     try {
-      debugPrint('🔄 Rescheduling all reminders...');
+      // debugPrint('🔄 Rescheduling all reminders...');
 
       // Cancel all existing notifications
       await _notificationService.cancelAllNotifications();
@@ -92,9 +92,9 @@ class ReminderSyncService {
         // }
       }
 
-      debugPrint('✅ All reminders rescheduled successfully');
+      // debugPrint('✅ All reminders rescheduled successfully');
     } catch (e) {
-      debugPrint('❌ Error rescheduling reminders: $e');
+      // debugPrint('❌ Error rescheduling reminders: $e');
     }
   }
 
@@ -124,7 +124,7 @@ class ReminderSyncService {
       final time = TimeOfDay.fromDateTime(reminder.time);
       final notificationId = _generateNotificationId(reminder);
 
-      debugPrint('🔔 Scheduling: $finalHabitName at ${time.hour}:${time.minute}');
+      // debugPrint('🔔 Scheduling: $finalHabitName at ${time.hour}:${time.minute}');
 
       await _notificationService.scheduleHabitReminder(
         id: notificationId,
@@ -135,9 +135,9 @@ class ReminderSyncService {
         repeatDaily: reminder.repeatDaily,
       );
 
-      debugPrint('✅ Reminder scheduled successfully');
+      // debugPrint('✅ Reminder scheduled successfully');
     } catch (e) {
-      debugPrint('❌ Error scheduling reminder: $e');
+      // debugPrint('❌ Error scheduling reminder: $e');
     }
   }
 
@@ -150,9 +150,9 @@ class ReminderSyncService {
         await _scheduleReminderNotification(reminder);
       }
 
-      debugPrint('✅ Reminder updated for habit ${reminder.habitId}');
+      // debugPrint('✅ Reminder updated for habit ${reminder.habitId}');
     } catch (e) {
-      debugPrint('❌ Error updating reminder: $e');
+      // debugPrint('❌ Error updating reminder: $e');
     }
   }
 
@@ -161,9 +161,9 @@ class ReminderSyncService {
     try {
       final notificationId = _generateNotificationId(reminder);
       await _notificationService.cancelNotification(notificationId);
-      debugPrint('✅ Reminder cancelled: $notificationId');
+      // debugPrint('✅ Reminder cancelled: $notificationId');
     } catch (e) {
-      debugPrint('❌ Error cancelling reminder: $e');
+      // debugPrint('❌ Error cancelling reminder: $e');
     }
   }
 
@@ -175,6 +175,6 @@ class ReminderSyncService {
   // Cleanup
   Future<void> dispose() async {
     await _reminderSubscription?.cancel();
-    debugPrint('🛑 Reminder sync service disposed');
+    // debugPrint('🛑 Reminder sync service disposed');
   }
 }

@@ -88,12 +88,12 @@ class LocalNotificationService {
     // Create notification channels
     await _createNotificationChannels();
 
-    debugPrint('✅ Local Notification Service initialized successfully');
+    // debugPrint('✅ Local Notification Service initialized successfully');
   }
 
   // Handle notification response
   static void _onNotificationResponse(NotificationResponse response) {
-    debugPrint('🔔 Notification tapped: ${response.payload}');
+    // debugPrint('🔔 Notification tapped: ${response.payload}');
     _instance._onNotificationTap?.call(response.payload);
   }
 
@@ -132,10 +132,10 @@ class LocalNotificationService {
         await androidPlugin.createNotificationChannel(habitChannel);
         await androidPlugin.createNotificationChannel(testChannel);
 
-        debugPrint('📱 Notification channels created successfully');
+        // debugPrint('📱 Notification channels created successfully');
       }
     } catch (e) {
-      debugPrint('❌ Error creating notification channels: $e');
+      // debugPrint('❌ Error creating notification channels: $e');
     }
   }
 
@@ -225,7 +225,7 @@ class LocalNotificationService {
       );
 
       if (repeatDaily) {
-        debugPrint('   🔄 Scheduling as DAILY REPEATING');
+        // debugPrint('   🔄 Scheduling as DAILY REPEATING');
         await _notificationsPlugin.zonedSchedule(
           id,
           title,
@@ -237,7 +237,7 @@ class LocalNotificationService {
           payload: 'habit_$habitId',
         );
       } else {
-        debugPrint('   ⏰ Scheduling as ONE-TIME');
+        // debugPrint('   ⏰ Scheduling as ONE-TIME');
         await _notificationsPlugin.zonedSchedule(
           id,
           title,
@@ -249,21 +249,21 @@ class LocalNotificationService {
         );
       }
 
-      // debugPrint('✅ NOTIFICATION SCHEDULED SUCCESSFULLY');
+      debugPrint('✅ NOTIFICATION SCHEDULED SUCCESSFULLY');
 
       // Immediate verification
       await _verifyScheduledNotification(id);
       
-    } catch (e, stackTrace) {
-      debugPrint('❌ CRITICAL ERROR scheduling reminder: $e');
-      debugPrint('Stack trace: $stackTrace');
+    } catch (e) {
+      // debugPrint('❌ CRITICAL ERROR scheduling reminder: $e');
+      // debugPrint('Stack trace: $stackTrace');
       
       // Try fallback: immediate notification
-      debugPrint('🔄 Trying fallback: immediate notification');
+      // debugPrint('🔄 Trying fallback: immediate notification');
       try {
         await showTestNotification(title.replaceFirst('Habit Reminder: ', ''));
       } catch (fallbackError) {
-        debugPrint('❌ Fallback also failed: $fallbackError');
+        // debugPrint('❌ Fallback also failed: $fallbackError');
       }
     }
   }
@@ -312,18 +312,18 @@ class LocalNotificationService {
         payload: 'test_$habitName',
       );
 
-      debugPrint('✅ TEST NOTIFICATION SENT SUCCESSFULLY');
+      // debugPrint('✅ TEST NOTIFICATION SENT SUCCESSFULLY');
     } catch (e) {
-      debugPrint('❌ ERROR showing test notification: $e');
+      // debugPrint('❌ ERROR showing test notification: $e');
     }
   }
 
   Future<void> cancelNotification(int id) async {
     try {
       await _notificationsPlugin.cancel(id);
-      debugPrint('✅ Notification $id cancelled');
+      // debugPrint('✅ Notification $id cancelled');
     } catch (e) {
-      debugPrint('❌ Error cancelling notification $id: $e');
+      // debugPrint('❌ Error cancelling notification $id: $e');
     }
   }
 
@@ -340,18 +340,18 @@ class LocalNotificationService {
         }
       }
 
-      debugPrint('✅ Cancelled $cancelledCount notifications for habit $habitId');
+      // debugPrint('✅ Cancelled $cancelledCount notifications for habit $habitId');
     } catch (e) {
-      debugPrint('❌ Error cancelling habit notifications: $e');
+      // debugPrint('❌ Error cancelling habit notifications: $e');
     }
   }
 
   Future<void> cancelAllNotifications() async {
     try {
       await _notificationsPlugin.cancelAll();
-      debugPrint('✅ All notifications cancelled');
+      // debugPrint('✅ All notifications cancelled');
     } catch (e) {
-      debugPrint('❌ Error cancelling all notifications: $e');
+      // debugPrint('❌ Error cancelling all notifications: $e');
     }
   }
 
@@ -384,7 +384,7 @@ class LocalNotificationService {
 //       notificationDetails,
 //     );
 
-//     debugPrint('Test notification shown for $habitName');
+    // debugPrint('Test notification shown for $habitName');
 //   }
 
 // =======
@@ -393,10 +393,10 @@ class LocalNotificationService {
   Future<List<PendingNotificationRequest>> getPendingNotifications() async {
     try {
       final pending = await _notificationsPlugin.pendingNotificationRequests();
-      debugPrint('📋 Found ${pending.length} pending notifications');
+      // debugPrint('📋 Found ${pending.length} pending notifications');
       return pending;
     } catch (e) {
-      debugPrint('❌ Error getting pending notifications: $e');
+      // debugPrint('❌ Error getting pending notifications: $e');
       return [];
     }
   }
@@ -404,7 +404,7 @@ class LocalNotificationService {
   // Check permissions
   Future<bool> checkPermissions() async {
     try {
-      debugPrint('🔐 Checking notification permissions...');
+      // debugPrint('🔐 Checking notification permissions...');
 
       bool hasPermission = false;
 
@@ -439,9 +439,9 @@ class LocalNotificationService {
 
           await _notificationsPlugin.cancel(testId);
           hasPermission = true;
-          debugPrint('   ✅ Android: Notifications are working');
+          // debugPrint('   ✅ Android: Notifications are working');
         } catch (e) {
-          debugPrint('   ❌ Android: Notifications blocked - $e');
+          // debugPrint('   ❌ Android: Notifications blocked - $e');
           hasPermission = false;
         }
       }
@@ -459,12 +459,12 @@ class LocalNotificationService {
           sound: true,
         );
         hasPermission = result ?? false;
-        debugPrint('   - iOS permission granted: $hasPermission');
+        // debugPrint('   - iOS permission granted: $hasPermission');
       }
 
       return hasPermission;
     } catch (e) {
-      debugPrint('❌ Error checking permissions: $e');
+      // debugPrint('❌ Error checking permissions: $e');
       return false;
     }
   }
@@ -474,7 +474,7 @@ class LocalNotificationService {
     try {
       return await checkPermissions();
     } catch (e) {
-      debugPrint('❌ Error requesting permissions: $e');
+      // debugPrint('❌ Error requesting permissions: $e');
       return false;
     }
   }
@@ -482,31 +482,31 @@ class LocalNotificationService {
   // Verify scheduled notification dengan detail
   Future<void> _verifyScheduledNotification(int id) async {
     try {
-      debugPrint('🔍 VERIFYING SCHEDULED NOTIFICATION: $id');
+      // debugPrint('🔍 VERIFYING SCHEDULED NOTIFICATION: $id');
       
       final pending = await _notificationsPlugin.pendingNotificationRequests();
-      debugPrint('   - Total pending notifications: ${pending.length}');
+      // debugPrint('   - Total pending notifications: ${pending.length}');
       
       bool found = false;
       for (final notification in pending) {
-        debugPrint('   - Pending: ID=${notification.id}, Title="${notification.title}", Time=${notification.body}');
+        // debugPrint('   - Pending: ID=${notification.id}, Title="${notification.title}", Time=${notification.body}');
         if (notification.id == id) {
           found = true;
-          debugPrint('   ✅ OUR NOTIFICATION FOUND IN PENDING LIST');
-          debugPrint('      Title: ${notification.title}');
-          debugPrint('      Body: ${notification.body}');
-          debugPrint('      Payload: ${notification.payload}');
+          // debugPrint('   ✅ OUR NOTIFICATION FOUND IN PENDING LIST');
+          // debugPrint('      Title: ${notification.title}');
+          // debugPrint('      Body: ${notification.body}');
+          // debugPrint('      Payload: ${notification.payload}');
           break;
         }
       }
       
       if (!found) {
-        debugPrint('   ❌ OUR NOTIFICATION NOT FOUND IN PENDING LIST!');
-        debugPrint('   This means the scheduling failed silently');
+        // debugPrint('   ❌ OUR NOTIFICATION NOT FOUND IN PENDING LIST!');
+        // debugPrint('   This means the scheduling failed silently');
       }
       
     } catch (e) {
-      debugPrint('❌ Error verifying scheduled notification: $e');
+      // debugPrint('❌ Error verifying scheduled notification: $e');
     }
   }
 
@@ -518,8 +518,8 @@ class LocalNotificationService {
           .getNotificationAppLaunchDetails();
 
       if (details?.didNotificationLaunchApp ?? false) {
-        debugPrint('🚀 App launched from notification');
-        debugPrint('   - Payload: ${details?.notificationResponse?.payload}');
+        // debugPrint('🚀 App launched from notification');
+        // debugPrint('   - Payload: ${details?.notificationResponse?.payload}');
 
         final payload = details?.notificationResponse?.payload;
         if (payload != null) {
@@ -527,7 +527,7 @@ class LocalNotificationService {
         }
       }
     } catch (e) {
-      debugPrint('❌ Error handling notification on startup: $e');
+      // debugPrint('❌ Error handling notification on startup: $e');
     }
   }
 

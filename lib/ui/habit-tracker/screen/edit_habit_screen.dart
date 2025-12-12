@@ -103,7 +103,7 @@ class _EditHabitScreenState extends ConsumerState<EditHabitScreen> {
 
   Future<void> _updateHabit() async {
     if (_formKey.currentState!.validate()) {
-      print("tombol update ditekan"); 
+      // print("tombol update ditekan"); 
       
       try {
         final viewModel = ref.read(habitNotifierProvider.notifier);
@@ -115,16 +115,16 @@ class _EditHabitScreenState extends ConsumerState<EditHabitScreen> {
           finalUnit = _selectedUnit;
         }
 
-        print('=== UPDATING HABIT ===');
-        print('Habit ID: ${widget.habit.id}');
-        print('Name: ${_nameController.text}');
-        print('Category: $_selectedCategoryId');
-        print('Frequency: $_selectedFrequency');
-        print('Target Value: $_targetValue');
-        print('Unit: $finalUnit');
-        print('Reminder Enabled: $_reminderEnabled');
-        print('Reminder Time: $_reminderTime');
-        print('==================');
+        // print('=== UPDATING HABIT ===');
+        // print('Habit ID: ${widget.habit.id}');
+        // print('Name: ${_nameController.text}');
+        // print('Category: $_selectedCategoryId');
+        // print('Frequency: $_selectedFrequency');
+        // print('Target Value: $_targetValue');
+        // print('Unit: $finalUnit');
+        // print('Reminder Enabled: $_reminderEnabled');
+        // print('Reminder Time: $_reminderTime');
+        // print('==================');
 
         final updateData = <String, dynamic>{
           'name': _nameController.text,
@@ -142,9 +142,9 @@ class _EditHabitScreenState extends ConsumerState<EditHabitScreen> {
           updateData['reminder_time'] = null;
         }
 
-        print('=== UPDATE DATA ===');
-        print(updateData);
-        print('==================');
+        // print('=== UPDATE DATA ===');
+        // print(updateData);
+        // print('==================');
 
         await viewModel.updateHabits(
           habitId: widget.habit.id,
@@ -154,7 +154,7 @@ class _EditHabitScreenState extends ConsumerState<EditHabitScreen> {
           newTargetValue: _targetValue,
         );
 
-        print('=== HABIT UPDATED SUCCESS ===');
+        // print('=== HABIT UPDATED SUCCESS ===');
 
         if (mounted) {
           Navigator.of(context).pop();
@@ -164,7 +164,7 @@ class _EditHabitScreenState extends ConsumerState<EditHabitScreen> {
         }
 
       } catch (error) {
-        print('=== HABIT UPDATE ERROR: $error ===');
+        // print('=== HABIT UPDATE ERROR: $error ===');
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('Gagal memperbarui habit: $error')),

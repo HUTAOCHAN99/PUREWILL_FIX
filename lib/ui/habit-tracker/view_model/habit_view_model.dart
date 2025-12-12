@@ -120,18 +120,11 @@ class HabitsViewModel extends StateNotifier<HabitsState> {
   }
 
   Future<void> loadTodayUserHabits() async {
-    print("memuat data habit punya user hari ini...");
     state = state.copyWith(status: HabitStatus.loading, errorMessage: null);
     try {
       final habits = await _habitRepository.fetchTodayUserHabits(
         _currentUserId,
       );
-
-      debugPrint("habits hari ini:");
-      for (var habit in habits) {
-        debugPrint("- ${habit.name} (id: ${habit.id})");
-      }
-
 
       state = state.copyWith(status: HabitStatus.success, todayHabit: habits);
     } catch (e) {
@@ -147,8 +140,6 @@ class HabitsViewModel extends StateNotifier<HabitsState> {
 
     try {
       final habitDetail = await _habitRepository.getHabitById(habitId);
-      print("Habit Detail");
-      print(habitDetail);
       state = state.copyWith(
         status: HabitStatus.success,
         currentHabitDetail: habitDetail,
@@ -186,8 +177,6 @@ class HabitsViewModel extends StateNotifier<HabitsState> {
 
     try {
       final categories = await _categoryRepository.fetchCategories();
-      print("data categories");
-      print(categories);
 
       state = state.copyWith(
         status: HabitStatus.success,
@@ -209,13 +198,10 @@ class HabitsViewModel extends StateNotifier<HabitsState> {
         habit.id,
       );
 
-      print("existing log complete status = ");
-      print(existingLog?.status == LogStatus.success);
+      print("sebelum di toggle, status existing log: ${existingLog?.status.name}");
 
       if (existingLog != null) {
-        print("existing log found, toggling completion");
-        print("existingLog.isCompleted: ${existingLog.status}");
-        await _dailyLogRepository.recordLog(
+        final log = await _dailyLogRepository.recordLog(
           habitId: habit.id,
           date: today,
           status: (existingLog.status == LogStatus.success)
@@ -226,7 +212,9 @@ class HabitsViewModel extends StateNotifier<HabitsState> {
           actualValue: habit.targetValue?.toDouble(),
         );
 
-        print("objective after toggling: ${existingLog.status}");
+        print("setelah di toggle, status log jadi: ${log.status.name}");
+
+
       } else {
         await _dailyLogRepository.recordLog(
           habitId: habit.id,
@@ -237,9 +225,7 @@ class HabitsViewModel extends StateNotifier<HabitsState> {
       }
 
       await loadTodayUserHabits();
-    } catch (e, stackTrace) {
-      print(e);
-      print(stackTrace);
+    } catch (e) {
       state = state.copyWith(
         status: HabitStatus.failure,
         errorMessage: 'Failed to update habit status.' + e.toString(),
@@ -284,9 +270,6 @@ class HabitsViewModel extends StateNotifier<HabitsState> {
       for (final log in todayLogs) {
         completionStatus[log.habitId] = log.status;
       }
-
-      print("completion status");
-      print(completionStatus);
 
       return completionStatus;
     } catch (e) {
@@ -394,9 +377,7 @@ class HabitsViewModel extends StateNotifier<HabitsState> {
       );
 
       return logs;
-    } catch (e, stackTrace) {
-      print(e);
-      print(stackTrace);
+    } catch (e) {
       state = state.copyWith(
         status: HabitStatus.failure,
         errorMessage: 'Failed to delete habit.',
@@ -408,11 +389,8 @@ class HabitsViewModel extends StateNotifier<HabitsState> {
   Future<int> fetchHabitLogStreak({required int habitId}) async {
     try {
       final streak = await _dailyLogRepository.fetchHabitLogStreak(habitId);
-      print("habit streak: $streak");
       return streak;
-    } catch (e, stackTrace) {
-      print(e);
-      print(stackTrace);
+    } catch (e) {
       state = state.copyWith(
         status: HabitStatus.failure,
         errorMessage: 'Failed to fetch habit streak.',
@@ -426,9 +404,7 @@ class HabitsViewModel extends StateNotifier<HabitsState> {
       final logs = await _dailyLogRepository.fetchLogsByHabit(habitId);
 
       return logs;
-    } catch (e, stackTrace) {
-      print(e);
-      print(stackTrace);
+    } catch (e) {
       state = state.copyWith(
         status: HabitStatus.failure,
         errorMessage: 'Failed to fetch log habit.',

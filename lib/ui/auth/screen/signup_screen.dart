@@ -86,8 +86,8 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
     
     // 3. Check OTP status
     final currentUser = Supabase.instance.client.auth.currentUser;
-    print('User after signup: ${currentUser?.email}');
-    print('User confirmed: ${currentUser?.confirmedAt}');
+    // print('User after signup: ${currentUser?.email}');
+    // print('User confirmed: ${currentUser?.confirmedAt}');
     
     // 4. Navigasi ke verification screen
     Navigator.of(context).push(
@@ -103,12 +103,12 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
     _showSnackBar("Registrasi Gagal: ${e.message}");
     
     // Log error detail
-    print('AuthException: ${e.message}');
-    print('Status: ${e.statusCode}');
+    // print('AuthException: ${e.message}');
+    // print('Status: ${e.statusCode}');
     
   } catch (e) {
     _showSnackBar("Terjadi kesalahan: $e");
-    print('Error: $e');
+    // print('Error: $e');
   } finally {
     if (mounted) {
       setState(() {

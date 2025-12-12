@@ -37,7 +37,7 @@ class _PerformanceChartWidgetState
         isLoading = false;
       });
     } catch (e) {
-      debugPrint('Error loading performance data: $e');
+      // debugPrint('Error loading performance data: $e');
       setState(() {
         isLoading = false;
       });

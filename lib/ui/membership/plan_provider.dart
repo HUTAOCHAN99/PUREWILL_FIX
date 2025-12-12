@@ -67,10 +67,10 @@ class PlanNotifier extends StateNotifier<PlanState> {
   void _autoLoad() async {
     final user = Supabase.instance.client.auth.currentUser;
     if (user != null) {
-      print('🔄 PlanNotifier: Auto-loading for user ${user.email}');
+      // print('🔄 PlanNotifier: Auto-loading for user ${user.email}');
       await loadPlans();
     } else {
-      print('⚠️ PlanNotifier: No user logged in, loading plans only');
+      // print('⚠️ PlanNotifier: No user logged in, loading plans only');
       await loadPlans();
     }
   }
@@ -78,14 +78,14 @@ class PlanNotifier extends StateNotifier<PlanState> {
   // Load plans dan status user
   Future<void> loadPlans() async {
     try {
-      print('🔄 PlanNotifier.loadPlans() called');
+      // print('🔄 PlanNotifier.loadPlans() called');
       state = state.copyWith(isLoading: true, error: null);
 
       final user = Supabase.instance.client.auth.currentUser;
-      print('👤 Current user: ${user?.id} - ${user?.email}');
+      // print('👤 Current user: ${user?.id} - ${user?.email}');
 
       if (user == null) {
-        print('⚠️ No user logged in, loading public plans only');
+        // print('⚠️ No user logged in, loading public plans only');
         final plans = await _planRepository.getPlans();
         state = state.copyWith(
           plans: plans,
@@ -97,25 +97,25 @@ class PlanNotifier extends StateNotifier<PlanState> {
       }
 
       // Load semua data
-      print('📥 Loading plans data...');
+      // print('📥 Loading plans data...');
       final plans = await _planRepository.getPlans();
-      print('✅ Loaded ${plans.length} plans');
+      // print('✅ Loaded ${plans.length} plans');
 
-      print('📥 Loading current plan...');
+      // print('📥 Loading current plan...');
       final currentPlan = await _planRepository.getCurrentUserPlan();
-      print('✅ Current plan: ${currentPlan?.name ?? "None"}');
+      // print('✅ Current plan: ${currentPlan?.name ?? "None"}');
 
-      print('📥 Checking premium status...');
+      // print('📥 Checking premium status...');
       final isPremium = await _planRepository.isUserPremium(user.id);
-      print('✅ Is premium: $isPremium');
+      // print('✅ Is premium: $isPremium');
 
       // Get user profile
       ProfileModel? userProfile;
       try {
         userProfile = await _planRepository.getUserProfileWithPremiumStatus();
-        print('✅ User profile loaded');
+        // print('✅ User profile loaded');
       } catch (e) {
-        print('⚠️ Failed to load user profile: $e');
+        // print('⚠️ Failed to load user profile: $e');
       }
 
       state = state.copyWith(
@@ -127,14 +127,14 @@ class PlanNotifier extends StateNotifier<PlanState> {
         error: null,
       );
 
-      print('🎯 PlanState updated:');
-      print('   - Plans: ${state.plans.length}');
-      print('   - Current plan: ${state.currentPlan?.name}');
-      print('   - Is premium: ${state.isUserPremium}');
-      print('   - Has error: ${state.error != null}');
+      // print('🎯 PlanState updated:');
+      // print('   - Plans: ${state.plans.length}');
+      // print('   - Current plan: ${state.currentPlan?.name}');
+      // print('   - Is premium: ${state.isUserPremium}');
+      // print('   - Has error: ${state.error != null}');
     } catch (e, stackTrace) {
-      print('❌ Error in PlanNotifier.loadPlans(): $e');
-      print('Stack trace: $stackTrace');
+      // print('❌ Error in PlanNotifier.loadPlans(): $e');
+      // print('Stack trace: $stackTrace');
 
       // HAPUS FALLBACK KE DEFAULT PLANS
       state = state.copyWith(
@@ -147,17 +147,17 @@ class PlanNotifier extends StateNotifier<PlanState> {
   // Subscribe to plan
   Future<void> subscribeToPlan(int planId) async {
     try {
-      print('🔄 Subscribing to plan $planId');
+      // print('🔄 Subscribing to plan $planId');
       state = state.copyWith(isLoading: true, error: null);
 
       await _planRepository.subscribeToPlan(planId);
 
       // Reload data setelah subscribe
-      print('✅ Subscription successful, reloading data...');
+      // print('✅ Subscription successful, reloading data...');
       await loadPlans();
     } catch (e, stackTrace) {
-      print('❌ Error subscribing to plan: $e');
-      print('Stack trace: $stackTrace');
+      // print('❌ Error subscribing to plan: $e');
+      // print('Stack trace: $stackTrace');
       state = state.copyWith(
         error: 'Failed to subscribe: $e',
         isLoading: false,
@@ -169,17 +169,17 @@ class PlanNotifier extends StateNotifier<PlanState> {
   // Cancel subscription
   Future<void> cancelSubscription() async {
     try {
-      print('🔄 Cancelling subscription');
+      // print('🔄 Cancelling subscription');
       state = state.copyWith(isLoading: true, error: null);
 
       await _planRepository.cancelSubscription();
 
       // Reload data setelah cancel
-      print('✅ Cancellation successful, reloading data...');
+      // print('✅ Cancellation successful, reloading data...');
       await loadPlans();
     } catch (e, stackTrace) {
-      print('❌ Error cancelling subscription: $e');
-      print('Stack trace: $stackTrace');
+      // print('❌ Error cancelling subscription: $e');
+      // print('Stack trace: $stackTrace');
       state = state.copyWith(
         error: 'Failed to cancel subscription: $e',
         isLoading: false,
@@ -196,7 +196,7 @@ class PlanNotifier extends StateNotifier<PlanState> {
 
       return await _planRepository.isUserPremium(user.id);
     } catch (e) {
-      print('❌ Error checking premium status: $e');
+      // print('❌ Error checking premium status: $e');
       return false;
     }
   }
@@ -206,7 +206,7 @@ class PlanNotifier extends StateNotifier<PlanState> {
     try {
       return await _planRepository.getUserProfileWithPremiumStatus();
     } catch (e) {
-      print('❌ Error getting user profile: $e');
+      // print('❌ Error getting user profile: $e');
       return null;
     }
   }
@@ -214,17 +214,17 @@ class PlanNotifier extends StateNotifier<PlanState> {
   // Sync premium status
   Future<void> syncPremiumStatus() async {
     try {
-      print('🔄 Syncing premium status');
+      // print('🔄 Syncing premium status');
       await _planRepository.syncPremiumStatus();
       await loadPlans();
     } catch (e) {
-      print('❌ Error syncing premium status: $e');
+      // print('❌ Error syncing premium status: $e');
     }
   }
 
   // Force refresh
   Future<void> refresh() async {
-    print('🔄 Force refreshing plan data');
+    // print('🔄 Force refreshing plan data');
     await loadPlans();
   }
 

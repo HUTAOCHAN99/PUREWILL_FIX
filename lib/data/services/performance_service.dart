@@ -1,7 +1,7 @@
 // lib\data\services\performance_service.dart
-import 'package:flutter/foundation.dart';
+// import 'package:flutter/foundation.dart';
 import 'package:purewill/data/repository/habit_repository.dart';
-import 'package:purewill/domain/model/daily_log_model.dart';
+// import 'package:purewill/data/repository/habit_repository.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class PerformanceService {
@@ -9,16 +9,16 @@ class PerformanceService {
   final SupabaseClient _supabaseClient = Supabase.instance.client;
 
   PerformanceService(this._habitRepository);
+  // PerformanceService();
 
   Future<List<double>> getWeeklyPerformance(int habitId) async {
     try {
       final now = DateTime.now();
       final startOfWeek = now.subtract(Duration(days: now.weekday - 1));
       
-      debugPrint('Getting weekly performance for habit: $habitId');
-      debugPrint('Date range: $startOfWeek to $now');
+      // debugPrint('Getting weekly performance for habit: $habitId');
+      // debugPrint('Date range: $startOfWeek to $now');
 
-      // Ambil data langsung dari daily_logs table
       final response = await _supabaseClient
           .from('daily_logs')
           .select('*')
@@ -27,9 +27,8 @@ class PerformanceService {
           .lte('log_date', now.toIso8601String())
           .order('log_date', ascending: true);
 
-      debugPrint('Raw logs data: ${response.length} entries');
+      // debugPrint('Raw logs data: ${response.length} entries');
 
-      // Inisialisasi array untuk 7 hari
       final weeklyData = List<double>.filled(7, 0.0);
       
       for (final log in response) {
@@ -39,15 +38,15 @@ class PerformanceService {
         // Jika status adalah 'success', set nilai menjadi 100%
         if (log['status'] == 'success') {
           weeklyData[dayIndex] = 100.0;
-          debugPrint('Success log found for day $dayIndex (${logDate})');
+          // debugPrint('Success log found for day $dayIndex (${logDate})');
         }
       }
 
-      debugPrint('Final weekly data: $weeklyData');
+      // debugPrint('Final weekly data: $weeklyData');
       return weeklyData;
       
     } catch (e) {
-      debugPrint('Error in PerformanceService: $e');
+      // debugPrint('Error in PerformanceService: $e');
       // Return data dummy untuk testing
       return [100.0, 80.0, 60.0, 40.0, 100.0, 0.0, 20.0];
     }

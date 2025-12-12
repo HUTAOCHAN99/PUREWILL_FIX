@@ -70,8 +70,6 @@ class _HabitDetailScreenState extends ConsumerState<HabitDetailScreen> {
   }
 
   void _countPossibleDays(DateTime habitStartDate, DateTime? habitEndDate) {
-    print("habit start date: $habitStartDate");
-    print("habit end date: $habitEndDate");
 
     final localHabitStart = habitStartDate;
 
@@ -80,8 +78,6 @@ class _HabitDetailScreenState extends ConsumerState<HabitDetailScreen> {
       localHabitStart.month,
       localHabitStart.day,
     );
-
-    // print("local habit start date: $effectiveHabitStartDate");
 
     DateTime? effectiveHabitEndDate;
     if (habitEndDate != null) {

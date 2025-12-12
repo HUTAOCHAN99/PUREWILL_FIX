@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/legacy.dart';
 import 'package:purewill/data/repository/auth_repository.dart';
 import 'package:purewill/data/repository/user_repository.dart';
 import 'package:purewill/ui/auth/view_model/auth_view_model.dart';
+import 'package:purewill/ui/habit-tracker/habit_provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' hide AuthState;
 
 final supabaseClientProvider = Provider<SupabaseClient>((ref) {
@@ -24,7 +25,8 @@ final authNotifierProvider = StateNotifierProvider<AuthViewModel, AuthState>((
 ) {
   final repository = ref.watch(authRepositoryProvider);
   final userRepository = ref.watch(userRepositoryProvider);
-  return AuthViewModel(repository, userRepository);
+  final habitRepository = ref.watch(habitRepositoryProvider);
+  return AuthViewModel(repository, userRepository, habitRepository);
 });
 
 final authStateChangesProvider = StreamProvider<User?>((ref) {

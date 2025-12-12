@@ -20,7 +20,7 @@ class ReminderSettingRepository {
         reminderSettingData.remove('id');
       }
 
-      debugPrint('📦 CREATE REMINDER REQUEST DATA: $reminderSettingData');
+      // debugPrint('📦 CREATE REMINDER REQUEST DATA: $reminderSettingData');
 
       final response = await _supabaseClient
           .from(_reminderSettingTableName)
@@ -28,7 +28,7 @@ class ReminderSettingRepository {
           .select()
           .single();
 
-      debugPrint('📦 CREATE REMINDER RESPONSE: $response');
+      // debugPrint('📦 CREATE REMINDER RESPONSE: $response');
       
       return ReminderSettingModel.fromJson(response);
     } catch (e, stackTrace) {
@@ -46,7 +46,7 @@ class ReminderSettingRepository {
     int habitId,
   ) async {
     try {
-      debugPrint('📦 FETCHING REMINDERS FOR HABIT: $habitId');
+      // debugPrint('📦 FETCHING REMINDERS FOR HABIT: $habitId');
 
       final response = await _supabaseClient
           .from(_reminderSettingTableName)
@@ -72,7 +72,7 @@ class ReminderSettingRepository {
     required Map<String, dynamic> updates,
   }) async {
     try {
-      debugPrint('📦 UPDATING REMINDER: $reminderSettingId');
+      // debugPrint('📦 UPDATING REMINDER: $reminderSettingId');
 
       final cleanUpdates = Map<String, dynamic>.from(updates);
       cleanUpdates.remove('id');
@@ -90,7 +90,7 @@ class ReminderSettingRepository {
           .update(cleanUpdates)
           .eq('id', intId);
 
-      debugPrint('✅ UPDATE REMINDER SETTING SUCCESS: Reminder setting $reminderSettingId updated');
+      // debugPrint('✅ UPDATE REMINDER SETTING SUCCESS: Reminder setting $reminderSettingId updated');
     } catch (e, stackTrace) {
       log(
         'UPDATE REMINDER SETTING FAILURE: Failed to update reminder setting $reminderSettingId.',
@@ -139,14 +139,14 @@ class ReminderSettingRepository {
 
   Future<void> deleteAllReminderSettingsForHabit(int habitId) async {
     try {
-      debugPrint('📦 DELETING ALL REMINDERS FOR HABIT: $habitId');
+      // debugPrint('📦 DELETING ALL REMINDERS FOR HABIT: $habitId');
 
       await _supabaseClient
           .from(_reminderSettingTableName)
           .delete()
           .eq('habit_id', habitId);
 
-      debugPrint('✅ DELETE ALL REMINDERS SUCCESS: All reminders deleted for habit $habitId.');
+      // debugPrint('✅ DELETE ALL REMINDERS SUCCESS: All reminders deleted for habit $habitId.');
     } catch (e, stackTrace) {
       log(
         'DELETE ALL REMINDER SETTINGS FAILURE: Failed to delete all reminder settings for habit $habitId.',

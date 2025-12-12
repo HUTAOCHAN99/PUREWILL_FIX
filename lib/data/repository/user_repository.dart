@@ -39,7 +39,6 @@ class UserRepository {
           .select('*')
           .eq('user_id', userId.toString())
           .single();
-      print(response);
         return ProfileModel.fromJson(response);
     } catch (e, stackTrace) {
       print(e.toString());

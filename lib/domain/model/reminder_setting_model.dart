@@ -24,26 +24,26 @@ class ReminderSettingModel {
   });
 
   factory ReminderSettingModel.fromJson(Map<String, dynamic> json) {
-    debugPrint('🎯 REMINDER SETTING FROM JSON:');
-    debugPrint('   - Raw time from DB: ${json['time']}');
+    // debugPrint('🎯 REMINDER SETTING FROM JSON:');
+    // debugPrint('   - Raw time from DB: ${json['time']}');
 
     // Parse the timestamp as-is
     DateTime parsedTime;
     try {
       if (json['time'] is String) {
         parsedTime = DateTime.parse(json['time'] as String);
-        debugPrint('   ✅ Parsed time as-is: $parsedTime');
+        // debugPrint('   ✅ Parsed time as-is: $parsedTime');
       } else {
         parsedTime = DateTime.now();
-        debugPrint('   ⚠️  Time is not string, using current time');
+        // debugPrint('   ⚠️  Time is not string, using current time');
       }
     } catch (e) {
-      debugPrint('❌ Error parsing time: $e');
+      // debugPrint('❌ Error parsing time: $e');
       parsedTime = DateTime.now();
     }
 
-    debugPrint('   - Final time: $parsedTime');
-    debugPrint('   - Hour: ${parsedTime.hour}, Minute: ${parsedTime.minute}');
+    // debugPrint('   - Final time: $parsedTime');
+    // debugPrint('   - Hour: ${parsedTime.hour}, Minute: ${parsedTime.minute}');
 
     return ReminderSettingModel(
       id: json['id']?.toString() ?? '',
@@ -74,9 +74,9 @@ class ReminderSettingModel {
       json['id'] = int.tryParse(id) as Object;
     }
 
-    debugPrint('🎯 REMINDER SETTING TO JSON:');
-    debugPrint('   - Exact time to store: ${time.toIso8601String()}');
-    debugPrint('   - Hour: ${time.hour}, Minute: ${time.minute}');
+    // debugPrint('🎯 REMINDER SETTING TO JSON:');
+    // debugPrint('   - Exact time to store: ${time.toIso8601String()}');
+    // debugPrint('   - Hour: ${time.hour}, Minute: ${time.minute}');
 
     return json;
   }

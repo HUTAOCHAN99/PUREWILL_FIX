@@ -29,7 +29,7 @@ Future<void> main() async {
     anonKey: dotenv.env['SUPABASE_ANON_KEY']!,
   );
 
-  debugPrint('✅ Supabase initialized');
+  // debugPrint('✅ Supabase initialized');
 
   WidgetsBinding.instance.addPostFrameCallback((_) async {
     final user = Supabase.instance.client.auth.currentUser;
@@ -45,7 +45,7 @@ Future<void> main() async {
   // Initialize Badge Notification Service
   await badgeNotificationService.initialize(
     onBadgeNotificationTap: (payload) {
-      debugPrint('🎯 Badge notification tapped with payload: $payload');
+      // debugPrint('🎯 Badge notification tapped with payload: $payload');
       _handleBadgeNotification(payload);
     },
   );
@@ -56,18 +56,18 @@ Future<void> main() async {
     badgeNotificationService,
   );
 
-  debugPrint('✅ Badge Service initialized');
+  // debugPrint('✅ Badge Service initialized');
 
   // Initialize existing Notification Service
   final notificationService = LocalNotificationService();
   await notificationService.initialize(
     onNotificationTap: (payload) {
-      debugPrint('🔔 General notification tapped with payload: $payload');
+      // debugPrint('🔔 General notification tapped with payload: $payload');
       _handleNotificationPayload(payload);
     },
   );
 
-  debugPrint('✅ Local Notification Service initialized');
+  // debugPrint('✅ Local Notification Service initialized');
 
   // Handle notification pada app startup
   await LocalNotificationService.handleNotificationOnStartup();
@@ -75,7 +75,7 @@ Future<void> main() async {
   // Initialize Reminder Sync Service
   await _initializeReminderSyncService();
 
-  debugPrint('🚀 All services initialized successfully');
+  // debugPrint('🚀 All services initialized successfully');
 
   runApp(const ProviderScope(child: MyApp()));
 }
@@ -84,14 +84,14 @@ Future<void> main() async {
 void _handleBadgeNotification(String? payload) {
   if (payload == null) return;
 
-  debugPrint('🎯 Handling badge notification payload: $payload');
+  // debugPrint('🎯 Handling badge notification payload: $payload');
 
   if (payload.startsWith('badge_')) {
     final badgeId = payload.replaceFirst('badge_', '');
-    debugPrint('   - Badge ID from notification: $badgeId');
+    // debugPrint('   - Badge ID from notification: $badgeId');
   } else if (payload.startsWith('progress_')) {
     final badgeName = payload.replaceFirst('progress_', '');
-    debugPrint('   - Progress notification for: $badgeName');
+    // debugPrint('   - Progress notification for: $badgeName');
   }
 }
 
@@ -99,11 +99,11 @@ void _handleBadgeNotification(String? payload) {
 void _handleNotificationPayload(String? payload) {
   if (payload == null) return;
 
-  debugPrint('🎯 Handling general notification payload: $payload');
+  // debugPrint('🎯 Handling general notification payload: $payload');
 
   if (payload.startsWith('habit_')) {
     final habitId = payload.replaceFirst('habit_', '');
-    debugPrint('   - Habit ID from notification: $habitId');
+    // debugPrint('   - Habit ID from notification: $habitId');
   }
 }
 
@@ -117,21 +117,21 @@ Future<void> _initializeReminderSyncService() async {
     try {
       await ReminderSyncService().initialize();
       syncInitialized = true;
-      debugPrint('✅ ReminderSyncService initialized successfully');
+      // debugPrint('✅ ReminderSyncService initialized successfully');
     } catch (e, stackTrace) {
       retryCount++;
-      debugPrint(
-        '❌ Retry $retryCount/$maxRetries: Error initializing ReminderSyncService: $e',
-      );
-      debugPrint('Stack trace: $stackTrace');
+      // debugPrint(
+        // '❌ Retry $retryCount/$maxRetries: Error initializing ReminderSyncService: $e',
+      // );
+      // debugPrint('Stack trace: $stackTrace');
 
       if (retryCount < maxRetries) {
-        debugPrint('🔄 Retrying in 2 seconds...');
+        // debugPrint('🔄 Retrying in 2 seconds...');
         await Future.delayed(const Duration(seconds: 2));
       } else {
-        debugPrint(
-          '⚠️ ReminderSyncService initialization failed after $maxRetries attempts',
-        );
+        // debugPrint(
+          // '⚠️ ReminderSyncService initialization failed after $maxRetries attempts',
+        // );
       }
     }
   }
@@ -166,10 +166,10 @@ class MyApp extends StatelessWidget {
 // Function untuk check badges ketika user login
 Future<void> checkUserBadges(String userId) async {
   try {
-    debugPrint('🔍 Checking badges for user: $userId');
+    // debugPrint('🔍 Checking badges for user: $userId');
     await badgeService.checkAllBadges(userId);
   } catch (e) {
-    debugPrint('❌ Error checking user badges: $e');
+    // debugPrint('❌ Error checking user badges: $e');
   }
 }
 

@@ -60,7 +60,7 @@ final userProfileProvider = FutureProvider<UserProfile>((ref) async {
   }
 
   try {
-    debugPrint('🔄 Loading user profile for badge system...');
+    // debugPrint('🔄 Loading user profile for badge system...');
     
     // Get basic profile data
     final profileResponse = await supabase
@@ -87,12 +87,12 @@ final userProfileProvider = FutureProvider<UserProfile>((ref) async {
 
     final profile = UserProfile.fromJson(userProfileData);
     
-    debugPrint('✅ User profile loaded: ${profile.displayName}, Level ${profile.level}, ${profile.totalBadges} badges');
+    // debugPrint('✅ User profile loaded: ${profile.displayName}, Level ${profile.level}, ${profile.totalBadges} badges');
     
     return profile;
   } catch (e, stack) {
-    debugPrint('❌ Error loading user profile: $e');
-    debugPrint('Stack trace: $stack');
+    // debugPrint('❌ Error loading user profile: $e');
+    // debugPrint('Stack trace: $stack');
     throw Exception('Failed to load user profile: $e');
   }
 });
@@ -122,7 +122,7 @@ Future<int> _calculateCurrentStreak(String userId, SupabaseClient supabase) asyn
     
     return maxStreak;
   } catch (e) {
-    debugPrint('❌ Error calculating current streak: $e');
+    // debugPrint('❌ Error calculating current streak: $e');
     return 0;
   }
 }
@@ -156,14 +156,14 @@ Future<int> _calculateHabitStreak(int habitId, SupabaseClient supabase) async {
     
     return streak;
   } catch (e) {
-    debugPrint('❌ Error calculating habit streak: $e');
+    // debugPrint('❌ Error calculating habit streak: $e');
     return 0;
   }
 }
 
 // Provider untuk refresh profile
 final refreshUserProfileProvider = Provider<void>((ref) {
-  ref.refresh(userProfileProvider);
+  // ref.refresh(userProfileProvider);
 });
 
 // Provider untuk level up notification

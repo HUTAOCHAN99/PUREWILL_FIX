@@ -83,16 +83,16 @@ class HabitCardsList extends StatelessWidget {
   String _determineCategory(HabitModel habit) {
     if (habit.categoryId != null) {
       final categoryName = _mapCategoryIdToName(habit.categoryId!);
-      print(
-        'Habit ${habit.name}: categoryId ${habit.categoryId} -> $categoryName',
-      );
+      // print(
+      //   'Habit ${habit.name}: categoryId ${habit.categoryId} -> $categoryName',
+      // );
       return categoryName;
     }
 
     final categoryFromName = HabitIconHelper.getHabitCategory(habit.name);
-    print(
-      'Habit ${habit.name}: no categoryId, using name -> $categoryFromName',
-    );
+    // print(
+    //   'Habit ${habit.name}: no categoryId, using name -> $categoryFromName',
+    // );
     return categoryFromName;
   }
 

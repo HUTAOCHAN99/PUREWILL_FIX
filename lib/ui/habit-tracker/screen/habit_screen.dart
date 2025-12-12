@@ -7,13 +7,17 @@ import 'package:purewill/ui/habit-tracker/habit_provider.dart';
 import 'package:purewill/ui/habit-tracker/screen/community_selection_screen.dart';
 import 'package:purewill/ui/habit-tracker/screen/consultation_screen.dart';
 import 'package:purewill/ui/habit-tracker/screen/home_screen.dart';
-import 'package:purewill/ui/habit-tracker/widget/habit_cards_list.dart';
+import 'package:purewill/ui/habit-tracker/view_model/habit_view_model.dart';
+import 'package:purewill/ui/habit-tracker/widget/habit_screen_card.dart';
 import 'package:purewill/ui/habit-tracker/widget/clean_bottom_navigation_bar.dart';
 import 'package:purewill/ui/habit-tracker/screen/habit_detail_screen.dart';
 import 'package:purewill/ui/habit-tracker/screen/add_habit_screen.dart';
+import 'package:purewill/ui/habit-tracker/screen/nofap_screen.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:purewill/data/services/badge_service.dart';
 import 'package:purewill/data/services/badge_notification_service.dart';
+import 'package:purewill/utils/habit_icon_helper.dart';
+
 
 class HabitScreen extends ConsumerStatefulWidget {
   const HabitScreen({super.key});
@@ -22,7 +26,7 @@ class HabitScreen extends ConsumerStatefulWidget {
 }
 
 class _HabitScreenState extends ConsumerState<HabitScreen> {
-  int _currentIndex = 1; 
+  final _currentIndex = 1;
   Map<int, LogStatus> _todayCompletionStatus = {};
 
   final badgeNotificationService = BadgeNotificationService();
@@ -65,32 +69,30 @@ class _HabitScreenState extends ConsumerState<HabitScreen> {
   }
 
   void _onNavBarTap(int index) {
-    print('NavBar tapped: index $index');
-
     if (index == 0) {
       Navigator.of(context).pushReplacement(
-        MaterialPageRoute(
-          builder: (context) => const HomeScreen(),
-        ), 
+        MaterialPageRoute(builder: (context) => const HomeScreen()),
       );
     } else if (index == 1) {
+      // Already on Habit Screen, do nothing
       return;
     } else if (index == 2) {
+      // Navigate to NoFap Screen
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (context) => const NoFapScreen()),
+      );
+    } else if (index == 3) {
+      // Navigate to Community Screen
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(
           builder: (context) => const CommunitySelectionScreen(),
-        ), 
+        ),
       );
-    } else if (index == 3) {
+    } else if (index == 4) {
+      // Navigate to Consultation Screen
       Navigator.of(context).pushReplacement(
-        MaterialPageRoute(
-          builder: (context) => const ConsultationScreen(),
-        ), 
+        MaterialPageRoute(builder: (context) => const ConsultationScreen()),
       );
-    } else {
-      setState(() {
-        _currentIndex = index;
-      });
     }
   }
 
@@ -216,8 +218,6 @@ class _HabitScreenState extends ConsumerState<HabitScreen> {
                           ),
 
                           const SizedBox(height: 24),
-
-                          // Habits List Section
                           Container(
                             padding: const EdgeInsets.all(20),
                             decoration: BoxDecoration(
@@ -243,18 +243,7 @@ class _HabitScreenState extends ConsumerState<HabitScreen> {
                                   ),
                                 ),
                                 const SizedBox(height: 12),
-                                HabitCardsList(
-                                  habitsState: habitsState,
-                                  todayCompletionStatus: _todayCompletionStatus,
-                                  habits: userHabits,
-                                  onHabitTap: _handleHabitTap,
-                                  onCheckboxTap: _handleCheckboxTap,
-                                  isPremiumUser: false,
-                                  buildEmptyState: () =>
-                                      _buildCustomEmptyState(),
-                                  buildErrorState: (errorMessage) =>
-                                      _buildCustomErrorState(errorMessage),
-                                ),
+                                _buildHabitsList(userHabits),
                               ],
                             ),
                           ),
@@ -500,5 +489,115 @@ class _HabitScreenState extends ConsumerState<HabitScreen> {
         ),
       );
     }
+  }
+
+  Widget _buildHabitsList(List<HabitModel> userHabits) {
+    final habitsState = ref.watch(habitNotifierProvider);
+
+    switch (habitsState.status) {
+      case HabitStatus.loading:
+        return const Center(
+          child: Padding(
+            padding: EdgeInsets.all(20),
+            child: CircularProgressIndicator(),
+          ),
+        );
+
+      case HabitStatus.failure:
+        return _buildCustomErrorState(
+          habitsState.errorMessage ?? 'Unknown error',
+        );
+
+      case HabitStatus.success:
+        if (userHabits.isEmpty) {
+          return _buildCustomEmptyState();
+        }
+
+        final defaultHabits = userHabits.where((h) => h.isDefault).toList();
+        final userCustomHabits = userHabits.where((h) => !h.isDefault).toList();
+        final sortedHabits = [...defaultHabits, ...userCustomHabits];
+
+        return Column(
+          children: sortedHabits.map((habit) {
+            // Tentukan kategori berdasarkan categoryId
+            final categoryName = _determineCategory(habit);
+
+            // Dapatkan icon dan warna dari habit_icon_helper berdasarkan kategori
+            final iconData = HabitIconHelper.getHabitIcon(categoryName);
+            final color = HabitIconHelper.getHabitColor(categoryName);
+
+            // Hitung persentase progress (dummy calculation - bisa disesuaikan dengan logika real)
+            final todayStatus =
+                _todayCompletionStatus[habit.id] ?? LogStatus.neutral;
+            final progressPercentage = todayStatus == LogStatus.success
+                ? 1.0
+                : 0.0;
+
+            return HabitScreenCard(
+              icon: iconData,
+              title: habit.name,
+              subtitle: _buildHabitSubtitle(habit),
+              color: color,
+              progressPercentage: progressPercentage,
+              category: categoryName,
+              onTap: () => _handleHabitTap(habit),
+            );
+          }).toList(),
+        );
+
+      case HabitStatus.initial:
+        return const SizedBox.shrink();
+    }
+  }
+
+  // Method untuk menentukan kategori habit
+  String _determineCategory(HabitModel habit) {
+    // Prioritas 1: Jika habit punya categoryId, mapping ke nama kategori
+    if (habit.categoryId != null) {
+      final categoryName = _mapCategoryIdToName(habit.categoryId!);
+      return categoryName;
+    }
+
+    // Prioritas 2: Gunakan habit_icon_helper untuk menentukan kategori dari nama habit
+    final categoryFromName = HabitIconHelper.getHabitCategory(habit.name);
+    return categoryFromName;
+  }
+
+  // Mapping categoryId ke nama kategori
+  String _mapCategoryIdToName(int categoryId) {
+    switch (categoryId) {
+      case 1:
+        return "Health & Fitness";
+      case 2:
+        return "Learning & Education";
+      case 3:
+        return "Productivity";
+      case 4:
+        return "Mindfulness & Mental Health";
+      case 5:
+        return "Personal Care";
+      case 6:
+        return "Social & Relationships";
+      case 7:
+        return "Finance";
+      case 8:
+        return "Hobbies & Creativity";
+      case 9:
+        return "Work & Career";
+      case 10:
+        return "Other";
+      default:
+        return "Other";
+    }
+  }
+
+  String _buildHabitSubtitle(HabitModel habit) {
+    if (habit.targetValue != null) {
+      if (habit.unit != null && habit.unit!.isNotEmpty) {
+        return '${habit.targetValue} ${habit.unit}';
+      }
+      return '${habit.targetValue}';
+    }
+    return 'Daily habit';
   }
 }

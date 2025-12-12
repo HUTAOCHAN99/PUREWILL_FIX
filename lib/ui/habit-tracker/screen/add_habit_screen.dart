@@ -101,7 +101,7 @@ class _AddHabitScreenState extends ConsumerState<AddHabitScreen> {
 
   Future<void> _saveHabit() async {
     if (_formKey.currentState!.validate()) {
-      print("tombol save ditekan");
+      // print("tombol save ditekan");
       final viewModel = ref.read(habitNotifierProvider.notifier);
 
       String? finalUnit;
@@ -111,15 +111,15 @@ class _AddHabitScreenState extends ConsumerState<AddHabitScreen> {
         finalUnit = _selectedUnit;
       }
 
-      print('=== SAVING HABIT ===');
-      print('Name: ${_nameController.text}');
-      print('Category: $_selectedCategoryId');
-      print('Frequency: $_selectedFrequency');
-      print('Target Value: $_targetValue');
-      print('Unit: $finalUnit');
-      print('Reminder Enabled: $_reminderEnabled');
-      print('Reminder Time: $_reminderTime');
-      print('==================');
+      // print('=== SAVING HABIT ===');
+      // print('Name: ${_nameController.text}');
+      // print('Category: $_selectedCategoryId');
+      // print('Frequency: $_selectedFrequency');
+      // print('Target Value: $_targetValue');
+      // print('Unit: $finalUnit');
+      // print('Reminder Enabled: $_reminderEnabled');
+      // print('Reminder Time: $_reminderTime');
+      // print('==================');
 
       final supabaseClient = ref.read(supabaseClientProvider);
       final currentUser = supabaseClient.auth.currentUser;
@@ -147,10 +147,10 @@ class _AddHabitScreenState extends ConsumerState<AddHabitScreen> {
         isDefault: false,
       );
 
-      print('=== HABIT MODEL CREATED ===');
-      print('User ID: ${currentUser.id}');
-      print('Habit Data: ${newHabit.toJson()}');
-      print('========================');
+      // print('=== HABIT MODEL CREATED ===');
+      // print('User ID: ${currentUser.id}');
+      // print('Habit Data: ${newHabit.toJson()}');
+      // print('========================');
 
 
       await ref
