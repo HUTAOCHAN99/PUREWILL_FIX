@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/legacy.dart';
 import 'package:purewill/data/repository/auth_repository.dart';
 import 'package:purewill/data/repository/habit_repository.dart';
+import 'package:purewill/data/repository/habit_session_repository.dart';
 import 'package:purewill/data/repository/user_repository.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -26,8 +27,14 @@ class AuthViewModel extends StateNotifier<AuthState> {
   final AuthRepository _repository;
   final UserRepository _userRepository;
   final HabitRepository _habitRepository;
+  final HabitSessionRepository _habitSessionRepository;
 
-  AuthViewModel(this._repository, this._userRepository, this._habitRepository) : super(AuthState());
+  AuthViewModel(
+    this._repository,
+    this._userRepository,
+    this._habitRepository,
+    this._habitSessionRepository,
+  ) : super(AuthState());
 
   Future<void> login(String email, String password) async {
     try {
@@ -61,8 +68,10 @@ class AuthViewModel extends StateNotifier<AuthState> {
         email: email,
         password: password,
       );
-      
-      await _habitRepository.initializeDefaultHabitsForUser(user!.id);
+
+      final habit = await _habitRepository.initializeDefaultHabitsForUser(user!.id);
+
+     
 
       state = state.copyWith(
         status: AuthStatus.success,

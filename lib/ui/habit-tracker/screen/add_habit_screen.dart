@@ -104,13 +104,6 @@ class _AddHabitScreenState extends ConsumerState<AddHabitScreen> {
       // print("tombol save ditekan");
       final viewModel = ref.read(habitNotifierProvider.notifier);
 
-      String? finalUnit;
-      if (_selectedUnit == 'other' && _customUnitController.text.isNotEmpty) {
-        finalUnit = _customUnitController.text.trim();
-      } else if (_selectedUnit != 'other') {
-        finalUnit = _selectedUnit;
-      }
-
       // print('=== SAVING HABIT ===');
       // print('Name: ${_nameController.text}');
       // print('Category: $_selectedCategoryId');
@@ -130,28 +123,6 @@ class _AddHabitScreenState extends ConsumerState<AddHabitScreen> {
         );
         return;
       }
-
-      final newHabit = HabitModel(
-        id: 0, 
-        userId: currentUser.id,
-        name: _nameController.text,
-        frequency: _selectedFrequency,
-        startDate: DateTime.now(),
-        categoryId: _selectedCategoryId,
-        targetValue: _targetValue,
-        unit: finalUnit, 
-        isActive: true,
-        status: 'neutral',
-        reminderEnabled: _reminderEnabled,
-        reminderTime: _reminderEnabled ? _reminderTime : null,
-        isDefault: false,
-      );
-
-      // print('=== HABIT MODEL CREATED ===');
-      // print('User ID: ${currentUser.id}');
-      // print('Habit Data: ${newHabit.toJson()}');
-      // print('========================');
-
 
       await ref
           .read(habitNotifierProvider.notifier)
