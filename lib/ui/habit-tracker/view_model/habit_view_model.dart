@@ -1,5 +1,4 @@
 import 'dart:developer';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/legacy.dart';
 import 'package:purewill/data/repository/category_repository.dart';
@@ -14,6 +13,7 @@ import 'package:purewill/domain/model/target_unit_model.dart';
 import '../../../data/repository/habit_repository.dart';
 import '../../../data/repository/daily_log_repository.dart';
 import '../../../data/repository/reminder_setting_repository.dart';
+import '../../../data/repository/habit_session_repository.dart';
 
 enum HabitStatus { initial, loading, success, failure }
 
@@ -72,6 +72,7 @@ class HabitsViewModel extends StateNotifier<HabitsState> {
   final HabitRepository _habitRepository;
   final DailyLogRepository _dailyLogRepository;
   final ReminderSettingRepository _reminderSettingRepository;
+  final HabitSessionRepository _habitSessionRepository;
   final TargetUnitRepository _targetUnitRepository;
   final CategoryRepository _categoryRepository;
   final UserRepository _userRepository;
@@ -81,6 +82,7 @@ class HabitsViewModel extends StateNotifier<HabitsState> {
     this._habitRepository,
     this._dailyLogRepository,
     this._reminderSettingRepository,
+    this._habitSessionRepository,
     this._targetUnitRepository,
     this._categoryRepository,
     this._userRepository,
@@ -105,12 +107,106 @@ class HabitsViewModel extends StateNotifier<HabitsState> {
     }
   }
 
+  Future<bool> isHabitStarted({required int habitId}) async {
+    try {
+      final habit = await _habitRepository.getHabitById(habitId);
+      if (habit == null) {
+        throw Exception('Habit not found');
+      }
+
+      final today = DateTime.now();
+      return !today.isBefore(habit.startDate);
+    } catch (e) {
+      log(
+        'IS HABIT STARTED FAILURE: Failed to check if habit $habitId has started.',
+        error: e,
+        name: 'HABIT_VIEW_MODEL',
+      );
+      rethrow;
+    }
+  }
+
+  Future<List<DailyLogModel>> getLogNofapHabit() async {
+    try {
+      final habitId = await _habitRepository.getNofapHabitId(_currentUserId);
+      final log = await _dailyLogRepository.fetchLogsByHabit(habitId);
+      return log;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<void> startNofapHabit() async {
+    try {
+      final habitId = await _habitRepository.getNofapHabitId(_currentUserId);
+      await _habitRepository.activeNofapHabit(_currentUserId, habitId);
+      await _habitSessionRepository.addHabitSession(habitId: habitId, userId: _currentUserId, startDate: DateTime.now());
+
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<void> stopNofapHabit() async {
+    try {
+      final habitId = await _habitRepository.getNofapHabitId(_currentUserId);
+      final activeSession = await _habitSessionRepository.getActiveHabitSession(habitId: habitId, userId: _currentUserId);
+      await _habitSessionRepository.updateHabitSession(sessionId: activeSession!.id, endDate:  DateTime.now(), isActive: false);
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<int> getNofapHabitStreak() async {
+    try {
+      final habitId = await _habitRepository.getNofapHabitId(_currentUserId);
+      final streak = await _habitSessionRepository.fetchNofapHabitLongestStreak(habitId: habitId, userId: _currentUserId);
+      return streak;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<int> getNofapHabitCurrentStreak() async {
+    try {
+      final habitId = await _habitRepository.getNofapHabitId(_currentUserId);
+      final streak = await _habitSessionRepository.fetchNofapHabitCurrentStreak(habitId: habitId, userId: _currentUserId);
+      return streak;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<int> getRelapseCountNofapHabit() async {
+    try {
+      final habitId = await _habitRepository.getNofapHabitId(_currentUserId);
+      final relapseCount = await _habitSessionRepository.getRelapseCount(habitId: habitId, userId: _currentUserId);
+      return relapseCount;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<List<DateTime>> getSuccessDaysNofapHabit() async {
+    try {
+      final habitId = await _habitRepository.getNofapHabitId(_currentUserId);
+      final successDays = await _habitSessionRepository.getSuccessDays(habitId: habitId, userId: _currentUserId);
+      return successDays;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
   Future<void> loadUserHabits() async {
     state = state.copyWith(status: HabitStatus.loading, errorMessage: null);
 
     try {
-      final habits = await _habitRepository.fetchUserHabits(_currentUserId);
-      state = state.copyWith(status: HabitStatus.success, habits: habits);
+      final allHabits = await _habitRepository.fetchUserHabits(_currentUserId);
+      final habitsWithoutNofap = allHabits.where((habit) => 
+        habit.name.toLowerCase() != 'nofap'
+      ).toList();
+      
+      state = state.copyWith(status: HabitStatus.success, habits: habitsWithoutNofap);
     } catch (e) {
       state = state.copyWith(
         status: HabitStatus.failure,
@@ -198,7 +294,9 @@ class HabitsViewModel extends StateNotifier<HabitsState> {
         habit.id,
       );
 
-      print("sebelum di toggle, status existing log: ${existingLog?.status.name}");
+      print(
+        "sebelum di toggle, status existing log: ${existingLog?.status.name}",
+      );
 
       if (existingLog != null) {
         final log = await _dailyLogRepository.recordLog(
@@ -213,8 +311,6 @@ class HabitsViewModel extends StateNotifier<HabitsState> {
         );
 
         print("setelah di toggle, status log jadi: ${log.status.name}");
-
-
       } else {
         await _dailyLogRepository.recordLog(
           habitId: habit.id,

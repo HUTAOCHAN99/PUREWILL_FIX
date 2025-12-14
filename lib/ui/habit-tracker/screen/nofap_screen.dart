@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:purewill/ui/habit-tracker/habit_provider.dart';
 import 'package:purewill/ui/habit-tracker/screen/community_selection_screen.dart';
 import 'dart:ui';
 import 'package:purewill/ui/habit-tracker/widget/clean_bottom_navigation_bar.dart';
@@ -18,11 +19,14 @@ class _NoFapScreenState extends ConsumerState<NoFapScreen> {
   int _currentIndex = 2; // Set to 2 because this is the NoFap screen (center)
 
   // Dummy data for NoFap tracking
-  int _currentStreak = 7;
-  int _longestStreak = 21;
+  int _currentStreak = 0;
+  int _longestStreak = 0;
   int _totalRelapses = 3;
+  // DateTime _lastRelapseDate = DateTime.now().subtract(const Duration(days: 7));
+  // DateTime _startDate = DateTime.now().subtract(const Duration(days: 30));
   String _motivationalQuote =
       "The greatest victory is that which requires no battle. - Sun Tzu";
+  bool _isHabitStarted = false; // Track if habit is started or not
   List<String> _benefits = [
     "Increased energy and motivation",
     "Better focus and concentration",
@@ -42,11 +46,19 @@ class _NoFapScreenState extends ConsumerState<NoFapScreen> {
     DateTime.now().subtract(const Duration(days: 7)),
   ];
 
+  @override
+  void initState() {
+    super.initState();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadNofapHabitLogs();
+    });
+  }
+
   void _onNavBarTap(int index) {
     print('NavBar tapped: index $index');
 
     if (index == 0) {
-      // Navigate to Home Screen
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(builder: (context) => const HomeScreen()),
       );
@@ -71,6 +83,42 @@ class _NoFapScreenState extends ConsumerState<NoFapScreen> {
         MaterialPageRoute(builder: (context) => const ConsultationScreen()),
       );
     }
+  }
+
+  void _loadNofapHabitLogs() async {
+    print("Loading NoFap habit logs...");
+
+    final nofapLogs = await ref
+        .read(habitNotifierProvider.notifier)
+        .getLogNofapHabit();
+
+    int habitId = nofapLogs[0].habitId;
+
+    final longestStreak = await ref
+        .read(habitNotifierProvider.notifier)
+        .getNofapHabitStreak();
+    final currentStreak = await ref
+        .read(habitNotifierProvider.notifier)
+        .getNofapHabitCurrentStreak();
+
+    final isHabitStarted = await ref
+        .read(habitNotifierProvider.notifier)
+        .isHabitStarted(habitId: habitId);
+    final totalRelapses = await ref
+        .read(habitNotifierProvider.notifier)
+        .getRelapseCountNofapHabit();
+
+    final successDays = await ref
+        .read(habitNotifierProvider.notifier)
+        .getSuccessDaysNofapHabit();
+
+    setState(() {
+      _currentStreak = currentStreak;
+      _totalRelapses = totalRelapses;
+      _longestStreak = longestStreak;
+      _successDays = successDays;
+      _isHabitStarted = isHabitStarted;
+    });
   }
 
   void _resetStreak() {
@@ -120,6 +168,130 @@ class _NoFapScreenState extends ConsumerState<NoFapScreen> {
                 foregroundColor: Colors.white,
               ),
               child: const Text('Reset'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _handleHabitAction() {
+    if (_isHabitStarted) {
+      _stopHabit();
+    } else {
+      _startHabit();
+    }
+  }
+
+  void _startHabit() {
+    ref.watch(habitNotifierProvider.notifier).startNofapHabit();
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          title: const Text(
+            'Start NoFap Journey?',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: Colors.black87,
+            ),
+          ),
+          content: const Text(
+            'Are you ready to start your NoFap journey? This will begin tracking your progress.',
+            style: TextStyle(fontSize: 14, color: Colors.grey, height: 1.5),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () {
+                setState(() {
+                  _isHabitStarted = true;
+                  _currentStreak = 0;
+                  // _startDate = DateTime.now();
+                  _successDays.clear();
+                });
+                Navigator.of(context).pop();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('NoFap journey started! You got this!'),
+                    backgroundColor: Colors.green,
+                  ),
+                );
+              },
+              style: TextButton.styleFrom(
+                backgroundColor: Colors.green,
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('Start'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _stopHabit() {
+    ref.watch(habitNotifierProvider.notifier).stopNofapHabit();
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          title: const Text(
+            'Relapse Occurred?',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: Colors.black87,
+            ),
+          ),
+          content: const Text(
+            'Don\'t be too hard on yourself. Every setback is a setup for a comeback. Are you ready to restart?',
+            style: TextStyle(fontSize: 14, color: Colors.grey, height: 1.5),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () {
+                setState(() {
+                  _currentStreak = 0;
+                  _totalRelapses += 1;
+                  // _lastRelapseDate = DateTime.now();
+                  _successDays.clear();
+                  _isHabitStarted = false;
+                });
+                Navigator.of(context).pop();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text(
+                      'It\'s okay! Tomorrow is a fresh start. You can do this!',
+                    ),
+                    backgroundColor: Colors.orange,
+                  ),
+                );
+              },
+              style: TextButton.styleFrom(
+                backgroundColor: Colors.orange,
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('Reset & Restart'),
             ),
           ],
         );
@@ -467,6 +639,18 @@ class _NoFapScreenState extends ConsumerState<NoFapScreen> {
       bottomNavigationBar: CleanBottomNavigationBar(
         currentIndex: _currentIndex,
         onTap: _onNavBarTap,
+      ),
+
+      // Floating Action Button
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: _handleHabitAction,
+        backgroundColor: _isHabitStarted
+            ? Colors.red.shade600
+            : Colors.green.shade600,
+        foregroundColor: Colors.white,
+        icon: Icon(_isHabitStarted ? Icons.stop : Icons.play_arrow),
+        label: Text(_isHabitStarted ? 'Relapse' : 'Start'),
+        heroTag: "nofap_action_fab",
       ),
     );
   }

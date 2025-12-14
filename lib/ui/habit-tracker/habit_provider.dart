@@ -9,6 +9,7 @@ import 'package:purewill/data/repository/user_repository.dart';
 import 'package:purewill/data/services/performance_service.dart';
 import 'package:purewill/ui/habit-tracker/view_model/habit_view_model.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../data/repository/habit_session_repository.dart';
 
 final supabaseClientProvider = Provider<SupabaseClient>((ref) {
   return Supabase.instance.client;
@@ -46,6 +47,11 @@ final reminderSettingRepositoryProvider = Provider<ReminderSettingRepository>((
   return ReminderSettingRepository(client);
 });
 
+final habitSessionRepositoryProvider = Provider<HabitSessionRepository>((ref) {
+  final client = ref.watch(supabaseClientProvider);
+  return HabitSessionRepository(client);
+});
+
 final habitNotifierProvider =
     StateNotifierProvider<HabitsViewModel, HabitsState>((ref) {
       final habitRepository = ref.watch(habitRepositoryProvider);
@@ -53,6 +59,7 @@ final habitNotifierProvider =
       final reminderSettingRepository = ref.watch(
         reminderSettingRepositoryProvider,
       );
+      final habitSessionRepository = ref.watch(habitSessionRepositoryProvider);
       final targetUnitRepository = ref.watch(targetUnitRepositoryProvider);
       final categoryRepository = ref.watch(categoryRepositoryProvider);
       final userRepository = ref.watch(userRepositoryProvider);
@@ -63,6 +70,7 @@ final habitNotifierProvider =
           habitRepository,
           dailyLogRepository,
           reminderSettingRepository,
+          habitSessionRepository,
           targetUnitRepository,
           categoryRepository,
           userRepository,
@@ -73,6 +81,7 @@ final habitNotifierProvider =
         habitRepository,
         dailyLogRepository,
         reminderSettingRepository,
+        habitSessionRepository,
         targetUnitRepository,
         categoryRepository,
         userRepository,

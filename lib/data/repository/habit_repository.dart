@@ -52,9 +52,9 @@ class HabitRepository {
       // print('Total habits: ${allHabits.length}');
 
       // for (var habit in allHabits) {
-        // print(
-        //   'Habit: ${habit.name}, Target: ${habit.targetValue}, Unit: ${habit.unit}, IsDefault: ${habit.isDefault}, Habit id: ${habit.id}, Status: ${habit.status}',
-        // );
+      // print(
+      //   'Habit: ${habit.name}, Target: ${habit.targetValue}, Unit: ${habit.unit}, IsDefault: ${habit.isDefault}, Habit id: ${habit.id}, Status: ${habit.status}',
+      // );
       // }
       // print('========================');
 
@@ -83,37 +83,104 @@ class HabitRepository {
     }
   }
 
-  Future<void> initializeDefaultHabitsForUser(String userId) async {
+  Future<HabitModel> initializeDefaultHabitsForUser(String userId) async {
     try {
       final defaultHabits = DefaultHabitsService.getDefaultHabits();
 
-      for (var habit in defaultHabits) {
-        final habitToCreate = HabitModel(
-          id: 0, 
-          userId: userId,
-          frequency: habit.frequency,
-          name: habit.name,
-          notes: habit.notes,
-          categoryId: habit.categoryId,
-          targetValue: habit.targetValue,
-          unit: habit.unit,
-          startDate: DateTime.now(),
-          endDate: null,
-          isActive: true,
-          isDefault: true,
-          status: 'active',
-        );
+      var newHabit = defaultHabits.first;
+      final habitToCreate = HabitModel(
+        id: 0,
+        userId: userId,
+        frequency: newHabit.frequency,
+        name: newHabit.name,
+        notes: newHabit.notes,
+        categoryId: newHabit.categoryId,
+        targetValue: newHabit.targetValue,
+        unit: newHabit.unit,
+        startDate: DateTime.now(),
+        endDate: null,
+        isActive: false,
+        isDefault: true,
+      );
 
-        await createHabit(habitToCreate);
-      }
+      final habit = await createHabit(habitToCreate);
 
       log(
         'INITIALIZE DEFAULT HABITS SUCCESS: Default habits initialized for user $userId.',
         name: 'HABIT_REPO',
       );
+
+      return habit;
     } catch (e, stackTrace) {
       log(
         'INITIALIZE DEFAULT HABITS FAILURE: Failed to initialize default habits for user $userId.',
+        error: e,
+        stackTrace: stackTrace,
+        name: 'HABIT_REPO',
+      );
+      rethrow;
+    }
+  }
+
+  Future<HabitModel> activeNofapHabit(String userId, int habitId) async {
+    try {
+
+      final response = await _supabaseClient
+          .from(_habitTableName)
+          .update({'is_active': true})
+          .eq('user_id', userId)
+          .eq('id', habitId)
+          .select()
+          .single();
+
+      return HabitModel.fromJson(response);
+    } catch (e, stackTrace) {
+      log(
+        'ACTIVATE NOFAP HABIT FAILURE: Failed to activate NoFap habit for user $userId.',
+        error: e,
+        stackTrace: stackTrace,
+        name: 'HABIT_REPO',
+      );
+      rethrow;
+    }
+  }
+
+  Future<HabitModel> deactivateNofapHabit(String userId, int habitId) async {
+    try {
+
+      final response = await _supabaseClient
+          .from(_habitTableName)
+          .update({'is_active': false})
+          .eq('user_id', userId)
+          .eq('id', habitId)
+          .select()
+          .single();
+
+      return HabitModel.fromJson(response);
+    } catch (e, stackTrace) {
+      log(
+        'DEACTIVATE NOFAP HABIT FAILURE: Failed to deactivate NoFap habit for user $userId.',
+        error: e,
+        stackTrace: stackTrace,
+        name: 'HABIT_REPO',
+      );
+      rethrow;
+    }
+  }
+
+  Future<int> getNofapHabitId(String userId) async {
+    try {
+      final response = await _supabaseClient
+          .from(_habitTableName)
+          .select('id')
+          .eq('user_id', userId)
+          .eq('name', 'NoFap')
+          .single();
+
+      return response['id'] as int;
+    } catch (e, stackTrace) {
+      log(
+        'GET NOFAP HABIT ID FAILURE: Failed to fetch NoFap habit ID for user $userId.',
         error: e,
         stackTrace: stackTrace,
         name: 'HABIT_REPO',

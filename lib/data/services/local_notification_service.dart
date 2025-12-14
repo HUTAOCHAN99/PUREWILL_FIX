@@ -348,7 +348,7 @@ class LocalNotificationService {
 
   Future<void> cancelAllNotifications() async {
     try {
-      await _notificationsPlugin.cancelAll();
+      // await _notificationsPlugin.cancelAll();
       // debugPrint('✅ All notifications cancelled');
     } catch (e) {
       // debugPrint('❌ Error cancelling all notifications: $e');

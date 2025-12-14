@@ -26,7 +26,13 @@ final authNotifierProvider = StateNotifierProvider<AuthViewModel, AuthState>((
   final repository = ref.watch(authRepositoryProvider);
   final userRepository = ref.watch(userRepositoryProvider);
   final habitRepository = ref.watch(habitRepositoryProvider);
-  return AuthViewModel(repository, userRepository, habitRepository);
+  final habitSessionRepository = ref.watch(habitSessionRepositoryProvider);
+  return AuthViewModel(
+    repository,
+    userRepository,
+    habitRepository,
+    habitSessionRepository,
+  );
 });
 
 final authStateChangesProvider = StreamProvider<User?>((ref) {
