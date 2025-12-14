@@ -289,7 +289,7 @@ class _ContentState extends ConsumerWidget {
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
                 crossAxisCount: 2,
-                childAspectRatio: 3,
+                childAspectRatio: 2.6, // ⬅️ sebelumnya 3
                 crossAxisSpacing: 12,
                 mainAxisSpacing: 12,
                 children: [
@@ -619,7 +619,7 @@ class _BadgeSection extends StatelessWidget {
             crossAxisCount: 2,
             crossAxisSpacing: 12,
             mainAxisSpacing: 12,
-            childAspectRatio: 1.5,
+            childAspectRatio: 1.2,
           ),
           itemCount: badges.length,
           itemBuilder: (context, index) =>

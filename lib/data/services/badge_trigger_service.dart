@@ -131,7 +131,7 @@ class BadgeTriggerService {
     }
   }
 
-  // Get progress menuju badge tertentu - METODE ALTERNATIF
+  // Get progress menuju badge tertentu - METODE ALTERNATIF - FIXED: Filter user_id
   Future<Map<String, dynamic>> getBadgeProgress(String userId, int badgeId) async {
     try {
       // Ambil detail badge
@@ -176,19 +176,29 @@ class BadgeTriggerService {
           break;
           
         case 'first_habit_completion':
+          // FIXED: Filter berdasarkan user_id
           final completedHabits = await _supabase
               .from('daily_logs')
-              .select('id')
+              .select('''
+                id,
+                habits!inner(user_id)
+              ''')
               .eq('status', 'success')
+              .eq('habits.user_id', userId)  // Filter user_id
               .limit(1);
           currentProgress = completedHabits.isNotEmpty ? 1 : 0;
           break;
           
         case 'morning_completion':
+          // FIXED: Filter berdasarkan user_id
           final completions = await _supabase
               .from('daily_logs')
-              .select('created_at')
-              .eq('status', 'success');
+              .select('''
+                created_at,
+                habits!inner(user_id)
+              ''')
+              .eq('status', 'success')
+              .eq('habits.user_id', userId);  // Filter user_id
           int morningCount = 0;
           for (final completion in completions) {
             final createdAt = DateTime.parse(completion['created_at'] as String);

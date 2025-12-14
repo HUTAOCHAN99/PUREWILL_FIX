@@ -1,4 +1,3 @@
-// import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:purewill/data/services/badge_notification_service.dart';
 
@@ -29,14 +28,18 @@ class BadgeService {
       final profileId = profileResponse['id'] as int;
       // debugPrint('📋 Profile ID: $profileId');
 
-      // Check jika ada daily logs success
-      final successLogs = await _supabase
-          .from('daily_logs')
+      // SAFETY CHECK: Pastikan user punya habits dulu
+      final userHabits = await _supabase
+          .from('habits')
           .select('id')
-          .eq('status', 'success')
-          .limit(1);
+          .eq('user_id', userId)
+          .limit(1)
+          .maybeSingle();
       
-      // debugPrint('📊 Success logs found: ${successLogs.isNotEmpty}');
+      if (userHabits == null) {
+        // debugPrint('⚠️ User has no habits, skipping badge check');
+        return;
+      }
 
       List<Map<String, dynamic>> newlyEarnedBadges = [];
 
@@ -112,7 +115,7 @@ class BadgeService {
     }
   }
 
-  // Check first habit completion badge
+  // Check first habit completion badge - FIXED: Filter user_id
   Future<Map<String, dynamic>?> _checkFirstHabitCompletion(int profileId, String userId) async {
     try {
       // Check if user already has this badge
@@ -120,7 +123,7 @@ class BadgeService {
           .from('user_badges')
           .select('id')
           .eq('profile_id', profileId)
-          .eq('badge_id', 21) // ID untuk "First Step" badge
+          .eq('badge_id', 21)
           .maybeSingle();
 
       if (existingBadge != null) {
@@ -128,11 +131,15 @@ class BadgeService {
         return null;
       }
 
-      // Check if user has any completed habits (status = 'success')
+      // FIXED: Filter berdasarkan user_id melalui JOIN ke habits
       final completedHabits = await _supabase
           .from('daily_logs')
-          .select('id')
+          .select('''
+            id,
+            habits!inner(user_id)
+          ''')
           .eq('status', 'success')
+          .eq('habits.user_id', userId)  // Filter user_id
           .limit(1);
 
       if (completedHabits.isNotEmpty) {
@@ -157,7 +164,7 @@ class BadgeService {
     }
   }
 
-  // Check streak badges - DIPERBAIKI
+  // Check streak badges - FIXED
   Future<List<Map<String, dynamic>>> _checkStreakBadges(int profileId, String userId) async {
     final List<Map<String, dynamic>> earnedBadges = [];
     
@@ -209,7 +216,7 @@ class BadgeService {
     return earnedBadges;
   }
 
-  // Check habit count badges - DIPERBAIKI
+  // Check habit count badges - FIXED
   Future<List<Map<String, dynamic>>> _checkHabitCountBadges(int profileId, String userId) async {
     final List<Map<String, dynamic>> earnedBadges = [];
     
@@ -265,16 +272,20 @@ class BadgeService {
     return earnedBadges;
   }
 
-  // Check morning completion badges
+  // Check morning completion badges - FIXED: Filter user_id
   Future<List<Map<String, dynamic>>> _checkMorningCompletionBadges(int profileId, String userId) async {
     final List<Map<String, dynamic>> earnedBadges = [];
     
     try {
-      // Get completed habits dengan creation time
+      // FIXED: Filter berdasarkan user_id
       final completions = await _supabase
           .from('daily_logs')
-          .select('created_at')
-          .eq('status', 'success');
+          .select('''
+            created_at,
+            habits!inner(user_id)
+          ''')
+          .eq('status', 'success')
+          .eq('habits.user_id', userId);  // Filter user_id
 
       int morningCount = 0;
       for (final completion in completions) {
@@ -324,7 +335,7 @@ class BadgeService {
     return earnedBadges;
   }
 
-  // Check category variety badges - DIPERBAIKI
+  // Check category variety badges - FIXED
   Future<List<Map<String, dynamic>>> _checkCategoryVarietyBadges(int profileId, String userId) async {
     final List<Map<String, dynamic>> earnedBadges = [];
     
@@ -385,7 +396,7 @@ class BadgeService {
     return earnedBadges;
   }
 
-  // Check perfect week badges - DIPERBAIKI
+  // Check perfect week badges - FIXED
   Future<List<Map<String, dynamic>>> _checkPerfectWeekBadges(int profileId, String userId) async {
     final List<Map<String, dynamic>> earnedBadges = [];
     
@@ -435,15 +446,20 @@ class BadgeService {
     return earnedBadges;
   }
 
-  // Check consistency badges
+  // Check consistency badges - FIXED: Filter user_id
   Future<List<Map<String, dynamic>>> _checkConsistencyBadges(int profileId, String userId) async {
     final List<Map<String, dynamic>> earnedBadges = [];
     
     try {
+      // FIXED: Filter berdasarkan user_id
       final totalCompletions = await _supabase
           .from('daily_logs')
-          .select('id')
-          .eq('status', 'success');
+          .select('''
+            id,
+            habits!inner(user_id)
+          ''')
+          .eq('status', 'success')
+          .eq('habits.user_id', userId);  // Filter user_id
 
       final completionCount = totalCompletions.length;
       // debugPrint('📈 Total habit completions: $completionCount');
@@ -485,16 +501,20 @@ class BadgeService {
     return earnedBadges;
   }
 
-  // Check time of day badges
+  // Check time of day badges - FIXED: Filter user_id
   Future<List<Map<String, dynamic>>> _checkTimeOfDayBadges(int profileId, String userId) async {
     final List<Map<String, dynamic>> earnedBadges = [];
     
     try {
-      // Check for early bird badge (before 8 AM) dan night owl (after 9 PM)
+      // FIXED: Filter berdasarkan user_id
       final completions = await _supabase
           .from('daily_logs')
-          .select('created_at')
-          .eq('status', 'success');
+          .select('''
+            created_at,
+            habits!inner(user_id)
+          ''')
+          .eq('status', 'success')
+          .eq('habits.user_id', userId);  // Filter user_id
 
       int earlyBirdCount = 0;
       int nightOwlCount = 0;
@@ -762,10 +782,10 @@ class BadgeService {
     }
   }
 
-  // Get perfect weeks count
+  // Get perfect weeks count - FIXED: Filter user_id
   Future<int> _getPerfectWeeksCount(String userId) async {
     try {
-      // Get completed logs with habit user info
+      // FIXED: Filter berdasarkan user_id
       final completedLogs = await _supabase
           .from('daily_logs')
           .select('''
@@ -773,7 +793,7 @@ class BadgeService {
             habits!inner(user_id)
           ''')
           .eq('status', 'success')
-          .eq('habits.user_id', userId);
+          .eq('habits.user_id', userId);  // Filter user_id
       
       // Group by week
       final weeks = <String, Set<String>>{};
@@ -845,7 +865,7 @@ class BadgeService {
     return 0;
   }
 
-  // Helper method untuk progress calculation
+  // Helper method untuk progress calculation - FIXED: Filter user_id
   Future<Map<String, int>> _getBadgeProgress(String userId, Map<String, dynamic> badge) async {
     final triggerType = badge['trigger_type'] as String;
     final int triggerValue = _parseToInt(badge['trigger_value']);
@@ -867,6 +887,7 @@ class BadgeService {
         currentProgress = habitCount.length;
         break;
       case 'morning_completion':
+        // FIXED: Filter berdasarkan user_id
         final completions = await _supabase
             .from('daily_logs')
             .select('''
@@ -874,7 +895,7 @@ class BadgeService {
               habits!inner(user_id)
             ''')
             .eq('status', 'success')
-            .eq('habits.user_id', userId);
+            .eq('habits.user_id', userId);  // Filter user_id
         int morningCount = 0;
         for (final completion in completions) {
           final createdAt = DateTime.parse(completion['created_at'] as String);
@@ -902,10 +923,15 @@ class BadgeService {
         currentProgress = await _getPerfectWeeksCount(userId);
         break;
       case 'first_habit_completion':
+        // FIXED: Filter berdasarkan user_id
         final completedHabits = await _supabase
             .from('daily_logs')
-            .select('id')
+            .select('''
+              id,
+              habits!inner(user_id)
+            ''')
             .eq('status', 'success')
+            .eq('habits.user_id', userId)  // Filter user_id
             .limit(1);
         currentProgress = completedHabits.isNotEmpty ? 1 : 0;
         break;
