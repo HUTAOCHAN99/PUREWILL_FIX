@@ -1,4 +1,3 @@
-// lib/ui/habit-tracker/widget/habit_header.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:purewill/domain/model/plan_model.dart';
@@ -57,47 +56,68 @@ class HabitHeader extends ConsumerWidget {
               ),
             ],
           ),
-          
-          // Avatar dengan badge role
-          _buildUserAvatarWithRole(context),
+          _buildUserAvatarWithPremium(context),
         ],
       ),
     );
   }
 
-  Widget _buildUserAvatarWithRole(BuildContext context) {
-    Color roleColor = _getRoleColor();
-    IconData roleIcon = _getRoleIcon();
-    String roleText = _getRoleText();
-    
-    return GestureDetector(
-      onTap: () => _showUserProfileMenu(context),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        decoration: BoxDecoration(
-          color: _withOpacity(roleColor, 0.1),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: _withOpacity(roleColor, 0.3)),
-        ),
-        child: Row(
-          children: [
-            Icon(
-              roleIcon,
-              color: roleColor,
-              size: 16,
+  Widget _buildUserAvatarWithPremium(BuildContext context) {
+    return Stack(
+      children: [
+        Container(
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            border: Border.all(
+              color: isPremiumUser ? Colors.yellow : Colors.grey.shade300,
+              width: isPremiumUser ? 2 : 1.5,
             ),
-            const SizedBox(width: 6),
-            Text(
-              roleText,
-              style: TextStyle(
-                color: roleColor,
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
+          ),
+          child: CircleAvatar(
+            radius: 18,
+            backgroundColor: isPremiumUser
+                ? Colors.deepPurple[50]
+                : Colors.white,
+            child: IconButton(
+              icon: Icon(
+                Icons.person,
+                color: isPremiumUser
+                    ? Colors.deepPurple
+                    : const Color(0xFF7C3AED),
+                size: 18,
+              ),
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(),
+              onPressed: () => _showUserProfileMenu(context),
+            ),
+          ),
+        ),
+        // Badge premium kecil di sudut
+        if (isPremiumUser)
+          Positioned(
+            right: 0,
+            top: 0,
+            child: Container(
+              padding: const EdgeInsets.all(2),
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                shape: BoxShape.circle,
+              ),
+              child: Container(
+                padding: const EdgeInsets.all(2),
+                decoration: const BoxDecoration(
+                  color: Colors.yellow,
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.star,
+                  color: Colors.deepPurple,
+                  size: 10,
+                ),
               ),
             ),
-          ],
-        ),
-      ),
+          ),
+      ],
     );
   }
 
@@ -167,15 +187,17 @@ class HabitHeader extends ConsumerWidget {
                   ),
                 ),
                 const SizedBox(height: 20),
-                
-                // Avatar dengan status role
+
+                // Avatar dengan status premium
                 Stack(
                   children: [
                     CircleAvatar(
                       radius: 30,
-                      backgroundColor: _getRoleColor(),
-                      child: Icon(
-                        _getRoleIcon(),
+                      backgroundColor: isPremiumUser
+                          ? Colors.deepPurple
+                          : const Color(0xFF7C3AED),
+                      child: const Icon(
+                        Icons.person,
                         color: Colors.white,
                         size: 30,
                       ),
@@ -424,17 +446,17 @@ class HabitHeader extends ConsumerWidget {
                               value: darkMode,
                               onChanged: (value) {
                                 _toggleDarkMode(value);
-                                setStateIfMounted(() {
-                                  darkMode = value;
-                                });
+                                // setStateIfMounted(() {
+                                //   darkMode = value;
+                                // });
                               },
                               activeColor: Colors.deepPurple,
                             ),
                             onTap: () {
                               _toggleDarkMode(!darkMode);
-                              setStateIfMounted(() {
-                                darkMode = !darkMode;
-                              });
+                              // setStateIfMounted(() {
+                              //   darkMode = !darkMode;
+                              // });
                             },
                           ),
                         ),
@@ -442,8 +464,8 @@ class HabitHeader extends ConsumerWidget {
                     ),
                   ),
                 ),
-                
-                const SizedBox(height: 10),
+
+                const SizedBox(height: 20),
                 
                 Container(
                   width: double.infinity,
@@ -480,18 +502,9 @@ class HabitHeader extends ConsumerWidget {
     );
   }
 
-  // Helper untuk setState jika widget masih mounted
-  void setStateIfMounted(void Function() fn) {
-    // Karena ini StatelessWidget, kita tidak bisa panggil setState langsung
-    // Ini hanya contoh untuk menunjukkan konsep
-    fn();
-  }
-
   void _navigateToMembershipScreen(BuildContext context) {
     Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => const MembershipScreen(),
-      ),
+      MaterialPageRoute(builder: (context) => const MembershipScreen())
     );
   }
 
@@ -621,10 +634,7 @@ class HabitHeader extends ConsumerWidget {
               Navigator.of(context).pop();
               onLogout();
             },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
-              foregroundColor: Colors.white,
-            ),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
             child: const Text('Logout'),
           ),
         ],

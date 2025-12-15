@@ -18,12 +18,10 @@ class NoFapScreen extends ConsumerStatefulWidget {
 class _NoFapScreenState extends ConsumerState<NoFapScreen> {
   int _currentIndex = 2; // Set to 2 because this is the NoFap screen (center)
 
-  // Dummy data for NoFap tracking
   int _currentStreak = 0;
   int _longestStreak = 0;
-  int _totalRelapses = 3;
-  // DateTime _lastRelapseDate = DateTime.now().subtract(const Duration(days: 7));
-  // DateTime _startDate = DateTime.now().subtract(const Duration(days: 30));
+  int _totalRelapses = 0;
+
   String _motivationalQuote =
       "The greatest victory is that which requires no battle. - Sun Tzu";
   bool _isHabitStarted = false; // Track if habit is started or not
@@ -86,13 +84,11 @@ class _NoFapScreenState extends ConsumerState<NoFapScreen> {
   }
 
   void _loadNofapHabitLogs() async {
-    print("Loading NoFap habit logs...");
 
-    final nofapLogs = await ref
+    final habitId = await ref
         .read(habitNotifierProvider.notifier)
-        .getLogNofapHabit();
+        .getNofapHabitId();
 
-    int habitId = nofapLogs[0].habitId;
 
     final longestStreak = await ref
         .read(habitNotifierProvider.notifier)
@@ -239,6 +235,8 @@ class _NoFapScreenState extends ConsumerState<NoFapScreen> {
       },
     );
   }
+
+  
 
   void _stopHabit() {
     ref.watch(habitNotifierProvider.notifier).stopNofapHabit();

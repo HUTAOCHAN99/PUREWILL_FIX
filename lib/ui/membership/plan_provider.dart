@@ -133,7 +133,7 @@ class PlanNotifier extends StateNotifier<PlanState> {
       // print('   - Is premium: ${state.isUserPremium}');
       // print('   - Has error: ${state.error != null}');
     } catch (e, stackTrace) {
-      // print('❌ Error in PlanNotifier.loadPlans(): $e');
+      print('❌ Error in PlanNotifier.loadPlans(): $e');
       // print('Stack trace: $stackTrace');
 
       // HAPUS FALLBACK KE DEFAULT PLANS

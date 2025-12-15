@@ -54,10 +54,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       ref.read(habitNotifierProvider.notifier).loadTodayUserHabits();
       _loadTodayCompletionStatus();
       ref.read(habitNotifierProvider.notifier).getCurrentUser();
-      _loadUserRole(); // Load user role
-      Future.delayed(const Duration(milliseconds: 300), () {
-        ref.read(planProvider.notifier).loadPlans();
-      });
+      ref.read(planProvider.notifier).loadPlans();
     });
   }
 
@@ -395,21 +392,21 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       final currentStatus = _todayCompletionStatus[habit.id];
 
       setState(() {
-        _todayCompletionStatus[habit.id] = currentStatus == LogStatus.success 
+        _todayCompletionStatus[habit.id] = currentStatus == LogStatus.success
             ? LogStatus.failed
             : currentStatus == LogStatus.failed
-                ? LogStatus.neutral
-                : LogStatus.success;
+            ? LogStatus.neutral
+            : LogStatus.success;
       });
 
       await ref
           .read(habitNotifierProvider.notifier)
           .toggleHabitCompletion(habit);
-    
+
       final user = Supabase.instance.client.auth.currentUser;
       if (user != null) {
         final newStatus = _todayCompletionStatus[habit.id];
-        
+
         if (newStatus == LogStatus.success) {
           _showSnackBar('Habit completed successfully!');
           await badgeService.checkAllBadges(user.id);

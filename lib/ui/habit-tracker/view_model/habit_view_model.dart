@@ -109,19 +109,26 @@ class HabitsViewModel extends StateNotifier<HabitsState> {
 
   Future<bool> isHabitStarted({required int habitId}) async {
     try {
-      final habit = await _habitRepository.getHabitById(habitId);
+      final habit = await _habitSessionRepository.getActiveHabitSession(habitId: habitId, userId: _currentUserId);
       if (habit == null) {
-        throw Exception('Habit not found');
+        return false;
       }
-
-      final today = DateTime.now();
-      return !today.isBefore(habit.startDate);
+      return true;
     } catch (e) {
       log(
         'IS HABIT STARTED FAILURE: Failed to check if habit $habitId has started.',
         error: e,
         name: 'HABIT_VIEW_MODEL',
       );
+      rethrow;
+    }
+  }
+
+  Future<int> getNofapHabitId() async {
+    try {
+      final habitId = await _habitRepository.getNofapHabitId(_currentUserId);
+      return habitId;
+    } catch (e) {
       rethrow;
     }
   }
@@ -160,6 +167,8 @@ class HabitsViewModel extends StateNotifier<HabitsState> {
   Future<int> getNofapHabitStreak() async {
     try {
       final habitId = await _habitRepository.getNofapHabitId(_currentUserId);
+      // final streak = await _habitSessionRepository.fetchNofapHabitLongestStreak(habitId: habitId, userId:
+      // _currentUserId);
       final streak = await _habitSessionRepository.fetchNofapHabitLongestStreak(habitId: habitId, userId: _currentUserId);
       return streak;
     } catch (e) {
@@ -170,6 +179,7 @@ class HabitsViewModel extends StateNotifier<HabitsState> {
   Future<int> getNofapHabitCurrentStreak() async {
     try {
       final habitId = await _habitRepository.getNofapHabitId(_currentUserId);
+      // final streak = await _habitSessionRepository.fetchNofapHabitCurrentStreak(habitId: habitId, userId: _currentUserId);
       final streak = await _habitSessionRepository.fetchNofapHabitCurrentStreak(habitId: habitId, userId: _currentUserId);
       return streak;
     } catch (e) {
@@ -222,7 +232,11 @@ class HabitsViewModel extends StateNotifier<HabitsState> {
         _currentUserId,
       );
 
-      state = state.copyWith(status: HabitStatus.success, todayHabit: habits);
+      final habitsWithoutNofap = habits.where((habit) => 
+        habit.name.toLowerCase() != 'nofap'
+      ).toList();
+
+      state = state.copyWith(status: HabitStatus.success, todayHabit: habitsWithoutNofap);
     } catch (e) {
       state = state.copyWith(
         status: HabitStatus.failure,

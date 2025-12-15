@@ -234,6 +234,7 @@ class HabitSessionRepository {
     required int habitId,
     required String userId,
   }) async {
+    print("habitId: $habitId, userId: $userId");
     try {
       final response = await _supabaseClient
           .from('habit_sessions')

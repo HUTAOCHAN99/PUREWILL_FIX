@@ -14,7 +14,6 @@ import 'package:purewill/ui/auth/screen/signup_screen.dart';
 import 'package:purewill/ui/auth/screen/resetpassword_screen.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-// Global instances
 final badgeNotificationService = BadgeNotificationService();
 late BadgeService badgeService;
 
@@ -75,7 +74,6 @@ Future<void> main() async {
   // Initialize Reminder Sync Service
   await _initializeReminderSyncService();
 
-  // debugPrint('🚀 All services initialized successfully');
 
   runApp(const ProviderScope(child: MyApp()));
 }
@@ -157,6 +155,7 @@ class MyApp extends StatelessWidget {
         '/signup': (context) => const SignupScreen(),
         '/signup-password': (context) => const ResetPasswordScreen(),
         '/badges': (context) => const BadgeXpScreen(),
+        '/logout' : (context) => const LoginScreen(),
       },
       debugShowCheckedModeBanner: false,
     );

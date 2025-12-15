@@ -38,9 +38,9 @@ class AuthViewModel extends StateNotifier<AuthState> {
 
   Future<void> login(String email, String password) async {
     try {
+      print("email: $email, password: $password");
       state = state.copyWith(status: AuthStatus.loading, errorMessage: null);
       final user = await _repository.login(email: email, password: password);
-
       if (user != null) {
         state = state.copyWith(
           status: AuthStatus.success,

@@ -85,6 +85,10 @@ class DailyLogRepository {
           .select('*')
           .eq('habit_id', habitId)
           .order('log_date', ascending: false);
+      
+      if (response.isEmpty) {
+        return [];
+      }
 
       return response.map((data) => DailyLogModel.fromJson(data)).toList();
     } catch (e, stackTrace) {
