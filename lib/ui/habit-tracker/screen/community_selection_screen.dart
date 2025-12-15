@@ -1,103 +1,50 @@
+// lib\ui\habit-tracker\screen\community_selection_screen.dart
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:purewill/data/services/community_service.dart';
+import 'package:purewill/domain/model/community_model.dart';
+import 'package:purewill/ui/habit-tracker/screen/community_detail_screen.dart';
 import 'package:purewill/ui/habit-tracker/screen/consultation_screen.dart';
 import 'package:purewill/ui/habit-tracker/screen/habit_screen.dart';
 import 'package:purewill/ui/habit-tracker/screen/home_screen.dart';
 import 'package:purewill/ui/habit-tracker/widget/clean_bottom_navigation_bar.dart';
 import 'package:purewill/ui/habit-tracker/widget/community/community_confirmation_dialog.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
-class CommunitySelectionScreen extends StatefulWidget {
+// Provider untuk mengelola state komunitas
+final communitiesProvider = FutureProvider.autoDispose<List<Community>>((ref) async {
+  final communityService = CommunityService();
+  final user = Supabase.instance.client.auth.currentUser;
+  if (user == null) return [];
+  
+  return await communityService.getCommunities(user.id);
+});
+
+class CommunitySelectionScreen extends ConsumerStatefulWidget {
   const CommunitySelectionScreen({super.key});
 
   @override
-  State<CommunitySelectionScreen> createState() => _CommunitySelectionScreenState();
+  ConsumerState<CommunitySelectionScreen> createState() => _CommunitySelectionScreenState();
 }
 
-class _CommunitySelectionScreenState extends State<CommunitySelectionScreen> {
-  int _currentIndex = 2; // Index untuk tab komunitas
+class _CommunitySelectionScreenState extends ConsumerState<CommunitySelectionScreen> {
+  int _currentIndex = 3; // Index untuk tab komunitas
+  String? _currentUserId;
   
-  final List<Community> communities = [
-    Community(
-      id: 1,
-      name: 'Fitness & Workout',
-      description: 'Komunitas untuk pecinta fitness dan workout sehari-hari',
-      memberCount: 1250,
-      icon: Icons.fitness_center,
-      color: const Color(0xFF2196F3),
-      isJoined: false,
-    ),
-    Community(
-      id: 2,
-      name: 'Mental Wellness',
-      description: 'Diskusi tentang kesehatan mental dan mindfulness',
-      memberCount: 890,
-      icon: Icons.psychology,
-      color: const Color(0xFF9C27B0),
-      isJoined: true, // Contoh: user sudah join
-    ),
-    Community(
-      id: 3,
-      name: 'Healthy Eating',
-      description: 'Berbagi resep sehat dan tips nutrisi',
-      memberCount: 1560,
-      icon: Icons.restaurant,
-      color: const Color(0xFF4CAF50),
-      isJoined: false,
-    ),
-    Community(
-      id: 4,
-      name: 'Morning Routine',
-      description: 'Membangun rutinitas pagi yang produktif',
-      memberCount: 780,
-      icon: Icons.wb_sunny,
-      color: const Color(0xFFFF9800),
-      isJoined: false,
-    ),
-    Community(
-      id: 5,
-      name: 'Productivity',
-      description: 'Tips dan trik untuk meningkatkan produktivitas',
-      memberCount: 2100,
-      icon: Icons.work,
-      color: const Color(0xFF3F51B5),
-      isJoined: false,
-    ),
-    Community(
-      id: 6,
-      name: 'Reading Habit',
-      description: 'Komunitas pecinta buku dan membaca',
-      memberCount: 950,
-      icon: Icons.menu_book,
-      color: const Color(0xFF795548),
-      isJoined: true, // Contoh: user sudah join
-    ),
-    Community(
-      id: 7,
-      name: 'Meditation',
-      description: 'Panduan meditasi dan relaksasi',
-      memberCount: 670,
-      icon: Icons.self_improvement,
-      color: const Color(0xFF00BCD4),
-      isJoined: false,
-    ),
-    Community(
-      id: 8,
-      name: 'Study Group',
-      description: 'Belajar bersama dan diskusi pengetahuan',
-      memberCount: 1850,
-      icon: Icons.school,
-      color: const Color(0xFFE91E63),
-      isJoined: false,
-    ),
-  ];
-
-  List<Community> get joinedCommunities =>
-      communities.where((c) => c.isJoined).toList();
-
-  List<Community> get availableCommunities =>
-      communities.where((c) => !c.isJoined).toList();
+  @override
+  void initState() {
+    super.initState();
+    _getCurrentUser();
+  }
+  
+  void _getCurrentUser() {
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user != null) {
+      _currentUserId = user.id;
+    }
+  }
 
   void _onNavBarTap(int index) {
-
     if (index == 0) {
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(
@@ -111,51 +58,53 @@ class _CommunitySelectionScreenState extends State<CommunitySelectionScreen> {
         ), 
       );
     } else if (index == 2) {
-      return;
+      // TODO: Navigate to NoFap screen
+      // Navigator.of(context).pushReplacement(
+      //   MaterialPageRoute(
+      //     builder: (context) => const NoFapScreen(),
+      //   ), 
+      // );
     } else if (index == 3) {
+      return; // Stay in community screen
+    } else if (index == 4) {
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(
           builder: (context) => const ConsultationScreen(),
         ), 
       );
-    } 
+    }
   }
 
-  void _showConfirmationDialog(BuildContext context, Community community) {
-    showDialog(
-      context: context,
-      builder: (context) => CommunityConfirmationDialog(
-        community: community,
-        onJoin: () => _joinCommunity(community),
-        onCancel: () => Navigator.pop(context),
-      ),
-    );
-  }
-
-  void _joinCommunity(Community community) {
-    setState(() {
-      final index = communities.indexWhere((c) => c.id == community.id);
-      if (index != -1) {
-        communities[index] = communities[index].copyWith(isJoined: true);
+  Future<void> _joinCommunity(Community community) async {
+    if (_currentUserId == null) return;
+    
+    try {
+      final communityService = CommunityService();
+      final success = await communityService.joinCommunity(
+        community.id,
+        _currentUserId!,
+      );
+      
+      if (success) {
+        // Refresh data
+        ref.invalidate(communitiesProvider);
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Berhasil bergabung dengan ${community.name}! 🎉'),
+            backgroundColor: Colors.green,
+            duration: const Duration(seconds: 2),
+          ),
+        );
       }
-    });
-
-    Navigator.pop(context);
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Berhasil bergabung dengan ${community.name}! 🎉'),
-        backgroundColor: Colors.green,
-        duration: const Duration(seconds: 2),
-        action: SnackBarAction(
-          label: 'Lihat',
-          textColor: Colors.white,
-          onPressed: () {
-            _navigateToCommunityDetail(community);
-          },
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error: ${e.toString()}'),
+          backgroundColor: Colors.red,
         ),
-      ),
-    );
+      );
+    }
   }
 
   void _leaveCommunity(Community community) {
@@ -170,21 +119,37 @@ class _CommunitySelectionScreenState extends State<CommunitySelectionScreen> {
             child: const Text('Batal'),
           ),
           TextButton(
-            onPressed: () {
-              setState(() {
-                final index = communities.indexWhere((c) => c.id == community.id);
-                if (index != -1) {
-                  communities[index] = communities[index].copyWith(isJoined: false);
+            onPressed: () async {
+              if (_currentUserId == null) return;
+              
+              try {
+                final communityService = CommunityService();
+                final success = await communityService.leaveCommunity(
+                  community.id,
+                  _currentUserId!,
+                );
+                
+                if (success) {
+                  // Refresh data
+                  ref.invalidate(communitiesProvider);
+                  
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Anda telah keluar dari ${community.name}'),
+                      backgroundColor: Colors.orange,
+                      duration: const Duration(seconds: 2),
+                    ),
+                  );
                 }
-              });
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('Anda telah keluar dari ${community.name}'),
-                  backgroundColor: Colors.orange,
-                  duration: const Duration(seconds: 2),
-                ),
-              );
+              } catch (e) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Error: ${e.toString()}'),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+              }
             },
             child: const Text(
               'Keluar',
@@ -197,157 +162,25 @@ class _CommunitySelectionScreenState extends State<CommunitySelectionScreen> {
   }
 
   void _navigateToCommunityDetail(Community community) {
-    // TODO: Implementasi screen detail komunitas
-    _showComingSoon('Detail Komunitas');
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => CommunityDetailScreen(
+          communityId: community.id,
+          communityName: community.name,
+        ),
+      ),
+    );
   }
 
-  void _showComingSoon(String feature) {
+  void _showConfirmationDialog(Community community) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Coming Soon!'),
-        content: Text('Fitur $feature akan segera hadir.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('OK'),
-          ),
-        ],
+      builder: (context) => CommunityConfirmationDialog(
+        community: community,
+        onJoin: () => _joinCommunity(community),
+        onCancel: () => Navigator.pop(context),
       ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Color(0xFFF5F5F5),
-              Color(0xFFE8F4F8),
-            ],
-          ),
-        ),
-        child: SafeArea(
-          child: Column(
-            children: [
-              // Header
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
-                      blurRadius: 10,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text(
-                      'Komunitas',
-                      style: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black87,
-                      ),
-                    ),
-                    IconButton(
-                      onPressed: () {
-                        // TODO: Implement search functionality
-                        _showComingSoon('Pencarian Komunitas');
-                      },
-                      icon: const Icon(Icons.search, size: 28),
-                      color: Colors.grey[600],
-                    ),
-                  ],
-                ),
-              ),
-
-              Expanded(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Section: Komunitas yang Diikuti
-                      if (joinedCommunities.isNotEmpty) ...[
-                        _buildSectionTitle(
-                          'Komunitas Anda',
-                          '${joinedCommunities.length} komunitas',
-                        ),
-                        const SizedBox(height: 12),
-                        _buildJoinedCommunitiesList(),
-                        const SizedBox(height: 24),
-                      ],
-
-                      // Section: Temukan Komunitas Lain
-                      _buildSectionTitle(
-                        'Temukan Komunitas',
-                        '${availableCommunities.length} komunitas tersedia',
-                      ),
-                      const SizedBox(height: 12),
-                      _buildAvailableCommunitiesList(),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-      bottomNavigationBar: CleanBottomNavigationBar(
-        currentIndex: _currentIndex,
-        onTap: _onNavBarTap,
-      ),
-    );
-  }
-
-  Widget _buildSectionTitle(String title, String subtitle) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          title,
-          style: const TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: Colors.black87,
-          ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          subtitle,
-          style: TextStyle(
-            fontSize: 13,
-            color: Colors.grey[600],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildJoinedCommunitiesList() {
-    return GridView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        crossAxisSpacing: 12,
-        mainAxisSpacing: 12,
-        childAspectRatio: 1.2,
-      ),
-      itemCount: joinedCommunities.length,
-      itemBuilder: (context, index) {
-        final community = joinedCommunities[index];
-        return _buildJoinedCommunityCard(community);
-      },
     );
   }
 
@@ -370,12 +203,12 @@ class _CommunitySelectionScreenState extends State<CommunitySelectionScreen> {
                 width: 40,
                 height: 40,
                 decoration: BoxDecoration(
-                  color: community.color.withOpacity(0.15),
+                  color: _getColorFromHex(community.color ?? '#7C3AED').withOpacity(0.15),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(
-                  community.icon,
-                  color: community.color,
+                  _getIconFromName(community.iconName ?? 'people'),
+                  color: _getColorFromHex(community.color ?? '#7C3AED'),
                   size: 24,
                 ),
               ),
@@ -433,19 +266,6 @@ class _CommunitySelectionScreenState extends State<CommunitySelectionScreen> {
     );
   }
 
-  Widget _buildAvailableCommunitiesList() {
-    return ListView.separated(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      itemCount: availableCommunities.length,
-      separatorBuilder: (context, index) => const SizedBox(height: 12),
-      itemBuilder: (context, index) {
-        final community = availableCommunities[index];
-        return _buildAvailableCommunityCard(community);
-      },
-    );
-  }
-
   Widget _buildAvailableCommunityCard(Community community) {
     return Card(
       elevation: 2,
@@ -454,7 +274,7 @@ class _CommunitySelectionScreenState extends State<CommunitySelectionScreen> {
         side: BorderSide(color: Colors.grey.shade200, width: 1),
       ),
       child: InkWell(
-        onTap: () => _showConfirmationDialog(context, community),
+        onTap: () => _showConfirmationDialog(community),
         borderRadius: BorderRadius.circular(16),
         child: Padding(
           padding: const EdgeInsets.all(16),
@@ -464,12 +284,12 @@ class _CommunitySelectionScreenState extends State<CommunitySelectionScreen> {
                 width: 56,
                 height: 56,
                 decoration: BoxDecoration(
-                  color: community.color.withOpacity(0.1),
+                  color: _getColorFromHex(community.color ?? '#7C3AED').withOpacity(0.1),
                   borderRadius: BorderRadius.circular(14),
                 ),
                 child: Icon(
-                  community.icon,
-                  color: community.color,
+                  _getIconFromName(community.iconName ?? 'people'),
+                  color: _getColorFromHex(community.color ?? '#7C3AED'),
                   size: 30,
                 ),
               ),
@@ -487,7 +307,7 @@ class _CommunitySelectionScreenState extends State<CommunitySelectionScreen> {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      community.description,
+                      community.description ?? 'Deskripsi tidak tersedia',
                       style: TextStyle(
                         fontSize: 13,
                         color: Colors.grey[600],
@@ -511,6 +331,26 @@ class _CommunitySelectionScreenState extends State<CommunitySelectionScreen> {
                             color: Colors.grey[600],
                           ),
                         ),
+                        if (community.category != null) ...[
+                          const SizedBox(width: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.blue[50],
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              community.category!.name,
+                              style: TextStyle(
+                                fontSize: 10,
+                                color: Colors.blue[700],
+                              ),
+                            ),
+                          ),
+                        ],
                       ],
                     ),
                   ],
@@ -527,38 +367,235 @@ class _CommunitySelectionScreenState extends State<CommunitySelectionScreen> {
       ),
     );
   }
-}
 
-class Community {
-  final int id;
-  final String name;
-  final String description;
-  final int memberCount;
-  final IconData icon;
-  final Color color;
-  final bool isJoined;
+  Color _getColorFromHex(String hexColor) {
+    hexColor = hexColor.replaceAll('#', '');
+    if (hexColor.length == 6) {
+      hexColor = 'FF$hexColor';
+    }
+    return Color(int.parse('0x$hexColor'));
+  }
 
-  Community({
-    required this.id,
-    required this.name,
-    required this.description,
-    required this.memberCount,
-    required this.icon,
-    required this.color,
-    required this.isJoined,
-  });
+  IconData _getIconFromName(String iconName) {
+    switch (iconName) {
+      case 'fitness_center':
+        return Icons.fitness_center;
+      case 'psychology':
+        return Icons.psychology;
+      case 'restaurant':
+        return Icons.restaurant;
+      case 'wb_sunny':
+        return Icons.wb_sunny;
+      case 'work':
+        return Icons.work;
+      case 'menu_book':
+        return Icons.menu_book;
+      case 'self_improvement':
+        return Icons.self_improvement;
+      case 'school':
+        return Icons.school;
+      case 'local_fire_department':
+        return Icons.local_fire_department;
+      case 'bedtime':
+        return Icons.bedtime;
+      case 'water_drop':
+        return Icons.water_drop;
+      case 'sports_esports':
+        return Icons.sports_esports;
+      default:
+        return Icons.people;
+    }
+  }
 
-  Community copyWith({
-    bool? isJoined,
-  }) {
-    return Community(
-      id: id,
-      name: name,
-      description: description,
-      memberCount: memberCount,
-      icon: icon,
-      color: color,
-      isJoined: isJoined ?? this.isJoined,
+  @override
+  Widget build(BuildContext context) {
+    final communitiesAsync = ref.watch(communitiesProvider);
+
+    return Scaffold(
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Color(0xFFF5F5F5),
+              Color(0xFFE8F4F8),
+            ],
+          ),
+        ),
+        child: SafeArea(
+          child: Column(
+            children: [
+              // Header
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.05),
+                      blurRadius: 10,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      'Komunitas',
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black87,
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: () {
+                        // TODO: Implement search functionality
+                        showDialog(
+                          context: context,
+                          builder: (context) => AlertDialog(
+                            title: const Text('Pencarian'),
+                            content: const Text('Fitur pencarian akan segera hadir!'),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.pop(context),
+                                child: const Text('OK'),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                      icon: const Icon(Icons.search, size: 28),
+                      color: Colors.grey[600],
+                    ),
+                  ],
+                ),
+              ),
+
+              Expanded(
+                child: communitiesAsync.when(
+                  data: (communities) {
+                    final joinedCommunities = communities
+                        .where((c) => c.isJoined)
+                        .toList();
+                    
+                    final availableCommunities = communities
+                        .where((c) => !c.isJoined)
+                        .toList();
+
+                    return SingleChildScrollView(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Section: Komunitas yang Diikuti
+                          if (joinedCommunities.isNotEmpty) ...[
+                            _buildSectionTitle(
+                              'Komunitas Anda',
+                              '${joinedCommunities.length} komunitas',
+                            ),
+                            const SizedBox(height: 12),
+                            GridView.builder(
+                              shrinkWrap: true,
+                              physics: const NeverScrollableScrollPhysics(),
+                              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: 2,
+                                crossAxisSpacing: 12,
+                                mainAxisSpacing: 12,
+                                childAspectRatio: 1.2,
+                              ),
+                              itemCount: joinedCommunities.length,
+                              itemBuilder: (context, index) {
+                                return _buildJoinedCommunityCard(joinedCommunities[index]);
+                              },
+                            ),
+                            const SizedBox(height: 24),
+                          ],
+
+                          // Section: Temukan Komunitas Lain
+                          _buildSectionTitle(
+                            'Temukan Komunitas',
+                            '${availableCommunities.length} komunitas tersedia',
+                          ),
+                          const SizedBox(height: 12),
+                          availableCommunities.isEmpty
+                              ? const Padding(
+                                  padding: EdgeInsets.all(16),
+                                  child: Text(
+                                    'Tidak ada komunitas yang tersedia untuk saat ini',
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(color: Colors.grey),
+                                  ),
+                                )
+                              : ListView.separated(
+                                  shrinkWrap: true,
+                                  physics: const NeverScrollableScrollPhysics(),
+                                  itemCount: availableCommunities.length,
+                                  separatorBuilder: (context, index) => const SizedBox(height: 12),
+                                  itemBuilder: (context, index) {
+                                    return _buildAvailableCommunityCard(availableCommunities[index]);
+                                  },
+                                ),
+                        ],
+                      ),
+                    );
+                  },
+                  loading: () => const Center(child: CircularProgressIndicator()),
+                  error: (error, stack) => Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(Icons.error_outline, size: 50, color: Colors.red),
+                        const SizedBox(height: 16),
+                        Text(
+                          'Error: $error',
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(color: Colors.red),
+                        ),
+                        const SizedBox(height: 16),
+                        ElevatedButton(
+                          onPressed: () => ref.invalidate(communitiesProvider),
+                          child: const Text('Coba Lagi'),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+      bottomNavigationBar: CleanBottomNavigationBar(
+        currentIndex: _currentIndex,
+        onTap: _onNavBarTap,
+      ),
+    );
+  }
+
+  Widget _buildSectionTitle(String title, String subtitle) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: const TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: Colors.black87,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          subtitle,
+          style: TextStyle(
+            fontSize: 13,
+            color: Colors.grey[600],
+          ),
+        ),
+      ],
     );
   }
 }

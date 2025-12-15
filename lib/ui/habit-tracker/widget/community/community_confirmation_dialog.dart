@@ -1,6 +1,6 @@
-// lib\ui\habit-tracker\widget\community_confirmation_dialog.dart
+// lib\ui\habit-tracker\widget\community\community_confirmation_dialog.dart
 import 'package:flutter/material.dart';
-import 'package:purewill/ui/habit-tracker/screen/community_selection_screen.dart';
+import 'package:purewill/domain/model/community_model.dart';
 
 class CommunityConfirmationDialog extends StatelessWidget {
   final Community community;
@@ -34,7 +34,7 @@ class CommunityConfirmationDialog extends StatelessWidget {
             Container(
               height: 100,
               decoration: BoxDecoration(
-                color: community.color.withOpacity(0.2),
+                color: _getColorFromHex(community.color ?? '#7C3AED').withOpacity(0.2),
                 borderRadius: const BorderRadius.only(
                   topLeft: Radius.circular(20),
                   topRight: Radius.circular(20),
@@ -45,11 +45,11 @@ class CommunityConfirmationDialog extends StatelessWidget {
                   width: 60,
                   height: 60,
                   decoration: BoxDecoration(
-                    color: community.color,
+                    color: _getColorFromHex(community.color ?? '#7C3AED'),
                     borderRadius: BorderRadius.circular(30),
                   ),
                   child: Icon(
-                    community.icon,
+                    _getIconFromName(community.iconName ?? 'people'),
                     color: Colors.white,
                     size: 32,
                   ),
@@ -66,7 +66,7 @@ class CommunityConfirmationDialog extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
-                      color: community.color,
+                      color: _getColorFromHex(community.color ?? '#7C3AED'),
                     ),
                     textAlign: TextAlign.center,
                   ),
@@ -85,7 +85,7 @@ class CommunityConfirmationDialog extends StatelessWidget {
                   const SizedBox(height: 8),
                   
                   Text(
-                    community.description,
+                    community.description ?? 'Deskripsi tidak tersedia',
                     style: const TextStyle(
                       fontSize: 14,
                       color: Colors.grey,
@@ -110,7 +110,7 @@ class CommunityConfirmationDialog extends StatelessWidget {
                           Icons.people,
                           '${community.memberCount}',
                           'Anggota',
-                          community.color,
+                          _getColorFromHex(community.color ?? '#7C3AED'),
                         ),
                         Container(
                           width: 1,
@@ -118,21 +118,10 @@ class CommunityConfirmationDialog extends StatelessWidget {
                           color: Colors.grey[300],
                         ),
                         _buildStatItem(
-                          Icons.star,
-                          'Aktif',
-                          'Komunitas',
-                          community.color,
-                        ),
-                        Container(
-                          width: 1,
-                          height: 30,
-                          color: Colors.grey[300],
-                        ),
-                        _buildStatItem(
-                          Icons.forum,
-                          'Harian',
-                          'Diskusi',
-                          community.color,
+                          Icons.category,
+                          community.category?.name ?? 'General',
+                          'Kategori',
+                          _getColorFromHex(community.color ?? '#7C3AED'),
                         ),
                       ],
                     ),
@@ -190,7 +179,7 @@ class CommunityConfirmationDialog extends StatelessWidget {
                         child: ElevatedButton(
                           onPressed: onJoin,
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: community.color,
+                            backgroundColor: _getColorFromHex(community.color ?? '#7C3AED'),
                             padding: const EdgeInsets.symmetric(vertical: 16),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
@@ -259,5 +248,44 @@ class CommunityConfirmationDialog extends StatelessWidget {
         ),
       ],
     );
+  }
+
+  Color _getColorFromHex(String hexColor) {
+    hexColor = hexColor.replaceAll('#', '');
+    if (hexColor.length == 6) {
+      hexColor = 'FF$hexColor';
+    }
+    return Color(int.parse('0x$hexColor'));
+  }
+
+  IconData _getIconFromName(String iconName) {
+    switch (iconName) {
+      case 'fitness_center':
+        return Icons.fitness_center;
+      case 'psychology':
+        return Icons.psychology;
+      case 'restaurant':
+        return Icons.restaurant;
+      case 'wb_sunny':
+        return Icons.wb_sunny;
+      case 'work':
+        return Icons.work;
+      case 'menu_book':
+        return Icons.menu_book;
+      case 'self_improvement':
+        return Icons.self_improvement;
+      case 'school':
+        return Icons.school;
+      case 'local_fire_department':
+        return Icons.local_fire_department;
+      case 'bedtime':
+        return Icons.bedtime;
+      case 'water_drop':
+        return Icons.water_drop;
+      case 'sports_esports':
+        return Icons.sports_esports;
+      default:
+        return Icons.people;
+    }
   }
 }
