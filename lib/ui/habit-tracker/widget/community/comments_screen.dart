@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:purewill/data/services/community_service.dart';
+import 'package:purewill/data/services/community/comment_service.dart';
 import 'package:purewill/domain/model/community_model.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class CommentsScreen extends StatefulWidget {
   final String postId;
@@ -17,9 +18,9 @@ class CommentsScreen extends StatefulWidget {
 }
 
 class _CommentsScreenState extends State<CommentsScreen> {
-  final CommunityService _communityService = CommunityService();
+  final CommentService _commentService = CommentService();
   final TextEditingController _commentController = TextEditingController();
-  final String _currentUserId = ''; // TODO: Get from auth
+  late String _currentUserId;
 
   List<CommunityComment> _comments = [];
   bool _isLoading = true;
@@ -29,12 +30,14 @@ class _CommentsScreenState extends State<CommentsScreen> {
   @override
   void initState() {
     super.initState();
+    final user = Supabase.instance.client.auth.currentUser;
+    _currentUserId = user?.id ?? '';
     _loadComments();
   }
 
   Future<void> _loadComments() async {
     try {
-      final comments = await _communityService.getPostComments(
+      final comments = await _commentService.getPostComments(
         widget.postId,
         userId: _currentUserId,
       );
@@ -52,7 +55,7 @@ class _CommentsScreenState extends State<CommentsScreen> {
     if (_commentController.text.trim().isEmpty) return;
 
     try {
-      final comment = await _communityService.addComment(
+      final comment = await _commentService.addComment(
         postId: widget.postId,
         userId: _currentUserId,
         content: _commentController.text,

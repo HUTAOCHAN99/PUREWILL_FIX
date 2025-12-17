@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:purewill/data/services/community_service.dart';
+import 'package:purewill/data/services/community/post_service.dart';
+import 'package:purewill/data/services/community/community_service.dart';
 import 'package:purewill/domain/model/community_model.dart';
 
 class SharePostDialog extends StatefulWidget {
@@ -19,7 +20,9 @@ class SharePostDialog extends StatefulWidget {
 }
 
 class _SharePostDialogState extends State<SharePostDialog> {
+  final PostService _postService = PostService();
   final CommunityService _communityService = CommunityService();
+  
   final TextEditingController _commentController = TextEditingController();
   List<Community> _userCommunities = [];
   String? _selectedCommunityId;
@@ -59,7 +62,7 @@ class _SharePostDialogState extends State<SharePostDialog> {
     setState(() => _isLoading = true);
 
     try {
-      await _communityService.sharePostToCommunity(
+      await _postService.sharePostToCommunity(
         originalPostId: widget.originalPost.id,
         targetCommunityId: _selectedCommunityId!,
         userId: widget.userId,

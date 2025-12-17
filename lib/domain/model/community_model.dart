@@ -20,23 +20,101 @@ class CategoryModel {
     }
 
     return CategoryModel(
-      id: json['id'] is int ? json['id'] : int.tryParse(json['id'].toString()) ?? 0,
+      id: json['id'] is int
+          ? json['id']
+          : int.tryParse(json['id'].toString()) ?? 0,
       name: json['name']?.toString() ?? 'Unknown',
       createdAt: parseCreatedAt(json['created_at']),
     );
   }
 
   Map<String, dynamic> toJson() {
+    return {'id': id, 'name': name, 'created_at': createdAt.toIso8601String()};
+  }
+}
+
+class Profile {
+  final String userId;
+  final String fullName;
+  final String? avatarUrl;
+  final int level;
+  final int currentXp;
+
+  Profile({
+    required this.userId,
+    required this.fullName,
+    this.avatarUrl,
+    this.level = 1,
+    this.currentXp = 0,
+  });
+
+  factory Profile.fromJson(Map<String, dynamic> json) {
+    String userId = 'unknown';
+    String fullName = 'Pengguna';
+    String? avatarUrl;
+    int level = 1;
+    int currentXp = 0;
+
+    // Cek jika ini dari auth.users (ada email field)
+    if (json['email'] != null) {
+      userId = json['id']?.toString() ?? 'unknown';
+      fullName =
+          json['raw_user_meta_data']?['full_name']?.toString() ??
+          json['full_name']?.toString() ??
+          json['email']?.toString().split('@').first ??
+          'Pengguna';
+      avatarUrl =
+          json['raw_user_meta_data']?['avatar_url']?.toString() ??
+          json['avatar_url']?.toString();
+    }
+    // Cek jika ini dari profiles table
+    else if (json['user_id'] != null) {
+      userId = json['user_id']?.toString() ?? 'unknown';
+      fullName = json['full_name']?.toString() ?? 'Pengguna';
+      avatarUrl = json['avatar_url']?.toString();
+      level = json['level'] is int ? json['level'] : 1;
+      currentXp = json['current_xp'] is int ? json['current_xp'] : 0;
+    }
+    // Cek jika nested dalam auth.users format
+    else if (json['id'] is Map) {
+      final authData = Map<String, dynamic>.from(json['id']);
+      userId = authData['id']?.toString() ?? 'unknown';
+      fullName = authData['email']?.toString().split('@').first ?? 'Pengguna';
+    }
+
+    return Profile(
+      userId: userId,
+      fullName: fullName,
+      avatarUrl: avatarUrl,
+      level: level,
+      currentXp: currentXp,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
     return {
-      'id': id,
-      'name': name,
-      'created_at': createdAt.toIso8601String(),
+      'user_id': userId,
+      'full_name': fullName,
+      'avatar_url': avatarUrl,
+      'level': level,
+      'current_xp': currentXp,
     };
   }
 
-  @override
-  String toString() {
-    return 'CategoryModel{id: $id, name: $name}';
+  Profile copyWith({
+    String? userId,
+    String? fullName,
+    String? avatarUrl,
+    int? level,
+    int? currentXp,
+  }) {
+    return Profile(
+      userId: userId ?? this.userId,
+      fullName: fullName ?? this.fullName,
+      avatarUrl: avatarUrl ?? this.avatarUrl,
+      level: level ?? this.level,
+      currentXp: currentXp ?? this.currentXp,
+    );
   }
 }
 
@@ -47,80 +125,116 @@ class Community {
   final String? iconName;
   final String? color;
   final String? coverImageUrl;
-  final DateTime? createdAt;
-  final DateTime? updatedAt;
+  final DateTime createdAt;
+  final DateTime updatedAt;
   final bool isActive;
   final int memberCount;
   final String? adminId;
-  final int? categoryId;
   final List<String>? rules;
   final List<String>? tags;
   final bool isJoined;
-  final bool? isMember;
-  final CategoryModel? category;
 
   Community({
     required this.id,
     required this.name,
     this.description,
-    this.iconName,
-    this.color,
+    this.iconName = 'people',
+    this.color = '#7C3AED',
     this.coverImageUrl,
-    this.createdAt,
-    this.updatedAt,
+    required this.createdAt,
+    required this.updatedAt,
     this.isActive = true,
     this.memberCount = 0,
     this.adminId,
-    this.categoryId,
     this.rules,
     this.tags,
     this.isJoined = false,
-    this.isMember,
-    this.category,
   });
 
   factory Community.fromJson(Map<String, dynamic> json) {
-    List<String> parseList(dynamic list) {
-      if (list is List) {
-        return list.map((e) => e.toString()).toList();
+    // Parse category jika ada
+    CategoryModel? category;
+    if (json['categories'] != null) {
+      try {
+        if (json['categories'] is Map) {
+          category = CategoryModel.fromJson(
+            Map<String, dynamic>.from(json['categories']),
+          );
+        } else if (json['categories'] is List &&
+            (json['categories'] as List).isNotEmpty) {
+          category = CategoryModel.fromJson(
+            Map<String, dynamic>.from((json['categories'] as List).first),
+          );
+        }
+      } catch (e) {
+        // Ignore error
       }
-      return [];
     }
 
-    // Handle profiles jika berupa list atau map
-    CategoryModel? parseCategory(dynamic categoryData) {
-      if (categoryData == null) return null;
-      if (categoryData is List && categoryData.isNotEmpty) {
-        return CategoryModel.fromJson(categoryData[0] as Map<String, dynamic>);
-      } else if (categoryData is Map<String, dynamic>) {
-        return CategoryModel.fromJson(categoryData);
+    // Parse dates dengan error handling
+    DateTime parseDate(dynamic date) {
+      if (date == null) {
+        return DateTime.now();
       }
-      return null;
+      if (date is String) {
+        try {
+          return DateTime.parse(date);
+        } catch (e) {
+          return DateTime.now();
+        }
+      }
+      return DateTime.now();
+    }
+
+    // Parse rules
+    List<String>? rules;
+    if (json['rules'] != null) {
+      if (json['rules'] is String) {
+        try {
+          final parsed = jsonDecode(json['rules'] as String) as List;
+          rules = parsed.map((e) => e.toString()).toList();
+        } catch (e) {
+          rules = [];
+        }
+      } else if (json['rules'] is List) {
+        rules = (json['rules'] as List).map((e) => e.toString()).toList();
+      }
+    }
+
+    // Parse tags
+    List<String>? tags;
+    if (json['tags'] != null) {
+      if (json['tags'] is String) {
+        try {
+          final parsed = jsonDecode(json['tags'] as String) as List;
+          tags = parsed.map((e) => e.toString()).toList();
+        } catch (e) {
+          // Ignore error
+        }
+      } else if (json['tags'] is List) {
+        tags = (json['tags'] as List).map((e) => e.toString()).toList();
+      }
     }
 
     return Community(
-      id: json['id'].toString(),
-      name: json['name'].toString(),
+      id: json['id']?.toString() ?? 'unknown',
+      name: json['name']?.toString() ?? 'Unknown Community',
       description: json['description']?.toString(),
-      iconName: json['icon_name']?.toString(),
+      iconName: json['icon_name']?.toString() ?? 'people',
       color: json['color']?.toString() ?? '#7C3AED',
       coverImageUrl: json['cover_image_url']?.toString(),
-      createdAt: json['created_at'] != null 
-          ? DateTime.parse(json['created_at'].toString())
-          : null,
-      updatedAt: json['updated_at'] != null
-          ? DateTime.parse(json['updated_at'].toString())
-          : null,
-      isActive: json['is_active'] as bool? ?? true,
-      memberCount: (json['member_count'] as int?) ?? 0,
+      createdAt: parseDate(json['created_at']),
+      updatedAt: parseDate(json['updated_at']),
+      isActive: json['is_active'] == true,
+      memberCount: json['member_count'] is int
+          ? json['member_count']
+          : json['member_count'] is String
+          ? int.tryParse(json['member_count'].toString()) ?? 0
+          : 0,
       adminId: json['admin_id']?.toString(),
-      categoryId: json['category_id'] is int ? json['category_id'] : 
-          int.tryParse(json['category_id'].toString()),
-      rules: parseList(json['rules']),
-      tags: parseList(json['tags']),
-      isJoined: json['is_joined'] as bool? ?? false,
-      isMember: json['is_member'] as bool?,
-      category: parseCategory(json['categories']),
+      rules: rules,
+      tags: tags,
+      isJoined: json['is_joined'] == true,
     );
   }
 
@@ -132,12 +246,11 @@ class Community {
       'icon_name': iconName,
       'color': color,
       'cover_image_url': coverImageUrl,
-      'created_at': createdAt?.toIso8601String(),
-      'updated_at': updatedAt?.toIso8601String(),
+      'created_at': createdAt.toIso8601String(),
+      'updated_at': updatedAt.toIso8601String(),
       'is_active': isActive,
       'member_count': memberCount,
       'admin_id': adminId,
-      'category_id': categoryId,
       'rules': rules,
       'tags': tags,
       'is_joined': isJoined,
@@ -156,12 +269,10 @@ class Community {
     bool? isActive,
     int? memberCount,
     String? adminId,
-    int? categoryId,
+    CategoryModel? category,
     List<String>? rules,
     List<String>? tags,
     bool? isJoined,
-    bool? isMember,
-    CategoryModel? category,
   }) {
     return Community(
       id: id ?? this.id,
@@ -175,62 +286,10 @@ class Community {
       isActive: isActive ?? this.isActive,
       memberCount: memberCount ?? this.memberCount,
       adminId: adminId ?? this.adminId,
-      categoryId: categoryId ?? this.categoryId,
       rules: rules ?? this.rules,
       tags: tags ?? this.tags,
       isJoined: isJoined ?? this.isJoined,
-      isMember: isMember ?? this.isMember,
-      category: category ?? this.category,
     );
-  }
-
-  @override
-  String toString() {
-    return 'Community{id: $id, name: $name, members: $memberCount, isJoined: $isJoined}';
-  }
-}
-
-class Profile {
-  final String? id;
-  final String? userId;
-  final String? fullName;
-  final String? avatarUrl;
-  final int? level;
-  final int? currentXp;
-  final int? xpToNextLevel;
-
-  Profile({
-    this.id,
-    this.userId,
-    this.fullName,
-    this.avatarUrl,
-    this.level,
-    this.currentXp,
-    this.xpToNextLevel,
-  });
-
-  factory Profile.fromJson(Map<String, dynamic> json) {
-    return Profile(
-      id: json['id']?.toString(),
-      userId: json['user_id']?.toString(),
-      fullName: json['full_name']?.toString(),
-      avatarUrl: json['avatar_url']?.toString(),
-      level: (json['level'] as int?) ?? 1,
-      currentXp: (json['current_xp'] as int?) ?? 0,
-      xpToNextLevel: (json['xp_to_next_level'] as int?) ?? 100,
-    );
-  }
-
-  Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'user_id': userId,
-      'full_name': fullName,
-      'avatar_url': avatarUrl,
-      'level': level,
-      'current_xp': currentXp,
-      'xp_to_next_level': xpToNextLevel,
-    };
   }
 }
 
@@ -241,7 +300,7 @@ class CommunityPost {
   final String content;
   final String? imageUrl;
   final DateTime createdAt;
-  final DateTime updatedAt;
+  final DateTime? updatedAt;
   final bool isPinned;
   final bool isEdited;
   final DateTime? deletedAt;
@@ -252,10 +311,9 @@ class CommunityPost {
   final String? sharedFromPostId;
   final String? sharedFromCommunityId;
   final Profile? author;
+  final Community? community;
   final bool? isLikedByUser;
   final bool? isViewedByUser;
-  final Community? community;
-  final List<CommunityComment>? comments;
 
   CommunityPost({
     required this.id,
@@ -264,7 +322,7 @@ class CommunityPost {
     required this.content,
     this.imageUrl,
     required this.createdAt,
-    required this.updatedAt,
+    this.updatedAt,
     this.isPinned = false,
     this.isEdited = false,
     this.deletedAt,
@@ -275,59 +333,169 @@ class CommunityPost {
     this.sharedFromPostId,
     this.sharedFromCommunityId,
     this.author,
+    this.community,
     this.isLikedByUser,
     this.isViewedByUser,
-    this.community,
-    this.comments,
   });
 
   factory CommunityPost.fromJson(Map<String, dynamic> json) {
-    // Handle author profiles yang bisa berupa list atau map
-    Profile? parseAuthor(dynamic profilesData) {
-      if (profilesData == null) return null;
-      if (profilesData is List && profilesData.isNotEmpty) {
-        return Profile.fromJson(profilesData[0] as Map<String, dynamic>);
-      } else if (profilesData is Map<String, dynamic>) {
-        return Profile.fromJson(profilesData);
+    Profile? author;
+
+    if (json['profiles'] != null) {
+      try {
+        // Coba parse sebagai Map
+        if (json['profiles'] is Map) {
+          author = Profile.fromJson(
+            Map<String, dynamic>.from(json['profiles']),
+          );
+        }
+        // Atau jika profiles adalah List (array)
+        else if (json['profiles'] is List &&
+            (json['profiles'] as List).isNotEmpty) {
+          author = Profile.fromJson(
+            Map<String, dynamic>.from((json['profiles'] as List).first),
+          );
+        }
+        // Atau jika profiles adalah string JSON
+        else if (json['profiles'] is String) {
+          try {
+            final parsed = jsonDecode(json['profiles'] as String);
+            if (parsed is Map) {
+              author = Profile.fromJson(Map<String, dynamic>.from(parsed));
+            } else if (parsed is List && parsed.isNotEmpty) {
+              author = Profile.fromJson(
+                Map<String, dynamic>.from(parsed.first),
+              );
+            }
+          } catch (e) {
+            // Ignore error
+          }
+        }
+      } catch (e) {
+        // Ignore error
       }
-      return null;
     }
 
-    // Handle community data
-    Community? parseCommunity(dynamic communityData) {
-      if (communityData == null) return null;
-      if (communityData is List && communityData.isNotEmpty) {
-        return Community.fromJson(communityData[0] as Map<String, dynamic>);
-      } else if (communityData is Map<String, dynamic>) {
-        return Community.fromJson(communityData);
+    // Parse community jika ada
+    Community? community;
+    if (json['communities'] != null) {
+      try {
+        if (json['communities'] is Map) {
+          community = Community.fromJson(
+            Map<String, dynamic>.from(json['communities']),
+          );
+        } else if (json['communities'] is List &&
+            (json['communities'] as List).isNotEmpty) {
+          community = Community.fromJson(
+            Map<String, dynamic>.from((json['communities'] as List).first),
+          );
+        }
+      } catch (e) {
+        // Ignore error
       }
-      return null;
+    }
+
+    // VALIDASI: Image URL harus null atau URL Supabase, BUKAN Base64
+    final imageUrl = json['image_url']?.toString();
+    if (imageUrl != null && _isInvalidImageUrl(imageUrl)) {
+      // Invalid URL, set to null
+    }
+
+    // Validasi khusus untuk URL Supabase bucket 'communities'
+    bool isValidSupabaseUrl(String? url) {
+      if (url == null || url.isEmpty) return false;
+      
+      // Cek jika Base64
+      if (url.startsWith('data:image')) return false;
+      
+      // Cek jika mengandung Base64 pattern
+      if (url.contains('base64,')) return false;
+      
+      // Cek jika URL Supabase Storage dengan bucket 'communities'
+      final isSupabaseUrl = url.contains('supabase.co/storage/v1/object/public/');
+      final isCommunitiesBucket = url.contains('/communities/');
+      final isHttps = url.startsWith('https://');
+      
+      return isSupabaseUrl && isCommunitiesBucket && isHttps;
+    }
+
+    // Buat profile fallback jika author null
+    if (author == null) {
+      final authorId = json['author_id']?.toString() ?? 'unknown';
+      author = Profile(
+        userId: authorId,
+        fullName: 'Pengguna',
+        avatarUrl: null,
+        level: 1,
+        currentXp: 0,
+      );
+    }
+
+    // Parse dates
+    DateTime parseDate(dynamic date) {
+      if (date == null) return DateTime.now();
+      if (date is String) {
+        try {
+          return DateTime.parse(date);
+        } catch (e) {
+          return DateTime.now();
+        }
+      }
+      return DateTime.now();
     }
 
     return CommunityPost(
-      id: json['id'].toString(),
-      communityId: json['community_id'].toString(),
-      authorId: json['author_id'].toString(),
-      content: json['content'].toString(),
-      imageUrl: json['image_url']?.toString(),
-      createdAt: DateTime.parse(json['created_at'].toString()),
-      updatedAt: DateTime.parse(json['updated_at'].toString()),
-      isPinned: json['is_pinned'] as bool? ?? false,
-      isEdited: json['is_edited'] as bool? ?? false,
-      deletedAt: json['deleted_at'] != null 
-          ? DateTime.parse(json['deleted_at'].toString())
+      id: json['id']?.toString() ?? '',
+      communityId: json['community_id']?.toString() ?? '',
+      authorId: json['author_id']?.toString() ?? '',
+      content: json['content']?.toString() ?? '',
+      imageUrl: _isInvalidImageUrl(imageUrl) || !isValidSupabaseUrl(imageUrl)
+          ? null
+          : imageUrl,
+      createdAt: parseDate(json['created_at']),
+      updatedAt: json['updated_at'] != null
+          ? parseDate(json['updated_at'])
           : null,
-      likesCount: (json['likes_count'] as int?) ?? 0,
-      commentsCount: (json['comments_count'] as int?) ?? 0,
-      shareCount: (json['share_count'] as int?) ?? 0,
-      viewCount: (json['view_count'] as int?) ?? 0,
+      isPinned: json['is_pinned'] == true,
+      isEdited: json['is_edited'] == true,
+      deletedAt: json['deleted_at'] != null
+          ? parseDate(json['deleted_at'])
+          : null,
+      likesCount: json['likes_count'] is int
+          ? json['likes_count']
+          : json['likes_count'] is String
+          ? int.tryParse(json['likes_count'].toString()) ?? 0
+          : 0,
+      commentsCount: json['comments_count'] is int
+          ? json['comments_count']
+          : json['comments_count'] is String
+          ? int.tryParse(json['comments_count'].toString()) ?? 0
+          : 0,
+      shareCount: json['share_count'] is int
+          ? json['share_count']
+          : json['share_count'] is String
+          ? int.tryParse(json['share_count'].toString()) ?? 0
+          : 0,
+      viewCount: json['view_count'] is int
+          ? json['view_count']
+          : json['view_count'] is String
+          ? int.tryParse(json['view_count'].toString()) ?? 0
+          : 0,
       sharedFromPostId: json['shared_from_post_id']?.toString(),
       sharedFromCommunityId: json['shared_from_community_id']?.toString(),
-      author: parseAuthor(json['profiles']),
-      isLikedByUser: json['is_liked_by_user'] as bool?,
-      isViewedByUser: json['is_viewed_by_user'] as bool?,
-      community: parseCommunity(json['communities']),
+      author: author,
+      community: community,
+      isLikedByUser: json['is_liked_by_user'] == true,
+      isViewedByUser: json['is_viewed_by_user'] == true,
     );
+  }
+
+  static bool _isInvalidImageUrl(String? url) {
+    if (url == null) return false;
+    if (url.startsWith('data:image')) return true;
+    if (url.length < 10) return true;
+    if (url.contains('base64,')) return true;
+    return false;
   }
 
   Map<String, dynamic> toJson() {
@@ -338,7 +506,7 @@ class CommunityPost {
       'content': content,
       'image_url': imageUrl,
       'created_at': createdAt.toIso8601String(),
-      'updated_at': updatedAt.toIso8601String(),
+      'updated_at': updatedAt?.toIso8601String(),
       'is_pinned': isPinned,
       'is_edited': isEdited,
       'deleted_at': deletedAt?.toIso8601String(),
@@ -350,6 +518,8 @@ class CommunityPost {
       'shared_from_community_id': sharedFromCommunityId,
       'profiles': author?.toJson(),
       'communities': community?.toJson(),
+      'is_liked_by_user': isLikedByUser,
+      'is_viewed_by_user': isViewedByUser,
     };
   }
 
@@ -371,10 +541,9 @@ class CommunityPost {
     String? sharedFromPostId,
     String? sharedFromCommunityId,
     Profile? author,
+    Community? community,
     bool? isLikedByUser,
     bool? isViewedByUser,
-    Community? community,
-    List<CommunityComment>? comments,
   }) {
     return CommunityPost(
       id: id ?? this.id,
@@ -392,22 +561,29 @@ class CommunityPost {
       shareCount: shareCount ?? this.shareCount,
       viewCount: viewCount ?? this.viewCount,
       sharedFromPostId: sharedFromPostId ?? this.sharedFromPostId,
-      sharedFromCommunityId: sharedFromCommunityId ?? this.sharedFromCommunityId,
+      sharedFromCommunityId:
+          sharedFromCommunityId ?? this.sharedFromCommunityId,
       author: author ?? this.author,
+      community: community ?? this.community,
       isLikedByUser: isLikedByUser ?? this.isLikedByUser,
       isViewedByUser: isViewedByUser ?? this.isViewedByUser,
-      community: community ?? this.community,
-      comments: comments ?? this.comments,
     );
   }
 
-  bool get hasImage => imageUrl != null && imageUrl!.isNotEmpty;
-  bool get isShared => sharedFromPostId != null;
-  bool get canEdit => true; // Add logic for edit permission
+  bool get hasImage =>
+      imageUrl != null && imageUrl!.isNotEmpty && !_isInvalidImageUrl(imageUrl);
+  bool get isShared => sharedFromPostId != null && sharedFromPostId!.isNotEmpty;
 
-  @override
-  String toString() {
-    return 'CommunityPost{id: $id, content: ${content.length > 20 ? '${content.substring(0, 20)}...' : content}, likes: $likesCount, comments: $commentsCount}';
+  bool get isValidImageUrl {
+    if (imageUrl == null) return false;
+    
+    final url = imageUrl!;
+    final isSupabaseUrl = url.contains('supabase.co/storage/v1/object/public/');
+    final isCommunitiesBucket = url.contains('/communities/');
+    final isHttps = url.startsWith('https://');
+    final notBase64 = !url.contains('base64,') && !url.startsWith('data:');
+    
+    return isSupabaseUrl && isCommunitiesBucket && isHttps && notBase64;
   }
 }
 
@@ -422,9 +598,9 @@ class CommunityComment {
   final DateTime? deletedAt;
   final Profile? author;
   final List<CommunityComment>? replies;
-  final int replyCount;
   final bool? isLikedByUser;
   final int likesCount;
+  final int replyCount;
 
   CommunityComment({
     required this.id,
@@ -437,38 +613,71 @@ class CommunityComment {
     this.deletedAt,
     this.author,
     this.replies,
-    this.replyCount = 0,
     this.isLikedByUser,
     this.likesCount = 0,
+    this.replyCount = 0,
   });
 
   factory CommunityComment.fromJson(Map<String, dynamic> json) {
-    // Handle author profiles
-    Profile? parseAuthor(dynamic profilesData) {
-      if (profilesData == null) return null;
-      if (profilesData is List && profilesData.isNotEmpty) {
-        return Profile.fromJson(profilesData[0] as Map<String, dynamic>);
-      } else if (profilesData is Map<String, dynamic>) {
-        return Profile.fromJson(profilesData);
+    Profile? author;
+
+    if (json['profiles'] != null) {
+      try {
+        if (json['profiles'] is Map) {
+          author = Profile.fromJson(
+            Map<String, dynamic>.from(json['profiles']),
+          );
+        } else if (json['profiles'] is List &&
+            (json['profiles'] as List).isNotEmpty) {
+          author = Profile.fromJson(
+            Map<String, dynamic>.from((json['profiles'] as List).first),
+          );
+        }
+      } catch (e) {
+        // Ignore error
       }
-      return null;
+    }
+
+    // Buat profile fallback jika author null
+    if (author == null) {
+      final authorId = json['author_id']?.toString() ?? 'unknown';
+      author = Profile(
+        userId: authorId,
+        fullName: 'Pengguna',
+        avatarUrl: null,
+        level: 1,
+        currentXp: 0,
+      );
+    }
+
+    // Parse dates
+    DateTime parseDate(dynamic date) {
+      if (date == null) return DateTime.now();
+      if (date is String) {
+        try {
+          return DateTime.parse(date);
+        } catch (e) {
+          return DateTime.now();
+        }
+      }
+      return DateTime.now();
     }
 
     return CommunityComment(
-      id: json['id'].toString(),
-      postId: json['post_id'].toString(),
-      authorId: json['author_id'].toString(),
-      content: json['content'].toString(),
-      createdAt: DateTime.parse(json['created_at'].toString()),
-      updatedAt: DateTime.parse(json['updated_at'].toString()),
+      id: json['id']?.toString() ?? '',
+      postId: json['post_id']?.toString() ?? '',
+      authorId: json['author_id']?.toString() ?? '',
+      content: json['content']?.toString() ?? '',
+      createdAt: parseDate(json['created_at']),
+      updatedAt: parseDate(json['updated_at']),
       parentCommentId: json['parent_comment_id']?.toString(),
       deletedAt: json['deleted_at'] != null
-          ? DateTime.parse(json['deleted_at'].toString())
+          ? parseDate(json['deleted_at'])
           : null,
-      author: parseAuthor(json['profiles']),
-      replyCount: (json['reply_count'] as int?) ?? 0,
-      isLikedByUser: json['is_liked_by_user'] as bool?,
-      likesCount: (json['likes_count'] as int?) ?? 0,
+      author: author,
+      isLikedByUser: json['is_liked_by_user'] == true,
+      likesCount: json['likes_count'] is int ? json['likes_count'] : 0,
+      replyCount: json['reply_count'] is int ? json['reply_count'] : 0,
     );
   }
 
@@ -483,8 +692,9 @@ class CommunityComment {
       'parent_comment_id': parentCommentId,
       'deleted_at': deletedAt?.toIso8601String(),
       'profiles': author?.toJson(),
-      'reply_count': replyCount,
+      'is_liked_by_user': isLikedByUser,
       'likes_count': likesCount,
+      'reply_count': replyCount,
     };
   }
 
@@ -499,9 +709,9 @@ class CommunityComment {
     DateTime? deletedAt,
     Profile? author,
     List<CommunityComment>? replies,
-    int? replyCount,
     bool? isLikedByUser,
     int? likesCount,
+    int? replyCount,
   }) {
     return CommunityComment(
       id: id ?? this.id,
@@ -514,19 +724,14 @@ class CommunityComment {
       deletedAt: deletedAt ?? this.deletedAt,
       author: author ?? this.author,
       replies: replies ?? this.replies,
-      replyCount: replyCount ?? this.replyCount,
       isLikedByUser: isLikedByUser ?? this.isLikedByUser,
       likesCount: likesCount ?? this.likesCount,
+      replyCount: replyCount ?? this.replyCount,
     );
   }
 
-  bool get isReply => parentCommentId != null;
-  bool get hasReplies => replyCount > 0;
-
-  @override
-  String toString() {
-    return 'CommunityComment{id: $id, content: ${content.length > 20 ? '${content.substring(0, 20)}...' : content}}';
-  }
+  bool get hasReplies => replies != null && replies!.isNotEmpty;
+  bool get isReply => parentCommentId != null && parentCommentId!.isNotEmpty;
 }
 
 class CommunityPostShare {
@@ -551,25 +756,32 @@ class CommunityPostShare {
   });
 
   factory CommunityPostShare.fromJson(Map<String, dynamic> json) {
-    CommunityPost? parsePost(dynamic postData) {
-      if (postData == null) return null;
-      if (postData is List && postData.isNotEmpty) {
-        return CommunityPost.fromJson(postData[0] as Map<String, dynamic>);
-      } else if (postData is Map<String, dynamic>) {
-        return CommunityPost.fromJson(postData);
-      }
-      return null;
+    CommunityPost? originalPost;
+    CommunityPost? sharedPost;
+
+    if (json['original_post'] != null && json['original_post'] is Map) {
+      originalPost = CommunityPost.fromJson(
+        Map<String, dynamic>.from(json['original_post']),
+      );
+    }
+
+    if (json['shared_post'] != null && json['shared_post'] is Map) {
+      sharedPost = CommunityPost.fromJson(
+        Map<String, dynamic>.from(json['shared_post']),
+      );
     }
 
     return CommunityPostShare(
-      id: json['id'].toString(),
-      originalPostId: json['original_post_id'].toString(),
-      sharedPostId: json['shared_post_id'].toString(),
-      sharedByUserId: json['shared_by_user_id'].toString(),
+      id: json['id']?.toString() ?? '',
+      originalPostId: json['original_post_id']?.toString() ?? '',
+      sharedPostId: json['shared_post_id']?.toString() ?? '',
+      sharedByUserId: json['shared_by_user_id']?.toString() ?? '',
       sharedToCommunityId: json['shared_to_community_id']?.toString(),
-      createdAt: DateTime.parse(json['created_at'].toString()),
-      originalPost: parsePost(json['original_post']),
-      sharedPost: parsePost(json['shared_post']),
+      createdAt: json['created_at'] != null
+          ? DateTime.parse(json['created_at'].toString())
+          : DateTime.now(),
+      originalPost: originalPost,
+      sharedPost: sharedPost,
     );
   }
 
@@ -583,145 +795,6 @@ class CommunityPostShare {
       'created_at': createdAt.toIso8601String(),
       'original_post': originalPost?.toJson(),
       'shared_post': sharedPost?.toJson(),
-    };
-  }
-}
-
-class CommunityStats {
-  final String communityId;
-  final int memberCount;
-  final int postCount;
-  final int todayActivityCount;
-  final int totalLikes;
-  final int totalComments;
-  final int activeMembers;
-  final DateTime lastActivity;
-
-  CommunityStats({
-    required this.communityId,
-    required this.memberCount,
-    required this.postCount,
-    required this.todayActivityCount,
-    required this.totalLikes,
-    required this.totalComments,
-    required this.activeMembers,
-    required this.lastActivity,
-  });
-
-  factory CommunityStats.fromJson(Map<String, dynamic> json) {
-    return CommunityStats(
-      communityId: json['community_id'].toString(),
-      memberCount: (json['member_count'] as int?) ?? 0,
-      postCount: (json['post_count'] as int?) ?? 0,
-      todayActivityCount: (json['today_activity_count'] as int?) ?? 0,
-      totalLikes: (json['total_likes'] as int?) ?? 0,
-      totalComments: (json['total_comments'] as int?) ?? 0,
-      activeMembers: (json['active_members'] as int?) ?? 0,
-      lastActivity: DateTime.parse(json['last_activity'].toString()),
-    );
-  }
-}
-
-class CommunityActivity {
-  final String id;
-  final String communityId;
-  final String userId;
-  final String activityType;
-  final String? description;
-  final Map<String, dynamic>? metadata;
-  final DateTime createdAt;
-  final Community? community;
-  final Profile? user;
-
-  CommunityActivity({
-    required this.id,
-    required this.communityId,
-    required this.userId,
-    required this.activityType,
-    this.description,
-    this.metadata,
-    required this.createdAt,
-    this.community,
-    this.user,
-  });
-
-  factory CommunityActivity.fromJson(Map<String, dynamic> json) {
-    return CommunityActivity(
-      id: json['id'].toString(),
-      communityId: json['community_id'].toString(),
-      userId: json['user_id'].toString(),
-      activityType: json['activity_type'].toString(),
-      description: json['description']?.toString(),
-      metadata: json['metadata'] as Map<String, dynamic>?,
-      createdAt: DateTime.parse(json['created_at'].toString()),
-      community: json['communities'] != null
-          ? Community.fromJson(json['communities'] as Map<String, dynamic>)
-          : null,
-      user: json['profiles'] != null
-          ? Profile.fromJson(json['profiles'] as Map<String, dynamic>)
-          : null,
-    );
-  }
-}
-
-class CreatePostRequest {
-  final String communityId;
-  final String content;
-  final String? imageUrl;
-  final String? imagePath;
-
-  CreatePostRequest({
-    required this.communityId,
-    required this.content,
-    this.imageUrl,
-    this.imagePath,
-  });
-
-  Map<String, dynamic> toJson() {
-    return {
-      'community_id': communityId,
-      'content': content,
-      'image_url': imageUrl,
-    };
-  }
-}
-
-class CreateCommentRequest {
-  final String postId;
-  final String content;
-  final String? parentCommentId;
-
-  CreateCommentRequest({
-    required this.postId,
-    required this.content,
-    this.parentCommentId,
-  });
-
-  Map<String, dynamic> toJson() {
-    return {
-      'post_id': postId,
-      'content': content,
-      'parent_comment_id': parentCommentId,
-    };
-  }
-}
-
-class SharePostRequest {
-  final String originalPostId;
-  final String targetCommunityId;
-  final String? additionalComment;
-
-  SharePostRequest({
-    required this.originalPostId,
-    required this.targetCommunityId,
-    this.additionalComment,
-  });
-
-  Map<String, dynamic> toJson() {
-    return {
-      'original_post_id': originalPostId,
-      'target_community_id': targetCommunityId,
-      'additional_comment': additionalComment,
     };
   }
 }

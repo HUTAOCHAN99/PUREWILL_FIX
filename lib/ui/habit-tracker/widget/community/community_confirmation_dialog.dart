@@ -117,12 +117,6 @@ class CommunityConfirmationDialog extends StatelessWidget {
                           height: 30,
                           color: Colors.grey[300],
                         ),
-                        _buildStatItem(
-                          Icons.category,
-                          community.category?.name ?? 'General',
-                          'Kategori',
-                          _getColorFromHex(community.color ?? '#7C3AED'),
-                        ),
                       ],
                     ),
                   ),
