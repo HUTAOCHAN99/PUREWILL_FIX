@@ -33,7 +33,7 @@ class PostService {
         final user = _supabase.auth.currentUser;
         final email = user?.email ?? 'user@example.com';
         final fullName = email.split('@').first;
-        
+
         // Create profile
         await _supabase.from('profiles').insert({
           'user_id': userId,
@@ -152,16 +152,31 @@ class PostService {
       final postsResponse = await _supabase
           .from('community_posts')
           .select('''
-            *,
-            communities!community_posts_community_id_fkey(
-              id, name, description, icon_name, color, 
-              cover_image_url, created_at, updated_at,
-              is_active, member_count, admin_id,
-              categories!communities_category_id_fkey(
-                id, name, created_at
-              )
-            )
-          ''')
+  id,
+  community_id,
+  author_id,
+  content,
+  image_url,
+  created_at,
+  updated_at,
+  is_pinned,
+  is_edited,
+  deleted_at,
+  likes_count,
+  comments_count,
+  share_count,
+  view_count,
+  shared_from_post_id,
+  shared_from_community_id,
+  communities!community_posts_community_id_fkey(
+    id, name, description, icon_name, color, 
+    cover_image_url, created_at, updated_at,
+    is_active, member_count, admin_id,
+    categories!communities_category_id_fkey(
+      id, name, created_at
+    )
+  )
+''')
           .eq('community_id', communityId)
           .filter('deleted_at', 'is', null)
           .order('is_pinned', ascending: false)
@@ -180,7 +195,7 @@ class PostService {
 
       // 3. Get profiles for all authors
       final Map<String, Map<String, dynamic>> authorProfiles = {};
-      
+
       if (authorIds.isNotEmpty) {
         final profilesResponse = await _supabase
             .from('profiles')
@@ -201,10 +216,10 @@ class PostService {
         try {
           final authorId = postData['author_id']?.toString() ?? '';
           final authorProfile = authorProfiles[authorId];
-          
+
           // Prepare JSON dengan profile data
           final postJson = Map<String, dynamic>.from(postData);
-          
+
           if (authorProfile != null) {
             postJson['profiles'] = authorProfile;
           } else {
@@ -294,32 +309,92 @@ class PostService {
     int limit = 20,
   }) async {
     try {
+      // 1. Query posts terlebih dahulu
       var queryBuilder = _supabase
           .from('community_posts')
           .select('''
-            *,
-            profiles!community_posts_author_id_fkey(
-              user_id,
-              full_name,
-              avatar_url
-            ),
-            communities(name, icon_name)
-          ''')
-          .filter('deleted_at', 'is', null)
-          .textSearch('content', query);
+  *,
+  communities!community_posts_community_id_fkey(
+    id, 
+    name, 
+    icon_name
+  )
+''')
+          .filter('deleted_at', 'is', null);
 
-      if (communityId != null) {
+      if (communityId != null && communityId.isNotEmpty) {
         queryBuilder = queryBuilder.eq('community_id', communityId);
+      }
+
+      if (query.isNotEmpty) {
+        queryBuilder = queryBuilder.ilike('content', '%$query%');
       }
 
       final response = await queryBuilder
           .order('created_at', ascending: false)
           .limit(limit);
 
-      return (response as List)
-          .map((json) => CommunityPost.fromJson(json))
+      if (response.isEmpty) {
+        return [];
+      }
+
+      // 2. Ambil author profiles secara terpisah
+      final authorIds = (response as List)
+          .map<String>((post) => post['author_id']?.toString() ?? '')
+          .where((id) => id.isNotEmpty)
+          .toSet()
           .toList();
+
+      final Map<String, dynamic> authorProfiles = {};
+
+      if (authorIds.isNotEmpty) {
+        final profilesResponse = await _supabase
+            .from('profiles')
+            .select('user_id, full_name, avatar_url, level, current_xp')
+            .inFilter('user_id', authorIds);
+
+        for (var profile in profilesResponse) {
+          final profileUserId = profile['user_id']?.toString();
+          if (profileUserId != null) {
+            authorProfiles[profileUserId] = Map<String, dynamic>.from(profile);
+          }
+        }
+      }
+
+      // 3. Combine posts dengan profiles
+      final posts = <CommunityPost>[];
+      for (var postData in response) {
+        try {
+          final authorId = postData['author_id']?.toString() ?? '';
+          final authorProfile = authorProfiles[authorId];
+
+          // Prepare JSON dengan profile data
+          final postJson = Map<String, dynamic>.from(postData);
+
+          if (authorProfile != null) {
+            postJson['profiles'] = authorProfile;
+          } else {
+            // Create fallback profile
+            postJson['profiles'] = {
+              'user_id': authorId,
+              'full_name': 'Pengguna',
+              'avatar_url': null,
+              'level': 1,
+              'current_xp': 0,
+            };
+          }
+
+          final post = CommunityPost.fromJson(postJson);
+          posts.add(post);
+        } catch (e) {
+          print('Error parsing post: $e');
+          continue;
+        }
+      }
+
+      return posts;
     } catch (e) {
+      print('Error searching posts: $e');
       return [];
     }
   }
@@ -561,7 +636,7 @@ class PostService {
         final user = _supabase.auth.currentUser;
         final email = user?.email ?? 'user@example.com';
         final fullName = email.split('@').first;
-        
+
         await _supabase.from('profiles').insert({
           'user_id': userId,
           'full_name': fullName,
@@ -572,10 +647,10 @@ class PostService {
           'created_at': DateTime.now().toIso8601String(),
           'updated_at': DateTime.now().toIso8601String(),
         });
-        
+
         return true;
       }
-      
+
       return true;
     } catch (e) {
       return false;
@@ -627,23 +702,26 @@ class PostService {
           .inFilter('user_id', authorIds);
 
       final profilesMap = {
-        for (var profile in profilesResponse) 
-          profile['user_id'].toString(): profile
+        for (var profile in profilesResponse)
+          profile['user_id'].toString(): profile,
       };
 
       // Build posts manually
       final posts = postsResponse.map<CommunityPost>((postData) {
         final authorId = postData['author_id']?.toString() ?? '';
         final profile = profilesMap[authorId];
-        
+
         return CommunityPost(
           id: postData['id']?.toString() ?? '',
           communityId: postData['community_id']?.toString() ?? '',
           authorId: authorId,
           content: postData['content']?.toString() ?? '',
           imageUrl: postData['image_url']?.toString(),
-          createdAt: DateTime.parse(postData['created_at']?.toString() ?? DateTime.now().toIso8601String()),
-          updatedAt: postData['updated_at'] != null 
+          createdAt: DateTime.parse(
+            postData['created_at']?.toString() ??
+                DateTime.now().toIso8601String(),
+          ),
+          updatedAt: postData['updated_at'] != null
               ? DateTime.parse(postData['updated_at'].toString())
               : null,
           isPinned: postData['is_pinned'] == true,
@@ -652,11 +730,13 @@ class PostService {
           commentsCount: (postData['comments_count'] as int?) ?? 0,
           shareCount: (postData['share_count'] as int?) ?? 0,
           viewCount: (postData['view_count'] as int?) ?? 0,
-          author: profile != null ? Profile(
-            userId: authorId,
-            fullName: profile['full_name']?.toString() ?? 'Pengguna',
-            avatarUrl: profile['avatar_url']?.toString(),
-          ) : null,
+          author: profile != null
+              ? Profile(
+                  userId: authorId,
+                  fullName: profile['full_name']?.toString() ?? 'Pengguna',
+                  avatarUrl: profile['avatar_url']?.toString(),
+                )
+              : null,
         );
       }).toList();
 

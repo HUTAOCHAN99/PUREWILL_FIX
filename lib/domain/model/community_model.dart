@@ -1,5 +1,8 @@
 import 'dart:convert';
 
+import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
+
 class CategoryModel {
   final int id;
   final String name;
@@ -798,3 +801,154 @@ class CommunityPostShare {
     };
   }
 }
+
+class CommunityNotification {
+  final String id;
+  final String userId;
+  final String type; // 'comment', 'like', 'mention', 'follow'
+  final String title;
+  final String message;
+  final String? postId;
+  final String? commentId;
+  final String? senderId;
+  final String? communityId;
+  final bool isRead;
+  final DateTime createdAt;
+  final DateTime? readAt;
+  
+  // Enriched data
+  final CommunityPost? post;
+  final CommunityComment? comment;
+  final Profile? sender;
+
+  CommunityNotification({
+    required this.id,
+    required this.userId,
+    required this.type,
+    required this.title,
+    required this.message,
+    this.postId,
+    this.commentId,
+    this.senderId,
+    this.communityId,
+    this.isRead = false,
+    required this.createdAt,
+    this.readAt,
+    this.post,
+    this.comment,
+    this.sender,
+  });
+
+  factory CommunityNotification.fromJson(Map<String, dynamic> json) {
+    DateTime parseDate(dynamic date) {
+      if (date == null) return DateTime.now();
+      if (date is String) {
+        try {
+          return DateTime.parse(date);
+        } catch (e) {
+          return DateTime.now();
+        }
+      }
+      return DateTime.now();
+    }
+
+    return CommunityNotification(
+      id: json['id']?.toString() ?? '',
+      userId: json['user_id']?.toString() ?? '',
+      type: json['type']?.toString() ?? 'unknown',
+      title: json['title']?.toString() ?? 'Notifikasi',
+      message: json['message']?.toString() ?? '',
+      postId: json['post_id']?.toString(),
+      commentId: json['comment_id']?.toString(),
+      senderId: json['sender_id']?.toString(),
+      communityId: json['community_id']?.toString(),
+      isRead: json['is_read'] == true,
+      createdAt: parseDate(json['created_at']),
+      readAt: json['read_at'] != null ? parseDate(json['read_at']) : null,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'user_id': userId,
+      'type': type,
+      'title': title,
+      'message': message,
+      'post_id': postId,
+      'comment_id': commentId,
+      'sender_id': senderId,
+      'community_id': communityId,
+      'is_read': isRead,
+      'created_at': createdAt.toIso8601String(),
+      'read_at': readAt?.toIso8601String(),
+    };
+  }
+
+  CommunityNotification copyWith({
+    String? id,
+    String? userId,
+    String? type,
+    String? title,
+    String? message,
+    String? postId,
+    String? commentId,
+    String? senderId,
+    String? communityId,
+    bool? isRead,
+    DateTime? createdAt,
+    DateTime? readAt,
+    CommunityPost? post,
+    CommunityComment? comment,
+    Profile? sender,
+  }) {
+    return CommunityNotification(
+      id: id ?? this.id,
+      userId: userId ?? this.userId,
+      type: type ?? this.type,
+      title: title ?? this.title,
+      message: message ?? this.message,
+      postId: postId ?? this.postId,
+      commentId: commentId ?? this.commentId,
+      senderId: senderId ?? this.senderId,
+      communityId: communityId ?? this.communityId,
+      isRead: isRead ?? this.isRead,
+      createdAt: createdAt ?? this.createdAt,
+      readAt: readAt ?? this.readAt,
+      post: post ?? this.post,
+      comment: comment ?? this.comment,
+      sender: sender ?? this.sender,
+    );
+  }
+
+  bool get isCommentNotification => type == 'comment';
+  bool get isLikeNotification => type == 'like';
+  bool get isMentionNotification => type == 'mention';
+  
+  IconData get icon {
+    switch (type) {
+      case 'comment':
+        return Icons.comment;
+      case 'like':
+        return Icons.favorite;
+      case 'mention':
+        return Icons.alternate_email;
+      default:
+        return Icons.notifications;
+    }
+  }
+  
+  Color get iconColor {
+    switch (type) {
+      case 'comment':
+        return Colors.blue;
+      case 'like':
+        return Colors.red;
+      case 'mention':
+        return Colors.green;
+      default:
+        return Colors.grey;
+    }
+  }
+}
+

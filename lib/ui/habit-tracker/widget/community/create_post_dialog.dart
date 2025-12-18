@@ -1,9 +1,12 @@
 import 'dart:io';
 import 'dart:math';
+import 'dart:developer' as developer;
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:purewill/data/services/community/image_service.dart';
 import 'package:purewill/data/services/community/post_service.dart';
+import 'package:purewill/data/services/community/notification_service.dart';
+import 'package:purewill/domain/model/community_model.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class CreatePostDialog extends StatefulWidget {
@@ -37,6 +40,7 @@ class _CreatePostDialogState extends State<CreatePostDialog>
   final TextEditingController _contentController = TextEditingController();
   final ImageService _imageService = ImageService();
   final PostService _postService = PostService();
+  final NotificationService _notificationService = NotificationService();
   final SupabaseClient _supabase = Supabase.instance.client;
 
   XFile? _selectedImage;
@@ -50,12 +54,20 @@ class _CreatePostDialogState extends State<CreatePostDialog>
   late AnimationController _progressController;
   late Animation<double> _progressAnimation;
 
+  // Untuk mentions
+  final FocusNode _contentFocusNode = FocusNode();
+  final List<String> _mentions = [];
+  String? _lastCreatedPostId;
+
   @override
   void initState() {
     super.initState();
     _contentController.text = widget.initialContent ?? '';
     _imageUrl = widget.initialImageUrl;
     _selectedImage = widget.initialImage;
+
+    // Ekstrak mentions awal jika ada
+    _extractMentions(_contentController.text);
 
     // Animasi untuk progress bar
     _progressController = AnimationController(
@@ -67,11 +79,17 @@ class _CreatePostDialogState extends State<CreatePostDialog>
           ..addListener(() {
             setState(() {});
           });
+
+    // Listen untuk perubahan text untuk ekstrak mentions real-time
+    _contentController.addListener(() {
+      _extractMentions(_contentController.text);
+    });
   }
 
   @override
   void dispose() {
     _progressController.dispose();
+    _contentFocusNode.dispose();
     super.dispose();
   }
 
@@ -87,6 +105,98 @@ class _CreatePostDialogState extends State<CreatePostDialog>
         _uploadProgress = progress;
       });
     }
+  }
+
+  // ============ MENTIONS HANDLING ============
+
+  List<String> _extractMentions(String content) {
+    final mentionRegex = RegExp(r'@([a-zA-Z0-9_-]+)');
+    final matches = mentionRegex.allMatches(content);
+    final newMentions = matches.map((match) => match.group(1)!).toList();
+    
+    if (_mentions.length != newMentions.length) {
+      setState(() {
+        _mentions.clear();
+        _mentions.addAll(newMentions);
+      });
+    }
+    
+    return newMentions;
+  }
+
+  Future<void> _sendMentionNotifications(String postId) async {
+    if (_mentions.isEmpty) return;
+
+    try {
+      // Filter mentions yang valid (tidak termasuk diri sendiri)
+      final validMentions = _mentions
+          .where((mention) => mention != widget.userId)
+          .toList();
+
+      if (validMentions.isNotEmpty) {
+        await _notificationService.createMentionNotification(
+          mentionedUserIds: validMentions,
+          postId: postId,
+          senderId: widget.userId,
+          communityId: widget.communityId,
+        );
+        
+        developer.log('✅ Mention notifications sent to: $validMentions',
+            name: 'CreatePostDialog');
+      }
+    } catch (e) {
+      developer.log('❌ Error sending mention notifications: $e',
+          name: 'CreatePostDialog');
+    }
+  }
+
+  Widget _buildMentionsPreview() {
+    if (_mentions.isEmpty) return const SizedBox.shrink();
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.blue[50],
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.blue[100]!),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.alternate_email, size: 16, color: Colors.blue[700]),
+              const SizedBox(width: 6),
+              Text(
+                'Tag:',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.blue[700],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Wrap(
+            spacing: 6,
+            runSpacing: 4,
+            children: _mentions.map((mention) {
+              return Chip(
+                label: Text(
+                  '@$mention',
+                  style: const TextStyle(fontSize: 12),
+                ),
+                backgroundColor: Colors.blue[100],
+                visualDensity: VisualDensity.compact,
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                labelPadding: EdgeInsets.zero,
+              );
+            }).toList(),
+          ),
+        ],
+      ),
+    );
   }
 
   // ============ IMAGE UPLOAD ============
@@ -330,25 +440,33 @@ class _CreatePostDialogState extends State<CreatePostDialog>
 
       _updateUploadStatus('Menyimpan post...', progress: 0.7);
 
+      CommunityPost? createdPost;
+
       if (widget.isEditing && widget.postId != null) {
-        await _postService.updatePost(
+        createdPost = await _postService.updatePost(
           postId: widget.postId!,
           content: content,
           imageUrl: finalImageUrl,
         );
 
         _updateUploadStatus('✅ Berhasil update!', progress: 1.0);
-        _showSuccess('Post berhasil diperbarui!');
       } else {
-        await _postService.createPost(
+        createdPost = await _postService.createPost(
           communityId: widget.communityId,
           userId: widget.userId,
           content: content,
           imageUrl: finalImageUrl,
         );
 
+        _lastCreatedPostId = createdPost.id;
+        
+        // Kirim notifikasi untuk mentions
+        if (_mentions.isNotEmpty && createdPost.id.isNotEmpty) {
+          _updateUploadStatus('Mengirim notifikasi...', progress: 0.85);
+          await _sendMentionNotifications(createdPost.id);
+        }
+
         _updateUploadStatus('✅ Berhasil dibuat!', progress: 1.0);
-        _showSuccess('Post berhasil dibuat!');
       }
 
       await Future.delayed(const Duration(milliseconds: 500));
@@ -376,7 +494,27 @@ class _CreatePostDialogState extends State<CreatePostDialog>
       barrierDismissible: false,
       builder: (context) => AlertDialog(
         title: const Text('Upload Gagal'),
-        content: const Text('Upload gambar gagal. Lanjutkan tanpa gambar?'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text('Upload gambar gagal. Lanjutkan tanpa gambar?'),
+            if (_uploadError != null) ...[
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.red[50],
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.red[200]!),
+                ),
+                child: Text(
+                  _uploadError!,
+                  style: TextStyle(color: Colors.red[800], fontSize: 12),
+                ),
+              ),
+            ],
+          ],
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -463,6 +601,11 @@ class _CreatePostDialogState extends State<CreatePostDialog>
                 : null,
             color: Colors.grey[100],
           ),
+          child: _selectedImage == null && _imageUrl == null
+              ? const Center(
+                  child: Icon(Icons.image, size: 50, color: Colors.grey),
+                )
+              : null,
         ),
         Positioned(
           top: 8,
@@ -513,6 +656,12 @@ class _CreatePostDialogState extends State<CreatePostDialog>
               ),
             ),
           ],
+        ),
+        const SizedBox(height: 8),
+        Text(
+          'Format yang didukung: JPG, PNG, GIF, WebP (Maks. 20MB)',
+          style: TextStyle(fontSize: 11, color: Colors.grey[600]),
+          textAlign: TextAlign.center,
         ),
       ],
     );
@@ -576,7 +725,16 @@ class _CreatePostDialogState extends State<CreatePostDialog>
         Expanded(
           child: TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Batal'),
+            style: TextButton.styleFrom(
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            child: const Text(
+              'Batal',
+              style: TextStyle(fontSize: 16),
+            ),
           ),
         ),
         const SizedBox(width: 12),
@@ -592,12 +750,37 @@ class _CreatePostDialogState extends State<CreatePostDialog>
               ),
             ),
             child: Text(
-              widget.isEditing ? 'Update' : 'Posting',
+              widget.isEditing ? 'Update Post' : 'Buat Post',
               style: TextStyle(
                 color: hasContent ? Colors.white : Colors.blue[300],
                 fontWeight: FontWeight.w500,
+                fontSize: 16,
               ),
             ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCharacterCounter() {
+    final contentLength = _contentController.text.length;
+    final maxLength = 1000;
+    final isNearLimit = contentLength > maxLength * 0.9;
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.end,
+      children: [
+        Text(
+          '$contentLength/$maxLength',
+          style: TextStyle(
+            fontSize: 12,
+            color: isNearLimit
+                ? contentLength > maxLength
+                    ? Colors.red
+                    : Colors.orange
+                : Colors.grey[600],
+            fontWeight: contentLength > maxLength ? FontWeight.bold : null,
           ),
         ),
       ],
@@ -636,12 +819,14 @@ class _CreatePostDialogState extends State<CreatePostDialog>
 
   @override
   Widget build(BuildContext context) {
+    final hasContent = _contentController.text.trim().isNotEmpty;
+
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       insetPadding: const EdgeInsets.all(20),
       child: ConstrainedBox(
         constraints: BoxConstraints(
-          maxHeight: MediaQuery.of(context).size.height * 0.8,
+          maxHeight: MediaQuery.of(context).size.height * 0.85,
         ),
         child: Padding(
           padding: const EdgeInsets.all(20),
@@ -660,10 +845,16 @@ class _CreatePostDialogState extends State<CreatePostDialog>
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                  if (!_isUploading && !_isImageUploading)
+                  if (!_isUploading && !_isImageUploading && !_isCreatingPost)
                     IconButton(
                       icon: const Icon(Icons.close, size: 20),
-                      onPressed: () => Navigator.pop(context),
+                      onPressed: () {
+                        if (_contentController.text.isNotEmpty) {
+                          _showExitConfirmation();
+                        } else {
+                          Navigator.pop(context);
+                        }
+                      },
                     ),
                 ],
               ),
@@ -677,19 +868,36 @@ class _CreatePostDialogState extends State<CreatePostDialog>
                   child: Column(
                     children: [
                       // Content input
-                      TextField(
-                        controller: _contentController,
-                        maxLines: 6,
-                        minLines: 3,
-                        maxLength: 1000,
-                        decoration: const InputDecoration(
-                          hintText: 'Apa yang ingin Anda bagikan?',
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.all(Radius.circular(12)),
+                      Container(
+                        decoration: BoxDecoration(
+                          border: Border.all(color: Colors.grey[300]!),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: TextField(
+                          controller: _contentController,
+                          focusNode: _contentFocusNode,
+                          maxLines: 6,
+                          minLines: 3,
+                          maxLength: 1000,
+                          decoration: const InputDecoration(
+                            hintText: 'Apa yang ingin Anda bagikan? (Gunakan @ untuk tag)',
+                            border: InputBorder.none,
+                            contentPadding: EdgeInsets.all(16),
                           ),
-                          contentPadding: EdgeInsets.all(16),
                         ),
                       ),
+
+                      // Character counter
+                      Padding(
+                        padding: const EdgeInsets.only(top: 4),
+                        child: _buildCharacterCounter(),
+                      ),
+
+                      // Mentions preview
+                      if (_mentions.isNotEmpty) ...[
+                        const SizedBox(height: 12),
+                        _buildMentionsPreview(),
+                      ],
 
                       const SizedBox(height: 16),
 
@@ -705,6 +913,47 @@ class _CreatePostDialogState extends State<CreatePostDialog>
 
                       // Image picker buttons
                       _buildImagePickerButtons(),
+
+                      // Tips
+                      if (!widget.isEditing) ...[
+                        const SizedBox(height: 16),
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.blue[50],
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Icon(Icons.lightbulb_outline,
+                                      size: 16, color: Colors.blue[700]),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    'Tips:',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.blue[700],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                '• Gunakan @username untuk tag teman\n'
+                                '• Post akan otomatis memberi notifikasi ke yang di-tag\n'
+                                '• Unggah gambar yang relevan untuk engagement lebih baik',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.blue[800],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                     ],
                   ),
                 ),
@@ -719,5 +968,30 @@ class _CreatePostDialogState extends State<CreatePostDialog>
         ),
       ),
     );
+  }
+
+  Future<void> _showExitConfirmation() async {
+    final result = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        title: const Text('Batal Membuat Post?'),
+        content: const Text('Post yang belum disimpan akan hilang.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Lanjut Edit'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Ya, Batalkan'),
+          ),
+        ],
+      ),
+    );
+
+    if (result == true && mounted) {
+      Navigator.pop(context);
+    }
   }
 }

@@ -1,4 +1,5 @@
 import 'dart:developer' as developer;
+import 'package:purewill/data/services/community/notification_service.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:purewill/domain/model/community_model.dart';
 
@@ -27,31 +28,52 @@ class CommentService {
             'updated_at': DateTime.now().toIso8601String(),
           })
           .select('''
-            *,
-            profiles!community_comments_author_id_fkey(
-              user_id,
-              full_name,
-              avatar_url,
-              level,
-              current_xp
-            )
-          ''')
+          *,
+          profiles!community_comments_author_id_fkey(
+            user_id,
+            full_name,
+            avatar_url,
+            level,
+            current_xp
+          )
+        ''')
           .single();
 
-      // Update comments count in post - konversi ke integer
+      // Update comments count in post
       await _supabase.rpc(
         'increment_post_comments',
         params: {'post_id': postId},
       );
 
       final comment = CommunityComment.fromJson(response);
-      
-      // PERBAIKAN: Hapus parameter 'name'
-      developer.log('✅ Komentar berhasil ditambahkan dengan ID: ${comment.id}');
 
+      // PERBAIKAN: Query dengan alias yang jelas
+      final postResponse = await _supabase
+          .from('community_posts')
+          .select('author_id, community_id')
+          .eq('id', postId)
+          .single();
+
+      if (postResponse != null) {
+        final postAuthorId = postResponse['author_id']?.toString();
+        final communityId = postResponse['community_id']?.toString();
+
+        if (postAuthorId != null && communityId != null) {
+          // Trigger notifikasi
+          final notificationService = NotificationService();
+          await notificationService.createCommentNotification(
+            commentId: comment.id,
+            postId: postId,
+            commentAuthorId: userId,
+            postAuthorId: postAuthorId,
+            communityId: communityId,
+          );
+        }
+      }
+
+      developer.log('✅ Komentar berhasil ditambahkan dengan ID: ${comment.id}');
       return comment;
     } catch (e) {
-      // PERBAIKAN: Hapus parameter 'name'
       developer.log('❌ Error adding comment: $e');
       rethrow;
     }
@@ -183,7 +205,7 @@ class CommentService {
   }
 
   // ============ GET COMMENT BY ID ============
-  
+
   Future<CommunityComment?> getCommentById(String commentId) async {
     try {
       final response = await _supabase
@@ -202,7 +224,7 @@ class CommentService {
           .maybeSingle();
 
       if (response == null) return null;
-      
+
       return CommunityComment.fromJson(response);
     } catch (e) {
       // PERBAIKAN: Hapus parameter 'name'

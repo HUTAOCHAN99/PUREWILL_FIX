@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:purewill/data/services/community/index.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:purewill/data/services/community/notification_service.dart';
 import 'package:purewill/domain/model/community_model.dart';
 
 // Facade untuk menyederhanakan penggunaan service
@@ -16,7 +17,7 @@ class CommunityFacadeService {
     required PostService postService,
     required CommentService commentService,
     required ImageService imageService,
-    required ProfileService profileService,
+    required ProfileService profileService, required NotificationService notificationService,
   })  : _communityService = communityService,
         _postService = postService,
         _commentService = commentService,
