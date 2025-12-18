@@ -1,6 +1,8 @@
+// lib/ui/habit-tracker/widget/community/comments_screen.dart
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:purewill/ui/habit-tracker/screen/user_profile_screen.dart';
 import 'package:purewill/ui/habit-tracker/widget/community/chat_bubble_comment.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:purewill/data/services/community/comment_service.dart';
@@ -186,6 +188,23 @@ class _CommentsScreenState extends ConsumerState<CommentsScreen> {
     }
   }
 
+  void _showUserProfile(CommunityComment comment) {
+    if (comment.author == null) {
+      _showError('Tidak dapat membuka profil pengguna ini');
+      return;
+    }
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => UserProfileScreen(
+          userId: comment.authorId,
+          userName: comment.author?.fullName,
+        ),
+      ),
+    );
+  }
+
   void _scrollToBottom() {
     if (_scrollController.hasClients) {
       _scrollController.animateTo(
@@ -201,6 +220,7 @@ class _CommentsScreenState extends ConsumerState<CommentsScreen> {
       SnackBar(
         content: Text(message),
         backgroundColor: Colors.red,
+        duration: const Duration(seconds: 3),
       ),
     );
   }
@@ -210,6 +230,7 @@ class _CommentsScreenState extends ConsumerState<CommentsScreen> {
       SnackBar(
         content: Text(message),
         backgroundColor: Colors.blue,
+        duration: const Duration(seconds: 2),
       ),
     );
   }
@@ -224,14 +245,19 @@ class _CommentsScreenState extends ConsumerState<CommentsScreen> {
         children: [
           const Icon(Icons.reply, size: 16, color: Colors.blue),
           const SizedBox(width: 8),
-          Text(
-            'Membalas $_replyingToUserName',
-            style: TextStyle(color: Colors.blue[800], fontSize: 12),
+          Expanded(
+            child: Text(
+              'Membalas $_replyingToUserName',
+              style: TextStyle(color: Colors.blue[800], fontSize: 12),
+              overflow: TextOverflow.ellipsis,
+            ),
           ),
-          const Spacer(),
+          const SizedBox(width: 8),
           IconButton(
             icon: const Icon(Icons.close, size: 16),
             onPressed: _cancelReply,
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(),
           ),
         ],
       ),
@@ -329,6 +355,7 @@ class _CommentsScreenState extends ConsumerState<CommentsScreen> {
           onDelete: comment.authorId == _currentUserId
               ? () => _deleteComment(comment)
               : null,
+          onAvatarTap: () => _showUserProfile(comment),
           showTail: true,
           isReply: false,
         ),
@@ -348,6 +375,7 @@ class _CommentsScreenState extends ConsumerState<CommentsScreen> {
                   onDelete: reply.authorId == _currentUserId
                       ? () => _deleteComment(reply)
                       : null,
+                  onAvatarTap: () => _showUserProfile(reply),
                   showTail: false, // Replies tidak punya tail
                   isReply: true,
                 );
@@ -406,19 +434,26 @@ class _CommentsScreenState extends ConsumerState<CommentsScreen> {
         children: [
           const Icon(Icons.error_outline, size: 50, color: Colors.red),
           const SizedBox(height: 16),
-          Text(
+          const Text(
             'Gagal memuat komentar',
-            style: const TextStyle(color: Colors.red),
+            style: TextStyle(color: Colors.red),
           ),
           const SizedBox(height: 8),
-          Text(
-            error,
-            style: TextStyle(color: Colors.grey[600]),
-            textAlign: TextAlign.center,
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: Text(
+              error.length > 100 ? '${error.substring(0, 100)}...' : error,
+              style: TextStyle(color: Colors.grey[600]),
+              textAlign: TextAlign.center,
+            ),
           ),
           const SizedBox(height: 16),
           ElevatedButton(
             onPressed: () => ref.invalidate(postCommentsProvider(widget.postId)),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.blue,
+              foregroundColor: Colors.white,
+            ),
             child: const Text('Coba Lagi'),
           ),
         ],
@@ -433,10 +468,13 @@ class _CommentsScreenState extends ConsumerState<CommentsScreen> {
         children: [
           const Icon(Icons.login, size: 60, color: Colors.blue),
           const SizedBox(height: 20),
-          const Text(
-            'Silakan login untuk melihat dan menulis komentar',
-            style: TextStyle(fontSize: 16),
-            textAlign: TextAlign.center,
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 20),
+            child: Text(
+              'Silakan login untuk melihat dan menulis komentar',
+              style: TextStyle(fontSize: 16),
+              textAlign: TextAlign.center,
+            ),
           ),
           const SizedBox(height: 20),
           ElevatedButton(
@@ -447,7 +485,12 @@ class _CommentsScreenState extends ConsumerState<CommentsScreen> {
                 (route) => false,
               );
             },
-            child: const Text('Login'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.blue,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 12),
+            ),
+            child: const Text('Login Sekarang'),
           ),
         ],
       ),
@@ -458,14 +501,20 @@ class _CommentsScreenState extends ConsumerState<CommentsScreen> {
   Widget build(BuildContext context) {
     if (_isLoading) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Komentar')),
+        appBar: AppBar(
+          title: const Text('Komentar'),
+          backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
+        ),
         body: _buildLoadingState(),
       );
     }
 
     if (_currentUserId == null) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Komentar')),
+        appBar: AppBar(
+          title: const Text('Komentar'),
+          backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
+        ),
         body: _buildNotLoggedInState(),
       );
     }
@@ -477,6 +526,10 @@ class _CommentsScreenState extends ConsumerState<CommentsScreen> {
         title: const Text('Komentar'),
         backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
         elevation: 1,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => Navigator.pop(context),
+        ),
       ),
       body: Column(
         children: [

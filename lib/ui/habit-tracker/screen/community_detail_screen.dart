@@ -4,17 +4,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:purewill/ui/habit-tracker/screen/post_search_delegate.dart';
+import 'package:purewill/ui/habit-tracker/widget/community/user_profile_dialog.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter/services.dart';
 import 'package:purewill/data/services/community/post_service.dart';
 import 'package:purewill/data/services/community/community_service.dart';
-import 'package:purewill/data/services/community/notification_service.dart';
 import 'package:purewill/domain/model/community_model.dart';
 import 'package:purewill/ui/habit-tracker/widget/community/post_card.dart';
 import 'package:purewill/ui/habit-tracker/widget/community/create_post_dialog.dart';
 import 'package:purewill/ui/habit-tracker/widget/community/comments_screen.dart';
 import 'package:purewill/ui/habit-tracker/widget/community/share_post_dialog.dart';
-import 'package:purewill/ui/habit-tracker/widget/community/notification_bell.dart';
 
 // Provider untuk current user
 final currentUserProvider = Provider<User?>((ref) {
@@ -27,9 +26,6 @@ final postServiceProvider = Provider((ref) => PostService());
 
 // Provider untuk community service
 final communityServiceProvider = Provider((ref) => CommunityService());
-
-// Provider untuk notification service
-final notificationServiceProvider = Provider((ref) => NotificationService());
 
 // Provider untuk post dalam komunitas
 final communityPostsProvider = StreamProvider.autoDispose
@@ -62,6 +58,40 @@ final communityDetailsProvider = FutureProvider.autoDispose
       return await communityService.getCommunityDetails(communityId, user.id);
     });
 
+// Provider untuk user profile dengan statistik teman
+final userProfileWithStatsProvider = FutureProvider.autoDispose
+    .family<Map<String, dynamic>, String>((ref, userId) async {
+      try {
+        // Coba ambil profile dan friend count
+        final supabase = Supabase.instance.client;
+
+        // Get profile
+        final profileResponse = await supabase
+            .from('profiles')
+            .select('user_id, full_name, avatar_url, level, current_xp')
+            .eq('user_id', userId)
+            .maybeSingle();
+
+        Profile? profile;
+        if (profileResponse != null) {
+          profile = Profile.fromJson(profileResponse);
+        }
+
+        // Get friend count (hanya count saja untuk performa)
+        final friendCountResponse = await supabase
+            .from('friendships')
+            .select()
+            .or('(sender_id.eq.$userId,receiver_id.eq.$userId)')
+            .eq('status', 'accepted');
+
+        final friendCount = friendCountResponse.length;
+
+        return {'profile': profile, 'friendCount': friendCount};
+      } catch (e) {
+        return {'profile': null, 'friendCount': 0};
+      }
+    });
+
 class CommunityDetailScreen extends ConsumerStatefulWidget {
   final String communityId;
   final String communityName;
@@ -77,10 +107,204 @@ class CommunityDetailScreen extends ConsumerStatefulWidget {
       _CommunityDetailScreenState();
 }
 
+class CommunitySidebar extends StatelessWidget {
+  final String communityId;
+  final String communityName;
+  final String? userId;
+  final bool isAdmin;
+  final VoidCallback onInviteUsers;
+  final VoidCallback onViewMembers;
+  final VoidCallback onReportCommunity;
+  final VoidCallback onLeaveCommunity;
+  final VoidCallback onDeleteCommunity;
+  final VoidCallback onOpenProfile;
+
+  const CommunitySidebar({
+    super.key,
+    required this.communityId,
+    required this.communityName,
+    required this.userId,
+    required this.isAdmin,
+    required this.onInviteUsers,
+    required this.onViewMembers,
+    required this.onReportCommunity,
+    required this.onLeaveCommunity,
+    required this.onDeleteCommunity,
+    required this.onOpenProfile,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: const BorderRadius.only(
+          topLeft: Radius.circular(24),
+          topRight: Radius.circular(24),
+        ),
+      ),
+      child: SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Header
+            Padding(
+              padding: const EdgeInsets.all(20),
+              child: Row(
+                children: [
+                  Container(
+                    width: 50,
+                    height: 50,
+                    decoration: BoxDecoration(
+                      color: Colors.blue,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(
+                      Icons.people,
+                      color: Colors.white,
+                      size: 30,
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          communityName,
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Komunitas Aktif',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey[600],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            const Divider(height: 1),
+
+            // Menu Items
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              child: Column(
+                children: [
+                  // Profile
+                  if (userId != null)
+                    ListTile(
+                      leading: const Icon(Icons.person_outline),
+                      title: const Text('Profil Saya'),
+                      onTap: () {
+                        Navigator.pop(context);
+                        onOpenProfile();
+                      },
+                    ),
+
+                  // Undang Pengguna
+                  ListTile(
+                    leading: const Icon(Icons.person_add_outlined),
+                    title: const Text('Undang Pengguna'),
+                    onTap: () {
+                      Navigator.pop(context);
+                      onInviteUsers();
+                    },
+                  ),
+
+                  // Anggota
+                  ListTile(
+                    leading: const Icon(Icons.group_outlined),
+                    title: const Text('Anggota Komunitas'),
+                    onTap: () {
+                      Navigator.pop(context);
+                      onViewMembers();
+                    },
+                  ),
+
+                  // Laporkan Komunitas
+                  ListTile(
+                    leading: const Icon(Icons.flag_outlined),
+                    title: const Text('Laporkan Komunitas'),
+                    onTap: () {
+                      Navigator.pop(context);
+                      onReportCommunity();
+                    },
+                  ),
+
+                  // Keluar dari Komunitas
+                  ListTile(
+                    leading: const Icon(
+                      Icons.exit_to_app_outlined,
+                      color: Colors.red,
+                    ),
+                    title: const Text(
+                      'Keluar dari Komunitas',
+                      style: TextStyle(color: Colors.red),
+                    ),
+                    onTap: () {
+                      Navigator.pop(context);
+                      onLeaveCommunity();
+                    },
+                  ),
+
+                  // Hapus Komunitas (hanya admin)
+                  if (isAdmin)
+                    ListTile(
+                      leading: const Icon(
+                        Icons.delete_outline,
+                        color: Colors.red,
+                      ),
+                      title: const Text(
+                        'Hapus Komunitas',
+                        style: TextStyle(color: Colors.red),
+                      ),
+                      onTap: () {
+                        Navigator.pop(context);
+                        onDeleteCommunity();
+                      },
+                    ),
+
+                  const SizedBox(height: 20),
+                ],
+              ),
+            ),
+
+            // Tombol Close
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: ElevatedButton(
+                onPressed: () => Navigator.pop(context),
+                style: ElevatedButton.styleFrom(
+                  minimumSize: const Size(double.infinity, 48),
+                  backgroundColor: Colors.grey[100],
+                  foregroundColor: Colors.grey[800],
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  elevation: 0,
+                ),
+                child: const Text('Tutup'),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _CommunityDetailScreenState extends ConsumerState<CommunityDetailScreen> {
   late final PostService _postService;
   late final CommunityService _communityService;
-  late final NotificationService _notificationService;
 
   bool _isJoining = false;
   bool _isLoadingUser = true;
@@ -98,7 +322,6 @@ class _CommunityDetailScreenState extends ConsumerState<CommunityDetailScreen> {
     super.initState();
     _postService = ref.read(postServiceProvider);
     _communityService = ref.read(communityServiceProvider);
-    _notificationService = ref.read(notificationServiceProvider);
 
     _scrollController.addListener(_handleScroll);
 
@@ -126,12 +349,84 @@ class _CommunityDetailScreenState extends ConsumerState<CommunityDetailScreen> {
 
   Future<void> _updateLastSeen() async {
     if (_currentUserId != null) {
-      await _communityService.updateLastSeen(_currentUserId!, widget.communityId);
+      await _communityService.updateLastSeen(
+        _currentUserId!,
+        widget.communityId,
+      );
     }
+  }
+
+  void _openSidebar() {
+    final user = Supabase.instance.client.auth.currentUser;
+    final isAdmin = false; // Tambahkan logika cek admin jika diperlukan
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => CommunitySidebar(
+        communityId: widget.communityId,
+        communityName: widget.communityName,
+        userId: _currentUserId,
+        isAdmin: isAdmin,
+        onInviteUsers: _showInviteUsers,
+        onViewMembers: _showMembers,
+        onReportCommunity: _reportCommunity,
+        onLeaveCommunity: _leaveCommunity,
+        onDeleteCommunity: _deleteCommunity,
+        onOpenProfile: _openUserProfile,
+      ),
+    );
   }
 
   void _onImageSaved() {
     _showSuccess('Gambar berhasil disimpan ke galeri!');
+  }
+
+  void _showInviteUsers() {
+    if (_currentUserId == null) {
+      _showError('Silakan login untuk mengundang pengguna');
+      return;
+    }
+
+    _showInfo('Fitur undang pengguna akan segera hadir');
+  }
+
+  void _showMembers() {
+    _showInfo('Fitur lihat anggota akan segera hadir');
+  }
+
+  Future<void> _deleteCommunity() async {
+    if (_currentUserId == null) {
+      _showError('Silakan login untuk mengakses fitur ini');
+      return;
+    }
+
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Hapus Komunitas'),
+        content: const Text(
+          'Apakah Anda yakin ingin menghapus komunitas ini? '
+          'Tindakan ini tidak dapat dibatalkan.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Batal'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Hapus', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      // Implement delete community logic
+      _showInfo('Fitur hapus komunitas akan segera hadir');
+    }
   }
 
   @override
@@ -199,17 +494,7 @@ class _CommunityDetailScreenState extends ConsumerState<CommunityDetailScreen> {
     }
 
     try {
-      final isLiked = await _postService.toggleLikePost(post.id, _currentUserId!);
-      
-      // Kirim notifikasi jika like berhasil (dan bukan post sendiri)
-      if (isLiked && post.authorId != _currentUserId) {
-        await _notificationService.createLikeNotification(
-          postId: post.id,
-          likerId: _currentUserId!,
-          postAuthorId: post.authorId,
-          communityId: widget.communityId,
-        );
-      }
+      await _postService.toggleLikePost(post.id, _currentUserId!);
     } catch (e) {
       _showError('Error: ${e.toString()}');
     }
@@ -462,7 +747,10 @@ class _CommunityDetailScreenState extends ConsumerState<CommunityDetailScreen> {
           TextButton(
             onPressed: () {
               Clipboard.setData(
-                ClipboardData(text: 'https://app.example.com/community/${widget.communityId}'),
+                ClipboardData(
+                  text:
+                      'https://app.example.com/community/${widget.communityId}',
+                ),
               );
               _showInfo('Link komunitas disalin ke clipboard');
               Navigator.pop(context);
@@ -492,16 +780,6 @@ class _CommunityDetailScreenState extends ConsumerState<CommunityDetailScreen> {
     );
   }
 
-  void _showNotificationsScreen() {
-    if (_currentUserId == null) {
-      _showError('Silakan login untuk melihat notifikasi');
-      return;
-    }
-
-    // TODO: Implement notifications screen
-    _showInfo('Halaman notifikasi akan segera hadir');
-  }
-
   // ============ SEARCH HANDLERS ============
 
   Future<void> _handleSearchPostLike(CommunityPost post) async {
@@ -511,16 +789,7 @@ class _CommunityDetailScreenState extends ConsumerState<CommunityDetailScreen> {
     }
 
     try {
-      final isLiked = await _postService.toggleLikePost(post.id, _currentUserId!);
-      
-      if (isLiked && post.authorId != _currentUserId) {
-        await _notificationService.createLikeNotification(
-          postId: post.id,
-          likerId: _currentUserId!,
-          postAuthorId: post.authorId,
-          communityId: widget.communityId,
-        );
-      }
+      await _postService.toggleLikePost(post.id, _currentUserId!);
     } catch (e) {
       _showError('Error: ${e.toString()}');
     }
@@ -627,6 +896,20 @@ class _CommunityDetailScreenState extends ConsumerState<CommunityDetailScreen> {
           ],
         ),
       ),
+    );
+  }
+
+  // ============ PROFILE HANDLERS ============
+
+  void _openUserProfile() {
+    if (_currentUserId == null) {
+      _showError('Silakan login untuk melihat profil');
+      return;
+    }
+
+    showDialog(
+      context: context,
+      builder: (context) => UserProfileDialog(userId: _currentUserId!),
     );
   }
 
@@ -796,11 +1079,7 @@ class _CommunityDetailScreenState extends ConsumerState<CommunityDetailScreen> {
                 value: community.memberCount.toString(),
                 label: 'Anggota',
               ),
-              _buildStatItem(
-                icon: Icons.forum,
-                value: 'Post',
-                label: 'Aktif',
-              ),
+              _buildStatItem(icon: Icons.forum, value: 'Post', label: 'Aktif'),
               _buildStatItem(
                 icon: Icons.today,
                 value: 'Hari ini',
@@ -837,10 +1116,7 @@ class _CommunityDetailScreenState extends ConsumerState<CommunityDetailScreen> {
           style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
         ),
         const SizedBox(height: 2),
-        Text(
-          label,
-          style: TextStyle(fontSize: 11, color: Colors.grey[600]),
-        ),
+        Text(label, style: TextStyle(fontSize: 11, color: Colors.grey[600])),
       ],
     );
   }
@@ -877,11 +1153,7 @@ class _CommunityDetailScreenState extends ConsumerState<CommunityDetailScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            Icons.forum_outlined,
-            size: 80,
-            color: Colors.grey[300],
-          ),
+          Icon(Icons.forum_outlined, size: 80, color: Colors.grey[300]),
           const SizedBox(height: 16),
           Text(
             isMember ? 'Belum ada post' : 'Belum ada aktivitas',
@@ -908,7 +1180,10 @@ class _CommunityDetailScreenState extends ConsumerState<CommunityDetailScreen> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.blue,
                 foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 12,
+                ),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
@@ -1091,75 +1366,22 @@ class _CommunityDetailScreenState extends ConsumerState<CommunityDetailScreen> {
   }
 
   List<Widget> _buildAppBarActions(AsyncValue<Community> communityAsync) {
-    final actions = <Widget>[];
+    return [
+      IconButton(
+        icon: const Icon(Icons.menu),
+        onPressed: _openSidebar,
+        tooltip: 'Menu Komunitas',
+      ),
+    ];
+  }
 
-    return communityAsync.when(
-      data: (community) {
-        if (community.isJoined) {
-          actions.add(
-            PopupMenuButton<String>(
-              itemBuilder: (context) => [
-                const PopupMenuItem<String>(
-                  value: 'share',
-                  child: Row(
-                    children: [
-                      Icon(Icons.share, size: 20),
-                      SizedBox(width: 8),
-                      Text('Bagikan Komunitas'),
-                    ],
-                  ),
-                ),
-                const PopupMenuItem<String>(
-                  value: 'invite',
-                  child: Row(
-                    children: [
-                      Icon(Icons.person_add, size: 20),
-                      SizedBox(width: 8),
-                      Text('Undang Teman'),
-                    ],
-                  ),
-                ),
-                const PopupMenuItem<String>(
-                  value: 'report',
-                  child: Row(
-                    children: [
-                      Icon(Icons.flag, size: 20),
-                      SizedBox(width: 8),
-                      Text('Laporkan Komunitas'),
-                    ],
-                  ),
-                ),
-                const PopupMenuDivider(),
-                const PopupMenuItem<String>(
-                  value: 'leave',
-                  child: Row(
-                    children: [
-                      Icon(Icons.exit_to_app, size: 20, color: Colors.red),
-                      SizedBox(width: 8),
-                      Text('Keluar', style: TextStyle(color: Colors.red)),
-                    ],
-                  ),
-                ),
-              ],
-              onSelected: (value) {
-                if (value == 'leave') {
-                  _leaveCommunity();
-                } else if (value == 'share') {
-                  _shareCommunity();
-                } else if (value == 'report') {
-                  _reportCommunity();
-                } else if (value == 'invite') {
-                  _showInfo('Fitur undang teman akan segera hadir');
-                }
-              },
-            ),
-          );
-        }
-        return actions;
-      },
-      loading: () => actions,
-      error: (error, stack) => actions,
-    );
+  void _showInviteFriendsDialog(Community community) {
+    if (_currentUserId == null) {
+      _showError('Silakan login untuk mengundang teman');
+      return;
+    }
+
+    _showInfo('Fitur undang teman akan segera hadir');
   }
 
   Widget _buildFloatingActionButton(AsyncValue<Community> communityAsync) {
@@ -1245,14 +1467,8 @@ class _CommunityDetailScreenState extends ConsumerState<CommunityDetailScreen> {
               },
               tooltip: 'Cari postingan',
             ),
-            
-            // Notification Bell
-            NotificationBell(
-              userId: _currentUserId!,
-              onNotificationTap: _showNotificationsScreen,
-            ),
-            
-            // Existing community menu
+
+            // Community menu dan profile button
             ..._buildAppBarActions(communityAsync),
           ],
         ),
@@ -1274,8 +1490,7 @@ class _CommunityDetailScreenState extends ConsumerState<CommunityDetailScreen> {
                     color: Colors.blue[50],
                     child: Row(
                       children: [
-                        Icon(Icons.new_releases,
-                            size: 16, color: Colors.blue),
+                        Icon(Icons.new_releases, size: 16, color: Colors.blue),
                         const SizedBox(width: 8),
                         Text(
                           '${snapshot.data} post baru sejak kunjungan terakhir',
@@ -1296,10 +1511,7 @@ class _CommunityDetailScreenState extends ConsumerState<CommunityDetailScreen> {
                           },
                           child: Text(
                             'Lihat',
-                            style: TextStyle(
-                              color: Colors.blue,
-                              fontSize: 12,
-                            ),
+                            style: TextStyle(color: Colors.blue, fontSize: 12),
                           ),
                         ),
                       ],
@@ -1309,15 +1521,14 @@ class _CommunityDetailScreenState extends ConsumerState<CommunityDetailScreen> {
                 return const SizedBox.shrink();
               },
             ),
-            
+
             Expanded(
               child: communityAsync.when(
                 data: (community) {
                   return Column(
                     children: [
                       _buildCommunityHeader(community),
-                      if (!community.isJoined) 
-                        _buildJoinButton(),
+                      if (!community.isJoined) _buildJoinButton(),
                       Expanded(
                         child: _buildPostsContent(
                           postsAsync,

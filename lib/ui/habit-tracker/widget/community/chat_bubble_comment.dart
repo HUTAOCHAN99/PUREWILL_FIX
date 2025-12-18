@@ -1,3 +1,4 @@
+// lib/ui/habit-tracker/widget/community/chat_bubble_comment.dart
 import 'package:flutter/material.dart';
 import 'package:purewill/domain/model/community_model.dart';
 
@@ -7,6 +8,7 @@ class ChatBubble extends StatelessWidget {
   final VoidCallback? onLike;
   final VoidCallback? onReply;
   final VoidCallback? onDelete;
+  final VoidCallback? onAvatarTap;
   final bool showTail;
   final bool isReply;
 
@@ -17,6 +19,7 @@ class ChatBubble extends StatelessWidget {
     this.onLike,
     this.onReply,
     this.onDelete,
+    this.onAvatarTap,
     this.showTail = true,
     this.isReply = false,
   });
@@ -46,6 +49,64 @@ class ChatBubble extends StatelessWidget {
     final authorName = comment.author?.fullName ?? 'Pengguna';
     final level = comment.author?.level ?? 1;
 
+    // Buat avatar widget dengan gesture detector
+    Widget buildAvatarWidget() {
+      final avatar = Container(
+        width: 36,
+        height: 36,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          image: avatarUrl != null && avatarUrl.isNotEmpty
+              ? DecorationImage(
+                  image: NetworkImage(avatarUrl),
+                  fit: BoxFit.cover,
+                )
+              : null,
+          color: avatarUrl == null || avatarUrl.isEmpty
+              ? Colors.blueGrey[100]
+              : null,
+        ),
+        child: avatarUrl == null || avatarUrl.isEmpty
+            ? Center(
+                child: Text(
+                  authorName.substring(0, 1).toUpperCase(),
+                  style: TextStyle(
+                    color: Colors.blueGrey[800],
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                  ),
+                ),
+              )
+            : null,
+      );
+
+      // Wrap dengan GestureDetector jika onAvatarTap ada
+      return onAvatarTap != null
+          ? GestureDetector(
+              onTap: onAvatarTap,
+              child: avatar,
+            )
+          : avatar;
+    }
+
+    Widget buildLevelBadge() {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+        decoration: BoxDecoration(
+          color: Colors.orange,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Text(
+          'Lv.$level',
+          style: const TextStyle(
+            fontSize: 10,
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      );
+    }
+
     return Container(
       margin: EdgeInsets.only(
         left: isCurrentUser ? 48 : 12,
@@ -59,7 +120,15 @@ class ChatBubble extends StatelessWidget {
         children: [
           // Avatar untuk user lain (kiri)
           if (!isCurrentUser) ...[
-            _buildAvatar(avatarUrl, authorName, level),
+            Column(
+              children: [
+                buildAvatarWidget(),
+                if (!isReply) ...[
+                  const SizedBox(height: 4),
+                  buildLevelBadge(),
+                ],
+              ],
+            ),
             const SizedBox(width: 8),
           ],
 
@@ -91,7 +160,7 @@ class ChatBubble extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       // Nama dan level (hanya untuk user lain)
-                      if (!isCurrentUser) ...[
+                      if (!isCurrentUser && !isReply) ...[
                         Row(
                           children: [
                             Text(
@@ -103,22 +172,7 @@ class ChatBubble extends StatelessWidget {
                               ),
                             ),
                             const SizedBox(width: 4),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 6, vertical: 2),
-                              decoration: BoxDecoration(
-                                color: Colors.orange,
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: Text(
-                                'Lv.$level',
-                                style: const TextStyle(
-                                  fontSize: 10,
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
+                            buildLevelBadge(),
                           ],
                         ),
                         const SizedBox(height: 4),
@@ -247,66 +301,16 @@ class ChatBubble extends StatelessWidget {
           // Avatar untuk user sendiri (kanan)
           if (isCurrentUser) ...[
             const SizedBox(width: 8),
-            _buildAvatar(avatarUrl, authorName, level),
+            Column(
+              children: [
+                buildAvatarWidget(),
+                const SizedBox(height: 4),
+                buildLevelBadge(),
+              ],
+            ),
           ],
         ],
       ),
-    );
-  }
-
-  Widget _buildAvatar(String? avatarUrl, String authorName, int level) {
-    return Column(
-      children: [
-        // Avatar
-        Container(
-          width: 36,
-          height: 36,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            image: avatarUrl != null && avatarUrl.isNotEmpty
-                ? DecorationImage(
-                    image: NetworkImage(avatarUrl),
-                    fit: BoxFit.cover,
-                  )
-                : null,
-            color: avatarUrl == null || avatarUrl.isEmpty
-                ? Colors.blueGrey[100]
-                : null,
-          ),
-          child: avatarUrl == null || avatarUrl.isEmpty
-              ? Center(
-                  child: Text(
-                    authorName.substring(0, 1).toUpperCase(),
-                    style: TextStyle(
-                      color: Colors.blueGrey[800],
-                      fontWeight: FontWeight.bold,
-                      fontSize: 14,
-                    ),
-                  ),
-                )
-              : null,
-        ),
-
-        // Level badge untuk user sendiri
-        if (isCurrentUser) ...[
-          const SizedBox(height: 4),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-            decoration: BoxDecoration(
-              color: Colors.orange,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Text(
-              'Lv.$level',
-              style: const TextStyle(
-                fontSize: 10,
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-        ],
-      ],
     );
   }
 

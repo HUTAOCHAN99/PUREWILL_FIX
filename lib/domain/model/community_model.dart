@@ -1,5 +1,4 @@
 import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 
@@ -32,7 +31,11 @@ class CategoryModel {
   }
 
   Map<String, dynamic> toJson() {
-    return {'id': id, 'name': name, 'created_at': createdAt.toIso8601String()};
+    return {
+      'id': id,
+      'name': name,
+      'created_at': createdAt.toIso8601String()
+    };
   }
 }
 
@@ -42,6 +45,7 @@ class Profile {
   final String? avatarUrl;
   final int level;
   final int currentXp;
+  final int xpToNextLevel;
 
   Profile({
     required this.userId,
@@ -49,6 +53,7 @@ class Profile {
     this.avatarUrl,
     this.level = 1,
     this.currentXp = 0,
+    this.xpToNextLevel = 100,
   });
 
   factory Profile.fromJson(Map<String, dynamic> json) {
@@ -57,17 +62,16 @@ class Profile {
     String? avatarUrl;
     int level = 1;
     int currentXp = 0;
+    int xpToNextLevel = 100;
 
     // Cek jika ini dari auth.users (ada email field)
     if (json['email'] != null) {
       userId = json['id']?.toString() ?? 'unknown';
-      fullName =
-          json['raw_user_meta_data']?['full_name']?.toString() ??
+      fullName = json['raw_user_meta_data']?['full_name']?.toString() ??
           json['full_name']?.toString() ??
           json['email']?.toString().split('@').first ??
           'Pengguna';
-      avatarUrl =
-          json['raw_user_meta_data']?['avatar_url']?.toString() ??
+      avatarUrl = json['raw_user_meta_data']?['avatar_url']?.toString() ??
           json['avatar_url']?.toString();
     }
     // Cek jika ini dari profiles table
@@ -77,12 +81,16 @@ class Profile {
       avatarUrl = json['avatar_url']?.toString();
       level = json['level'] is int ? json['level'] : 1;
       currentXp = json['current_xp'] is int ? json['current_xp'] : 0;
+      xpToNextLevel = json['xp_to_next_level'] is int
+          ? json['xp_to_next_level']
+          : 100;
     }
     // Cek jika nested dalam auth.users format
     else if (json['id'] is Map) {
       final authData = Map<String, dynamic>.from(json['id']);
       userId = authData['id']?.toString() ?? 'unknown';
-      fullName = authData['email']?.toString().split('@').first ?? 'Pengguna';
+      fullName =
+          authData['email']?.toString().split('@').first ?? 'Pengguna';
     }
 
     return Profile(
@@ -91,6 +99,7 @@ class Profile {
       avatarUrl: avatarUrl,
       level: level,
       currentXp: currentXp,
+      xpToNextLevel: xpToNextLevel,
     );
   }
 
@@ -101,6 +110,7 @@ class Profile {
       'avatar_url': avatarUrl,
       'level': level,
       'current_xp': currentXp,
+      'xp_to_next_level': xpToNextLevel,
     };
   }
 
@@ -110,6 +120,7 @@ class Profile {
     String? avatarUrl,
     int? level,
     int? currentXp,
+    int? xpToNextLevel,
   }) {
     return Profile(
       userId: userId ?? this.userId,
@@ -117,6 +128,7 @@ class Profile {
       avatarUrl: avatarUrl ?? this.avatarUrl,
       level: level ?? this.level,
       currentXp: currentXp ?? this.currentXp,
+      xpToNextLevel: xpToNextLevel ?? this.xpToNextLevel,
     );
   }
 }
@@ -232,8 +244,8 @@ class Community {
       memberCount: json['member_count'] is int
           ? json['member_count']
           : json['member_count'] is String
-          ? int.tryParse(json['member_count'].toString()) ?? 0
-          : 0,
+              ? int.tryParse(json['member_count'].toString()) ?? 0
+              : 0,
       adminId: json['admin_id']?.toString(),
       rules: rules,
       tags: tags,
@@ -407,18 +419,19 @@ class CommunityPost {
     // Validasi khusus untuk URL Supabase bucket 'communities'
     bool isValidSupabaseUrl(String? url) {
       if (url == null || url.isEmpty) return false;
-      
+
       // Cek jika Base64
       if (url.startsWith('data:image')) return false;
-      
+
       // Cek jika mengandung Base64 pattern
       if (url.contains('base64,')) return false;
-      
+
       // Cek jika URL Supabase Storage dengan bucket 'communities'
-      final isSupabaseUrl = url.contains('supabase.co/storage/v1/object/public/');
+      final isSupabaseUrl =
+          url.contains('supabase.co/storage/v1/object/public/');
       final isCommunitiesBucket = url.contains('/communities/');
       final isHttps = url.startsWith('https://');
-      
+
       return isSupabaseUrl && isCommunitiesBucket && isHttps;
     }
 
@@ -431,6 +444,7 @@ class CommunityPost {
         avatarUrl: null,
         level: 1,
         currentXp: 0,
+        xpToNextLevel: 100,
       );
     }
 
@@ -452,38 +466,37 @@ class CommunityPost {
       communityId: json['community_id']?.toString() ?? '',
       authorId: json['author_id']?.toString() ?? '',
       content: json['content']?.toString() ?? '',
-      imageUrl: _isInvalidImageUrl(imageUrl) || !isValidSupabaseUrl(imageUrl)
-          ? null
-          : imageUrl,
+      imageUrl:
+          _isInvalidImageUrl(imageUrl) || !isValidSupabaseUrl(imageUrl)
+              ? null
+              : imageUrl,
       createdAt: parseDate(json['created_at']),
-      updatedAt: json['updated_at'] != null
-          ? parseDate(json['updated_at'])
-          : null,
+      updatedAt:
+          json['updated_at'] != null ? parseDate(json['updated_at']) : null,
       isPinned: json['is_pinned'] == true,
       isEdited: json['is_edited'] == true,
-      deletedAt: json['deleted_at'] != null
-          ? parseDate(json['deleted_at'])
-          : null,
+      deletedAt:
+          json['deleted_at'] != null ? parseDate(json['deleted_at']) : null,
       likesCount: json['likes_count'] is int
           ? json['likes_count']
           : json['likes_count'] is String
-          ? int.tryParse(json['likes_count'].toString()) ?? 0
-          : 0,
+              ? int.tryParse(json['likes_count'].toString()) ?? 0
+              : 0,
       commentsCount: json['comments_count'] is int
           ? json['comments_count']
           : json['comments_count'] is String
-          ? int.tryParse(json['comments_count'].toString()) ?? 0
-          : 0,
+              ? int.tryParse(json['comments_count'].toString()) ?? 0
+              : 0,
       shareCount: json['share_count'] is int
           ? json['share_count']
           : json['share_count'] is String
-          ? int.tryParse(json['share_count'].toString()) ?? 0
-          : 0,
+              ? int.tryParse(json['share_count'].toString()) ?? 0
+              : 0,
       viewCount: json['view_count'] is int
           ? json['view_count']
           : json['view_count'] is String
-          ? int.tryParse(json['view_count'].toString()) ?? 0
-          : 0,
+              ? int.tryParse(json['view_count'].toString()) ?? 0
+              : 0,
       sharedFromPostId: json['shared_from_post_id']?.toString(),
       sharedFromCommunityId: json['shared_from_community_id']?.toString(),
       author: author,
@@ -574,18 +587,22 @@ class CommunityPost {
   }
 
   bool get hasImage =>
-      imageUrl != null && imageUrl!.isNotEmpty && !_isInvalidImageUrl(imageUrl);
-  bool get isShared => sharedFromPostId != null && sharedFromPostId!.isNotEmpty;
+      imageUrl != null &&
+      imageUrl!.isNotEmpty &&
+      !_isInvalidImageUrl(imageUrl);
+  bool get isShared =>
+      sharedFromPostId != null && sharedFromPostId!.isNotEmpty;
 
   bool get isValidImageUrl {
     if (imageUrl == null) return false;
-    
+
     final url = imageUrl!;
-    final isSupabaseUrl = url.contains('supabase.co/storage/v1/object/public/');
+    final isSupabaseUrl =
+        url.contains('supabase.co/storage/v1/object/public/');
     final isCommunitiesBucket = url.contains('/communities/');
     final isHttps = url.startsWith('https://');
     final notBase64 = !url.contains('base64,') && !url.startsWith('data:');
-    
+
     return isSupabaseUrl && isCommunitiesBucket && isHttps && notBase64;
   }
 }
@@ -650,6 +667,7 @@ class CommunityComment {
         avatarUrl: null,
         level: 1,
         currentXp: 0,
+        xpToNextLevel: 100,
       );
     }
 
@@ -674,9 +692,8 @@ class CommunityComment {
       createdAt: parseDate(json['created_at']),
       updatedAt: parseDate(json['updated_at']),
       parentCommentId: json['parent_comment_id']?.toString(),
-      deletedAt: json['deleted_at'] != null
-          ? parseDate(json['deleted_at'])
-          : null,
+      deletedAt:
+          json['deleted_at'] != null ? parseDate(json['deleted_at']) : null,
       author: author,
       isLikedByUser: json['is_liked_by_user'] == true,
       likesCount: json['likes_count'] is int ? json['likes_count'] : 0,
@@ -734,7 +751,8 @@ class CommunityComment {
   }
 
   bool get hasReplies => replies != null && replies!.isNotEmpty;
-  bool get isReply => parentCommentId != null && parentCommentId!.isNotEmpty;
+  bool get isReply =>
+      parentCommentId != null && parentCommentId!.isNotEmpty;
 }
 
 class CommunityPostShare {
@@ -815,7 +833,7 @@ class CommunityNotification {
   final bool isRead;
   final DateTime createdAt;
   final DateTime? readAt;
-  
+
   // Enriched data
   final CommunityPost? post;
   final CommunityComment? comment;
@@ -924,7 +942,7 @@ class CommunityNotification {
   bool get isCommentNotification => type == 'comment';
   bool get isLikeNotification => type == 'like';
   bool get isMentionNotification => type == 'mention';
-  
+
   IconData get icon {
     switch (type) {
       case 'comment':
@@ -937,7 +955,7 @@ class CommunityNotification {
         return Icons.notifications;
     }
   }
-  
+
   Color get iconColor {
     switch (type) {
       case 'comment':
@@ -951,4 +969,3 @@ class CommunityNotification {
     }
   }
 }
-
