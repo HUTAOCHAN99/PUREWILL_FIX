@@ -31,24 +31,28 @@ class CommentService {
             profiles!community_comments_author_id_fkey(
               user_id,
               full_name,
-              avatar_url
+              avatar_url,
+              level,
+              current_xp
             )
           ''')
           .single();
 
-      // Update comments count in post
+      // Update comments count in post - konversi ke integer
       await _supabase.rpc(
         'increment_post_comments',
         params: {'post_id': postId},
       );
 
       final comment = CommunityComment.fromJson(response);
-      developer.log('✅ Komentar berhasil ditambahkan dengan ID: ${comment.id}',
-          name: 'CommentService');
+      
+      // PERBAIKAN: Hapus parameter 'name'
+      developer.log('✅ Komentar berhasil ditambahkan dengan ID: ${comment.id}');
 
       return comment;
     } catch (e) {
-      developer.log('❌ Error adding comment: $e', name: 'CommentService');
+      // PERBAIKAN: Hapus parameter 'name'
+      developer.log('❌ Error adding comment: $e');
       rethrow;
     }
   }
@@ -58,21 +62,28 @@ class CommentService {
     String? userId,
   }) async {
     try {
-      developer.log('🔄 Mengambil komentar untuk post $postId...',
-          name: 'CommentService');
+      // PERBAIKAN: Hapus parameter 'name'
+      developer.log('🔄 Mengambil komentar untuk post $postId...');
 
-      // Ambil komentar dari database
+      // Ambil komentar dengan profile author
       final commentsResponse = await _supabase
           .from('community_comments')
           .select('''
-            *
+            *,
+            profiles!community_comments_author_id_fkey(
+              user_id,
+              full_name,
+              avatar_url,
+              level,
+              current_xp
+            )
           ''')
           .eq('post_id', postId)
           .filter('deleted_at', 'is', null)
           .order('created_at', ascending: true);
 
-      developer.log('💬 ${commentsResponse.length} komentar ditemukan',
-          name: 'CommentService');
+      // PERBAIKAN: Hapus parameter 'name'
+      developer.log('💬 ${commentsResponse.length} komentar ditemukan');
 
       // Map ke model
       final comments = (commentsResponse as List)
@@ -116,7 +127,8 @@ class CommentService {
 
       return finalComments;
     } catch (e) {
-      developer.log('❌ Error fetching comments: $e', name: 'CommentService');
+      // PERBAIKAN: Hapus parameter 'name'
+      developer.log('❌ Error fetching comments: $e');
       rethrow;
     }
   }
@@ -164,9 +176,38 @@ class CommentService {
         return true;
       }
     } catch (e) {
-      developer.log('❌ Error toggling comment like: $e',
-          name: 'CommentService');
+      // PERBAIKAN: Hapus parameter 'name'
+      developer.log('❌ Error toggling comment like: $e');
       return false;
+    }
+  }
+
+  // ============ GET COMMENT BY ID ============
+  
+  Future<CommunityComment?> getCommentById(String commentId) async {
+    try {
+      final response = await _supabase
+          .from('community_comments')
+          .select('''
+            *,
+            profiles!community_comments_author_id_fkey(
+              user_id,
+              full_name,
+              avatar_url,
+              level,
+              current_xp
+            )
+          ''')
+          .eq('id', commentId)
+          .maybeSingle();
+
+      if (response == null) return null;
+      
+      return CommunityComment.fromJson(response);
+    } catch (e) {
+      // PERBAIKAN: Hapus parameter 'name'
+      developer.log('❌ Error getting comment: $e');
+      return null;
     }
   }
 }
