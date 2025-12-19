@@ -111,32 +111,25 @@ class _ConsultationScreenState extends ConsumerState<ConsultationScreen> {
   ];
 
   void _onNavBarTap(int index) {
-    if (index == _currentIndex) return; // Already on this page
-
     if (index == 0) {
-      // Navigate to Home Screen
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(builder: (context) => const HomeScreen()),
       );
     } else if (index == 1) {
-      // Navigate to Habit Screen
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(builder: (context) => const HabitScreen()),
       );
     } else if (index == 2) {
-      // Navigate to NoFap Screen
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(builder: (context) => const NoFapScreen()),
       );
     } else if (index == 3) {
-      // Navigate to Community Screen
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(
           builder: (context) => const CommunitySelectionScreen(),
         ),
       );
     } else if (index == 4) {
-      // Already on Consultation Screen, do nothing
       return;
     }
   }
@@ -299,39 +292,12 @@ class _ConsultationScreenState extends ConsumerState<ConsultationScreen> {
                     padding: const EdgeInsets.all(20),
                     child: Row(
                       children: [
-                        Expanded(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text(
-                                'Early protection for\nyour family health',
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.white,
-                                  height: 1.3,
-                                ),
-                              ),
-                              const SizedBox(height: 12),
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 16,
-                                  vertical: 8,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  borderRadius: BorderRadius.circular(20),
-                                ),
-                                child: const Text(
-                                  'Learn more',
-                                  style: TextStyle(
-                                    color: Color(0xFF00BFA5),
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ),
-                            ],
+                        const Text(
+                          'Konsultasi',
+                          style: TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black87,
                           ),
                         ),
                         // Spacer untuk gambar

@@ -304,10 +304,10 @@ class _NoFapScreenState extends ConsumerState<NoFapScreen> {
         backgroundColor: const Color.fromRGBO(176, 230, 216, 1),
         elevation: 4,
         shadowColor: Colors.black.withOpacity(0.2),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black87),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
+        // leading: IconButton(
+        //   icon: const Icon(Icons.arrow_back, color: Colors.black87),
+        //   onPressed: () => Navigator.of(context).pop(),
+        // ),
         title: const Text(
           'NoFap Journey',
           style: TextStyle(
@@ -349,7 +349,6 @@ class _NoFapScreenState extends ConsumerState<NoFapScreen> {
           SafeArea(
             child: RefreshIndicator(
               onRefresh: () async {
-                // Refresh logic if needed
                 await Future.delayed(const Duration(seconds: 1));
               },
               child: ListView(

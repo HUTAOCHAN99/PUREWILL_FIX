@@ -33,6 +33,7 @@ class _HabitDetailScreenState extends ConsumerState<HabitDetailScreen> {
   int _habitLogStreak = 0;
   int _possibleDays = 0;
   List<DailyLogModel>? _habitLogForThisMonth;
+  List<double> _weeklyPerformance = [];
   bool _isLoading = true;
   ReminderSettingModel? _reminderSetting;
 
@@ -87,8 +88,6 @@ class _HabitDetailScreenState extends ConsumerState<HabitDetailScreen> {
         localHabitEnd.month,
         localHabitEnd.day,
       );
-
-      // print("local habit end date: $effectiveHabitEndDate");
     }
 
     final now = DateTime.now();
@@ -162,8 +161,6 @@ class _HabitDetailScreenState extends ConsumerState<HabitDetailScreen> {
       }).toList();
 
       final completeDays = localCompletionDates.length;
-
-      // final List<DateTime> habitLogFor
 
       print(localCompletionDates);
 
@@ -244,7 +241,7 @@ class _HabitDetailScreenState extends ConsumerState<HabitDetailScreen> {
                   WeeklyStreakWidget(streak: _habitLogStreak),
                   const SizedBox(height: 24),
 
-                  PerformanceChartWidget(habitId: widget.habit.id),
+                  PerformanceChartWidget(weeklyPerformance: _weeklyPerformance,),
                   const SizedBox(height: 24),
 
                   CalendarTrackerWidget(

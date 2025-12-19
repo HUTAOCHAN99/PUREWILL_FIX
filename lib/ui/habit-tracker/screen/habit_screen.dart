@@ -105,10 +105,6 @@ class _HabitScreenState extends ConsumerState<HabitScreen> {
         backgroundColor: const Color.fromRGBO(176, 230, 216, 1),
         elevation: 4,
         shadowColor: Colors.black.withOpacity(0.2),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black87),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
         title: const Text(
           'My Habits',
           style: TextStyle(
