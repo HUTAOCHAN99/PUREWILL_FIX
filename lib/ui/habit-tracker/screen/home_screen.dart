@@ -1,3 +1,4 @@
+// lib/ui/habit-tracker/screen/home_screen.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:purewill/domain/model/habit_model.dart';
@@ -34,6 +35,8 @@ class HomeScreen extends ConsumerStatefulWidget {
 class _HomeScreenState extends ConsumerState<HomeScreen> {
   int _currentIndex = 0;
   Map<int, LogStatus> _todayCompletionStatus = {};
+  String _userRole = 'user'; // Default role
+  bool _isLoadingRole = true;
 
   final badgeNotificationService = BadgeNotificationService();
   late BadgeService badgeService;
@@ -51,6 +54,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       ref.read(habitNotifierProvider.notifier).loadTodayUserHabits();
       _loadTodayCompletionStatus();
       ref.read(habitNotifierProvider.notifier).getCurrentUser();
+      _loadUserRole(); // Load user role
       Future.delayed(const Duration(milliseconds: 300), () {
         ref.read(planProvider.notifier).loadPlans();
       });
@@ -69,6 +73,41 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       }
     } catch (e) {
       print('Error loading completion status: $e');
+    }
+  }
+
+  Future<void> _loadUserRole() async {
+    try {
+      final user = Supabase.instance.client.auth.currentUser;
+      if (user != null) {
+        final response = await Supabase.instance.client
+            .from('profiles')
+            .select('role')
+            .eq('user_id', user.id)
+            .single();
+        
+        if (mounted) {
+          setState(() {
+            _userRole = response['role'] as String? ?? 'user';
+            _isLoadingRole = false;
+          });
+        }
+      } else {
+        if (mounted) {
+          setState(() {
+            _userRole = 'user';
+            _isLoadingRole = false;
+          });
+        }
+      }
+    } catch (e) {
+      print('Error loading user role: $e');
+      if (mounted) {
+        setState(() {
+          _userRole = 'user';
+          _isLoadingRole = false;
+        });
+      }
     }
   }
 
@@ -111,9 +150,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   void _navigateToMembership() {
-    Navigator.of(
-      context,
-    ).push(MaterialPageRoute(builder: (context) => const MembershipScreen()));
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (context) => const MembershipScreen())
+    );
+  }
+
+  void _refreshData() async {
+    await ref.read(habitNotifierProvider.notifier).loadTodayUserHabits();
+    await ref.read(planProvider.notifier).loadPlans();
+    await _loadTodayCompletionStatus();
+    await _loadUserRole();
   }
 
   @override
@@ -121,8 +167,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final habitsState = ref.watch(habitNotifierProvider);
     final planState = ref.watch(planProvider);
 
-    if (habitsState.status == HabitStatus.loading) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    if (_isLoadingRole || habitsState.status == HabitStatus.loading) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
     }
 
     final List<HabitModel> userHabits = habitsState.todayHabit;
@@ -192,9 +240,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     return Scaffold(
       body: RefreshIndicator(
         onRefresh: () async {
-          await ref.read(habitNotifierProvider.notifier).loadTodayUserHabits();
-          await ref.read(planProvider.notifier).refresh();
-          await _loadTodayCompletionStatus();
+         ref.read(authNotifierProvider.notifier).logout();
         },
         child: Container(
           decoration: const BoxDecoration(
@@ -209,6 +255,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 HabitHeader(
                   userEmail: userEmail,
                   userName: userName,
+                  userRole: _userRole,
                   onLogout: _performLogout,
                   isPremiumUser: isPremiumUser,
                   currentPlan: currentPlan,
@@ -223,6 +270,55 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         HabitWelcomeMessage(name: userName),
+                        
+                        // Role info badge (jika doctor atau admin)
+                        if (_userRole == 'doctor' || _userRole == 'admin')
+                          Container(
+                            margin: const EdgeInsets.only(bottom: 16),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 8,
+                            ),
+                            decoration: BoxDecoration(
+                              color: _userRole == 'doctor'
+                                  ? const Color(0xFF10B981).withOpacity(0.1)
+                                  : const Color(0xFFEF4444).withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: _userRole == 'doctor'
+                                    ? const Color(0xFF10B981).withOpacity(0.3)
+                                    : const Color(0xFFEF4444).withOpacity(0.3),
+                              ),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  _userRole == 'doctor'
+                                      ? Icons.medical_services
+                                      : Icons.admin_panel_settings,
+                                  color: _userRole == 'doctor'
+                                      ? const Color(0xFF10B981)
+                                      : const Color(0xFFEF4444),
+                                  size: 20,
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    _userRole == 'doctor'
+                                        ? 'Akun dokter Anda sudah aktif'
+                                        : 'Anda memiliki akses admin',
+                                    style: TextStyle(
+                                      color: _userRole == 'doctor'
+                                          ? const Color(0xFF10B981)
+                                          : const Color(0xFFEF4444),
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+
                         ProgressCard(
                           progress: progress,
                           completed: completedToday,
@@ -277,9 +373,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   void _addHabit() {
-    Navigator.of(
-      context,
-    ).push(MaterialPageRoute(builder: (context) => const AddHabitScreen()));
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (context) => const AddHabitScreen())
+    );
   }
 
   void _handleHabitTap(HabitModel habit) {
@@ -296,7 +392,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   void _handleCheckboxTap(HabitModel habit) async {
     try {
-
       final currentStatus = _todayCompletionStatus[habit.id];
 
       setState(() {

@@ -239,4 +239,68 @@ class AuthRepository {
       rethrow;
     }
   }
+
+  Future<void> updateUserRole({
+    required String userId,
+    required String newRole,
+    required String updatedBy, // Admin yang melakukan update
+  }) async {
+    try {
+      await _supabaseClient
+          .from('profiles')
+          .update({
+            'role': newRole,
+            'updated_at': DateTime.now().toIso8601String(),
+          })
+          .eq('user_id', userId);
+
+      // Log aktivitas role change
+      await _logRoleChange(userId, newRole, updatedBy);
+    } on PostgrestException catch (e, stackTrace) {
+      log(
+        'DATABASE FAILURE: Failed to update user role.',
+        error: e,
+        stackTrace: stackTrace,
+        name: 'AUTH_REPO',
+      );
+      rethrow;
+    } catch (e, stackTrace) {
+      log(
+        'GENERAL FAILURE: Unexpected error during role update.',
+        error: e,
+        stackTrace: stackTrace,
+        name: 'AUTH_REPO',
+      );
+      rethrow;
+    }
+  }
+
+  Future<String?> getUserRole(String userId) async {
+    try {
+      final response = await _supabaseClient
+          .from('profiles')
+          .select('role')
+          .eq('user_id', userId)
+          .single();
+
+      return response['role'] as String?;
+    } catch (e) {
+      log('Error getting user role: $e', name: 'AUTH_REPO');
+      return null;
+    }
+  }
+
+  Future<void> _logRoleChange(
+    String userId,
+    String newRole,
+    String updatedBy,
+  ) async {
+    await _supabaseClient.from('role_change_logs').insert({
+      'user_id': userId,
+      'old_role': 'user', // Karena hanya user ke doctor
+      'new_role': newRole,
+      'changed_by': updatedBy,
+      'changed_at': DateTime.now().toIso8601String(),
+    });
+  }
 }
