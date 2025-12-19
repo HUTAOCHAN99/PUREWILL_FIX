@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:purewill/ui/auth/auth_provider.dart';
 import 'package:purewill/ui/auth/screen/login_screen.dart';
 import 'package:purewill/ui/habit-tracker/screen/home_screen.dart';
+import 'package:purewill/ui/habit-tracker/habit_provider.dart'
+    as habit_provider;
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class AuthWrapper extends ConsumerStatefulWidget {
@@ -23,12 +25,11 @@ class _AuthWrapperState extends ConsumerState<AuthWrapper> {
     final supabaseClient = ref.read(supabaseClientProvider);
     supabaseClient.auth.onAuthStateChange.listen((data) {
       final AuthChangeEvent event = data.event;
-      final Session? session = data.session;
-      
-      // print('Auth state changed: $event');
-      // print('Session: ${session != null ? "Active" : "None"}');
-      
+
       if (event == AuthChangeEvent.signedOut) {
+        // Clear semua provider state saat logout
+        ref.invalidate(habit_provider.habitNotifierProvider);
+
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (mounted) {
             Navigator.of(context).pushAndRemoveUntil(
@@ -37,16 +38,18 @@ class _AuthWrapperState extends ConsumerState<AuthWrapper> {
             );
           }
         });
+      } else if (event == AuthChangeEvent.signedIn) {
+        // Clear dan refresh provider state saat login
+        ref.invalidate(habit_provider.habitNotifierProvider);
       }
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    final supabaseClient = ref.read(supabaseClientProvider);
-    final currentUser = supabaseClient.auth.currentUser;
-
-    // print('AuthWrapper - Current User: ${currentUser?.email}');
+    // Watch auth state untuk reactive updates
+    final authState = ref.watch(authNotifierProvider);
+    final currentUser = authState.user;
 
     if (currentUser != null) {
       return HomeScreen();

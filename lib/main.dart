@@ -28,8 +28,6 @@ Future<void> main() async {
     anonKey: dotenv.env['SUPABASE_ANON_KEY']!,
   );
 
-  // debugPrint('✅ Supabase initialized');
-
   WidgetsBinding.instance.addPostFrameCallback((_) async {
     final user = Supabase.instance.client.auth.currentUser;
     if (user != null) {
@@ -74,7 +72,6 @@ Future<void> main() async {
   // Initialize Reminder Sync Service
   await _initializeReminderSyncService();
 
-
   runApp(const ProviderScope(child: MyApp()));
 }
 
@@ -118,17 +115,12 @@ Future<void> _initializeReminderSyncService() async {
       // debugPrint('✅ ReminderSyncService initialized successfully');
     } catch (e, stackTrace) {
       retryCount++;
-      // debugPrint(
-        // '❌ Retry $retryCount/$maxRetries: Error initializing ReminderSyncService: $e',
-      // );
-      // debugPrint('Stack trace: $stackTrace');
-
       if (retryCount < maxRetries) {
         // debugPrint('🔄 Retrying in 2 seconds...');
         await Future.delayed(const Duration(seconds: 2));
       } else {
         // debugPrint(
-          // '⚠️ ReminderSyncService initialization failed after $maxRetries attempts',
+        // '⚠️ ReminderSyncService initialization failed after $maxRetries attempts',
         // );
       }
     }
@@ -155,7 +147,7 @@ class MyApp extends StatelessWidget {
         '/signup': (context) => const SignupScreen(),
         '/signup-password': (context) => const ResetPasswordScreen(),
         '/badges': (context) => const BadgeXpScreen(),
-        '/logout' : (context) => const LoginScreen(),
+        '/logout': (context) => const LoginScreen(),
       },
       debugShowCheckedModeBanner: false,
     );

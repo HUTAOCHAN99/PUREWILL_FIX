@@ -89,6 +89,22 @@ class HabitsViewModel extends StateNotifier<HabitsState> {
     this._currentUserId,
   ) : super(HabitsState());
 
+  // Method untuk clear/reset state
+  void clearState() {
+    state = HabitsState(
+      status: HabitStatus.initial,
+      errorMessage: null,
+      habits: const [],
+      todayHabit: const [],
+      dailyLogs: const [],
+      targetUnits: const [],
+      categories: const [],
+      currentUser: null,
+      currentHabitDetail: null,
+      currentReminderSetting: null,
+    );
+  }
+
   Future<void> getCurrentUser() async {
     state = state.copyWith(status: HabitStatus.loading, errorMessage: null);
     try {
@@ -109,7 +125,10 @@ class HabitsViewModel extends StateNotifier<HabitsState> {
 
   Future<bool> isHabitStarted({required int habitId}) async {
     try {
-      final habit = await _habitSessionRepository.getActiveHabitSession(habitId: habitId, userId: _currentUserId);
+      final habit = await _habitSessionRepository.getActiveHabitSession(
+        habitId: habitId,
+        userId: _currentUserId,
+      );
       if (habit == null) {
         return false;
       }
@@ -147,8 +166,11 @@ class HabitsViewModel extends StateNotifier<HabitsState> {
     try {
       final habitId = await _habitRepository.getNofapHabitId(_currentUserId);
       await _habitRepository.activeNofapHabit(_currentUserId, habitId);
-      await _habitSessionRepository.addHabitSession(habitId: habitId, userId: _currentUserId, startDate: DateTime.now());
-
+      await _habitSessionRepository.addHabitSession(
+        habitId: habitId,
+        userId: _currentUserId,
+        startDate: DateTime.now(),
+      );
     } catch (e) {
       rethrow;
     }
@@ -157,8 +179,15 @@ class HabitsViewModel extends StateNotifier<HabitsState> {
   Future<void> stopNofapHabit() async {
     try {
       final habitId = await _habitRepository.getNofapHabitId(_currentUserId);
-      final activeSession = await _habitSessionRepository.getActiveHabitSession(habitId: habitId, userId: _currentUserId);
-      await _habitSessionRepository.updateHabitSession(sessionId: activeSession!.id, endDate:  DateTime.now(), isActive: false);
+      final activeSession = await _habitSessionRepository.getActiveHabitSession(
+        habitId: habitId,
+        userId: _currentUserId,
+      );
+      await _habitSessionRepository.updateHabitSession(
+        sessionId: activeSession!.id,
+        endDate: DateTime.now(),
+        isActive: false,
+      );
     } catch (e) {
       rethrow;
     }
@@ -169,7 +198,10 @@ class HabitsViewModel extends StateNotifier<HabitsState> {
       final habitId = await _habitRepository.getNofapHabitId(_currentUserId);
       // final streak = await _habitSessionRepository.fetchNofapHabitLongestStreak(habitId: habitId, userId:
       // _currentUserId);
-      final streak = await _habitSessionRepository.fetchNofapHabitLongestStreak(habitId: habitId, userId: _currentUserId);
+      final streak = await _habitSessionRepository.fetchNofapHabitLongestStreak(
+        habitId: habitId,
+        userId: _currentUserId,
+      );
       return streak;
     } catch (e) {
       rethrow;
@@ -180,7 +212,10 @@ class HabitsViewModel extends StateNotifier<HabitsState> {
     try {
       final habitId = await _habitRepository.getNofapHabitId(_currentUserId);
       // final streak = await _habitSessionRepository.fetchNofapHabitCurrentStreak(habitId: habitId, userId: _currentUserId);
-      final streak = await _habitSessionRepository.fetchNofapHabitCurrentStreak(habitId: habitId, userId: _currentUserId);
+      final streak = await _habitSessionRepository.fetchNofapHabitCurrentStreak(
+        habitId: habitId,
+        userId: _currentUserId,
+      );
       return streak;
     } catch (e) {
       rethrow;
@@ -190,7 +225,10 @@ class HabitsViewModel extends StateNotifier<HabitsState> {
   Future<int> getRelapseCountNofapHabit() async {
     try {
       final habitId = await _habitRepository.getNofapHabitId(_currentUserId);
-      final relapseCount = await _habitSessionRepository.getRelapseCount(habitId: habitId, userId: _currentUserId);
+      final relapseCount = await _habitSessionRepository.getRelapseCount(
+        habitId: habitId,
+        userId: _currentUserId,
+      );
       return relapseCount;
     } catch (e) {
       rethrow;
@@ -200,7 +238,10 @@ class HabitsViewModel extends StateNotifier<HabitsState> {
   Future<List<DateTime>> getSuccessDaysNofapHabit() async {
     try {
       final habitId = await _habitRepository.getNofapHabitId(_currentUserId);
-      final successDays = await _habitSessionRepository.getSuccessDays(habitId: habitId, userId: _currentUserId);
+      final successDays = await _habitSessionRepository.getSuccessDays(
+        habitId: habitId,
+        userId: _currentUserId,
+      );
       return successDays;
     } catch (e) {
       rethrow;
@@ -212,11 +253,14 @@ class HabitsViewModel extends StateNotifier<HabitsState> {
 
     try {
       final allHabits = await _habitRepository.fetchUserHabits(_currentUserId);
-      final habitsWithoutNofap = allHabits.where((habit) => 
-        habit.name.toLowerCase() != 'nofap'
-      ).toList();
-      
-      state = state.copyWith(status: HabitStatus.success, habits: habitsWithoutNofap);
+      final habitsWithoutNofap = allHabits
+          .where((habit) => habit.name.toLowerCase() != 'nofap')
+          .toList();
+
+      state = state.copyWith(
+        status: HabitStatus.success,
+        habits: habitsWithoutNofap,
+      );
     } catch (e) {
       state = state.copyWith(
         status: HabitStatus.failure,
@@ -232,11 +276,14 @@ class HabitsViewModel extends StateNotifier<HabitsState> {
         _currentUserId,
       );
 
-      final habitsWithoutNofap = habits.where((habit) => 
-        habit.name.toLowerCase() != 'nofap'
-      ).toList();
+      final habitsWithoutNofap = habits
+          .where((habit) => habit.name.toLowerCase() != 'nofap')
+          .toList();
 
-      state = state.copyWith(status: HabitStatus.success, todayHabit: habitsWithoutNofap);
+      state = state.copyWith(
+        status: HabitStatus.success,
+        todayHabit: habitsWithoutNofap,
+      );
     } catch (e) {
       state = state.copyWith(
         status: HabitStatus.failure,

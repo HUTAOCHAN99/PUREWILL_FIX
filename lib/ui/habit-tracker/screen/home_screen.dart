@@ -55,6 +55,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       _loadTodayCompletionStatus();
       ref.read(habitNotifierProvider.notifier).getCurrentUser();
       ref.read(planProvider.notifier).loadPlans();
+      _refreshData();
     });
   }
 

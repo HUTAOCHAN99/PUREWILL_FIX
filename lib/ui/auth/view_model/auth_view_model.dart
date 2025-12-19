@@ -17,8 +17,8 @@ class AuthState {
   AuthState copyWith({AuthStatus? status, String? errorMessage, User? user}) {
     return AuthState(
       status: status ?? this.status,
-      errorMessage: errorMessage,
-      user: user,
+      errorMessage: errorMessage ?? this.errorMessage,
+      user: user ?? this.user,
     );
   }
 }
@@ -69,9 +69,7 @@ class AuthViewModel extends StateNotifier<AuthState> {
         password: password,
       );
 
-      final habit = await _habitRepository.initializeDefaultHabitsForUser(user!.id);
-
-     
+      await _habitRepository.initializeDefaultHabitsForUser(user!.id);
 
       state = state.copyWith(
         status: AuthStatus.success,
@@ -92,8 +90,10 @@ class AuthViewModel extends StateNotifier<AuthState> {
     try {
       state = state.copyWith(status: AuthStatus.loading, errorMessage: null);
       await _repository.logout();
-      state = state.copyWith(
-        status: AuthStatus.success,
+
+      // Reset state ke initial setelah logout berhasil
+      state = AuthState(
+        status: AuthStatus.initial,
         user: null,
         errorMessage: null,
       );

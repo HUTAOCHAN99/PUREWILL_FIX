@@ -10,6 +10,7 @@ import 'package:purewill/data/services/performance_service.dart';
 import 'package:purewill/ui/habit-tracker/view_model/habit_view_model.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../data/repository/habit_session_repository.dart';
+import '../auth/auth_provider.dart';
 
 final supabaseClientProvider = Provider<SupabaseClient>((ref) {
   return Supabase.instance.client;
@@ -52,6 +53,7 @@ final habitSessionRepositoryProvider = Provider<HabitSessionRepository>((ref) {
   return HabitSessionRepository(client);
 });
 
+// Provider yang reactive terhadap perubahan auth state
 final habitNotifierProvider =
     StateNotifierProvider<HabitsViewModel, HabitsState>((ref) {
       final habitRepository = ref.watch(habitRepositoryProvider);
@@ -63,20 +65,19 @@ final habitNotifierProvider =
       final targetUnitRepository = ref.watch(targetUnitRepositoryProvider);
       final categoryRepository = ref.watch(categoryRepositoryProvider);
       final userRepository = ref.watch(userRepositoryProvider);
-      final client = ref.read(supabaseClientProvider);
-      final userId = client.auth.currentUser?.id;
-      if (userId != null) {
-        return HabitsViewModel(
-          habitRepository,
-          dailyLogRepository,
-          reminderSettingRepository,
-          habitSessionRepository,
-          targetUnitRepository,
-          categoryRepository,
-          userRepository,
-          userId,
-        );
-      }
+
+      // Watch auth state untuk mendapat current user
+      final authState = ref.watch(authNotifierProvider);
+      final userId = authState.user?.id ?? "";
+
+      // Invalidate provider ini ketika auth state berubah
+      ref.listen(authNotifierProvider, (previous, next) {
+        // Jika user berubah atau logout, invalidate provider ini
+        if (previous?.user?.id != next.user?.id) {
+          ref.invalidateSelf();
+        }
+      });
+
       return HabitsViewModel(
         habitRepository,
         dailyLogRepository,
@@ -85,7 +86,7 @@ final habitNotifierProvider =
         targetUnitRepository,
         categoryRepository,
         userRepository,
-        "",
+        userId,
       );
     });
 
