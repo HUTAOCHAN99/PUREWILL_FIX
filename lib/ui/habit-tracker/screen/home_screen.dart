@@ -23,6 +23,7 @@ import 'package:purewill/ui/habit-tracker/screen/nofap_screen.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:purewill/data/services/badge_service.dart';
 import 'package:purewill/data/services/badge_notification_service.dart';
+import 'package:purewill/data/services/reminder_sync_service.dart';
 import 'package:purewill/domain/model/daily_log_model.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
@@ -54,7 +55,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       _loadTodayCompletionStatus();
       ref.read(habitNotifierProvider.notifier).getCurrentUser();
       ref.read(planProvider.notifier).loadPlans();
+      _loadUserRole();
       _refreshData();
+
+      // Schedule reminders setelah login
+      _scheduleReminders();
     });
   }
 
@@ -82,7 +87,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             .select('role')
             .eq('user_id', user.id)
             .single();
-        
+
         if (mounted) {
           setState(() {
             _userRole = response['role'] as String? ?? 'user';
@@ -105,6 +110,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           _isLoadingRole = false;
         });
       }
+    }
+  }
+
+  Future<void> _scheduleReminders() async {
+    try {
+      // debugPrint('🔄 Scheduling reminders for current user...');
+      final reminderService = ReminderSyncService();
+      await reminderService.rescheduleAllReminders();
+      // debugPrint('✅ Reminders scheduled successfully');
+    } catch (e) {
+      // debugPrint('❌ Error scheduling reminders: $e');
     }
   }
 
@@ -147,9 +163,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   void _navigateToMembership() {
-    Navigator.of(context).push(
-      MaterialPageRoute(builder: (context) => const MembershipScreen())
-    );
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (context) => const MembershipScreen()));
   }
 
   void _refreshData() async {
@@ -165,9 +181,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final planState = ref.watch(planProvider);
 
     if (_isLoadingRole || habitsState.status == HabitStatus.loading) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
     final List<HabitModel> userHabits = habitsState.todayHabit;
@@ -237,7 +251,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     return Scaffold(
       body: RefreshIndicator(
         onRefresh: () async {
-         ref.read(authNotifierProvider.notifier).logout();
+          ref.read(authNotifierProvider.notifier).logout();
         },
         child: Container(
           decoration: const BoxDecoration(
@@ -267,7 +281,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         HabitWelcomeMessage(name: userName),
-                        
+
                         // Role info badge (jika doctor atau admin)
                         if (_userRole == 'doctor' || _userRole == 'admin')
                           Container(
@@ -370,9 +384,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   void _addHabit() {
-    Navigator.of(context).push(
-      MaterialPageRoute(builder: (context) => const AddHabitScreen())
-    );
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (context) => const AddHabitScreen()));
   }
 
   void _handleHabitTap(HabitModel habit) {

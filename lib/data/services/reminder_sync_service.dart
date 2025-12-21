@@ -68,28 +68,46 @@ class ReminderSyncService {
     try {
       // debugPrint('🔄 Rescheduling all reminders...');
 
-      // Cancel all existing notifications
+      // Cancel all existing notifications first
       await _notificationService.cancelAllNotifications();
 
-      // Get all habits with reminders enabled
+      // Get current user
+      final currentUser = _supabaseClient.auth.currentUser;
+      if (currentUser == null) {
+        // debugPrint('❌ No user logged in, skipping reminder reschedule');
+        return;
+      }
+
+      // Get all active habits for current user
       final habitsResponse = await _supabaseClient
           .from('habits')
-          .select('id, name, reminder_enabled')
-          .eq('is_active', true)
-          .eq('reminder_enabled', true);
+          .select('id, name')
+          .eq('user_id', currentUser.id)
+          .eq('is_active', true);
+
+      // debugPrint('📋 Found ${habitsResponse.length} active habits');
 
       for (final habit in habitsResponse) {
         final habitId = habit['id'] as int;
         final habitName = habit['name'] as String;
 
-        // Get reminder settings for this habit
-        final reminders = await _repository.fetchReminderSettingsByHabit(habitId);
+        try {
+          // Get reminder settings for this habit
+          final reminder = await _repository.fetchReminderSettingsByHabit(
+            habitId,
+          );
 
-        // for (final reminder in reminders) {
-          if (reminders.isEnabled) {
-            await _scheduleReminderNotification(reminders, habitName: habitName);
+          // Check if reminder exists and is enabled
+          if (reminder.id.isNotEmpty && reminder.isEnabled) {
+            // debugPrint('⏰ Scheduling reminder for: $habitName');
+            await _scheduleReminderNotification(reminder, habitName: habitName);
+          } else {
+            // debugPrint('⏭️ No enabled reminder for: $habitName');
           }
-        // }
+        } catch (e) {
+          // debugPrint('⚠️ Error processing reminder for $habitName: $e');
+          continue; // Skip this habit and continue with others
+        }
       }
 
       // debugPrint('✅ All reminders rescheduled successfully');
@@ -145,7 +163,7 @@ class ReminderSyncService {
   Future<void> _updateScheduledReminder(ReminderSettingModel reminder) async {
     try {
       await _cancelReminderNotification(reminder);
-      
+
       if (reminder.isEnabled) {
         await _scheduleReminderNotification(reminder);
       }
@@ -157,7 +175,9 @@ class ReminderSyncService {
   }
 
   // Cancel reminder notification
-  Future<void> _cancelReminderNotification(ReminderSettingModel reminder) async {
+  Future<void> _cancelReminderNotification(
+    ReminderSettingModel reminder,
+  ) async {
     try {
       final notificationId = _generateNotificationId(reminder);
       await _notificationService.cancelNotification(notificationId);
