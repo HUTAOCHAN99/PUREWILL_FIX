@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class PerformanceChartWidget extends ConsumerStatefulWidget {
-  // final int habitId;
   final List<double> weeklyPerformance;
 
   const PerformanceChartWidget({super.key, required this.weeklyPerformance});
@@ -15,40 +14,29 @@ class PerformanceChartWidget extends ConsumerStatefulWidget {
 
 class _PerformanceChartWidgetState
     extends ConsumerState<PerformanceChartWidget> {
-  // List<double> weeklyPerformance = List.filled(7, 0.0);
-  // bool isLoading = true;
-
-  // @override
-  // void initState() {
-  //   super.initState();
-  //   // _loadPerformanceData();
-  // }
-
-  // Future<void> _loadPerformanceData() async {
-  //   try {
-  //     final performanceService = ref.read(performanceServiceProvider);
-
-  //     final data = await performanceService.getWeeklyPerformance(
-  //       widget.habitId,
-  //     );
-
-  //     setState(() {
-  //       weeklyPerformance = data;
-  //       isLoading = false;
-  //     });
-  //   } catch (e) {
-  //     // debugPrint('Error loading performance data: $e');
-  //     setState(() {
-  //       isLoading = false;
-  //     });
-  //   }
-  // }
 
   @override
   Widget build(BuildContext context) {
-    final days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-    final maxPerformance = widget.weeklyPerformance.isNotEmpty
-        ? widget.weeklyPerformance.reduce((a, b) => a > b ? a : b)
+    // Generate actual dates for this week (Monday to Sunday)
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final startOfWeek = today.subtract(Duration(days: today.weekday - 1));
+    
+    final weekDates = List.generate(7, (index) {
+      final date = startOfWeek.add(Duration(days: index));
+      return {
+        'date': date,
+        'dayName': _getShortDayName(date.weekday),
+        'dayNumber': date.day.toString(),
+        'isToday': date.isAtSameMomentAs(today),
+      };
+    });
+    
+    // Safe handling untuk weeklyPerformance dengan default values
+    final safeWeeklyPerformance = _ensureValidPerformanceData(widget.weeklyPerformance);
+    
+    final maxPerformance = safeWeeklyPerformance.isNotEmpty
+        ? safeWeeklyPerformance.reduce((a, b) => a > b ? a : b)
         : 0.0;
 
     return Container(
@@ -68,37 +56,50 @@ class _PerformanceChartWidgetState
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            "Weekly Performance",
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: Colors.black87,
-            ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                "Weekly Performance",
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87,
+                ),
+              ),
+              Text(
+                _getWeekRange(startOfWeek),
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.grey[600],
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 16),
 
-          // if (isLoading)
-          //   const SizedBox(
-          //     height: 120,
-          //     child: Center(child: CircularProgressIndicator()),
-          //   )
-          // else
-            SizedBox(
-              height: 140, // TINGGI DITAMBAH
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: List.generate(7, (index) {
-                  final percentage = widget.weeklyPerformance[index] / 100;
-                  return _buildBarChartItem(
-                    days[index],
-                    percentage,
-                    maxPerformance,
-                  );
-                }),
-              ),
+          // Chart dengan tanggal aktual
+          SizedBox(
+            height: 140,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: List.generate(7, (index) {
+                final dayInfo = weekDates[index];
+                final percentage = index < safeWeeklyPerformance.length 
+                    ? safeWeeklyPerformance[index] / 100 
+                    : 0.0;
+                return _buildBarChartItem(
+                  dayInfo['dayName'] as String,
+                  dayInfo['dayNumber'] as String,
+                  percentage,
+                  maxPerformance,
+                  dayInfo['isToday'] as bool,
+                );
+              }),
             ),
+          ),
 
           const SizedBox(height: 16),
           const Divider(),
@@ -109,10 +110,68 @@ class _PerformanceChartWidgetState
     );
   }
 
+  // Helper method untuk memastikan data valid
+  List<double> _ensureValidPerformanceData(List<double> data) {
+    // Jika data kosong atau kurang dari 7, isi dengan 0.0
+    if (data.isEmpty) {
+      return List.filled(7, 0.0);
+    }
+    
+    // Jika data kurang dari 7, tambahkan 0.0 hingga 7 elemen
+    if (data.length < 7) {
+      final List<double> result = List.from(data);
+      while (result.length < 7) {
+        result.add(0.0);
+      }
+      return result;
+    }
+    
+    // Jika data lebih dari 7, ambil 7 pertama
+    if (data.length > 7) {
+      return data.take(7).toList();
+    }
+    
+    // Data sudah tepat 7 elemen
+    return data;
+  }
+
+  String _getShortDayName(int weekday) {
+    switch (weekday) {
+      case 1: return 'Mon';
+      case 2: return 'Tue';
+      case 3: return 'Wed';
+      case 4: return 'Thu';
+      case 5: return 'Fri';
+      case 6: return 'Sat';
+      case 7: return 'Sun';
+      default: return 'Unknown';
+    }
+  }
+
+  String _getWeekRange(DateTime startOfWeek) {
+    final endOfWeek = startOfWeek.add(const Duration(days: 6));
+    final startMonth = startOfWeek.month;
+    final endMonth = endOfWeek.month;
+    
+    if (startMonth == endMonth) {
+      return '${startOfWeek.day}-${endOfWeek.day} ${_getMonthName(startMonth)}';
+    } else {
+      return '${startOfWeek.day} ${_getMonthName(startMonth)} - ${endOfWeek.day} ${_getMonthName(endMonth)}';
+    }
+  }
+
+  String _getMonthName(int month) {
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 
+                    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    return months[month - 1];
+  }
+
   Widget _buildBarChartItem(
-    String day,
+    String dayName,
+    String dayNumber,
     double percentage,
     double maxPerformance,
+    bool isToday,
   ) {
     final height = percentage * 80;
 
@@ -121,7 +180,7 @@ class _PerformanceChartWidgetState
       children: [
         Container(
           width: 20,
-          height: height,
+          height: height.clamp(2.0, 80.0), // Minimum height 2px untuk visibility
           decoration: BoxDecoration(
             color: _getPerformanceColor(percentage),
             borderRadius: const BorderRadius.only(
@@ -133,15 +192,27 @@ class _PerformanceChartWidgetState
         const SizedBox(height: 8),
         Text(
           '${(percentage * 100).toInt()}%',
-          style: TextStyle(fontSize: 10, color: Colors.grey[600]),
+          style: TextStyle(
+            fontSize: 10, 
+            color: isToday ? Colors.blue[700] : Colors.grey[600],
+            fontWeight: isToday ? FontWeight.bold : FontWeight.normal,
+          ),
         ),
         const SizedBox(height: 4),
         Text(
-          day,
+          dayName,
           style: TextStyle(
             fontSize: 12,
-            fontWeight: FontWeight.normal,
-            color: Colors.grey[600],
+            fontWeight: isToday ? FontWeight.bold : FontWeight.normal,
+            color: isToday ? Colors.blue[700] : Colors.grey[600],
+          ),
+        ),
+        Text(
+          dayNumber,
+          style: TextStyle(
+            fontSize: 10,
+            color: isToday ? Colors.blue[700] : Colors.grey[500],
+            fontWeight: isToday ? FontWeight.bold : FontWeight.normal,
           ),
         ),
       ],

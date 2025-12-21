@@ -138,15 +138,29 @@ class _HabitDetailScreenState extends ConsumerState<HabitDetailScreen> {
 
   Future<void> _loadHabitLogForThisMonth(int habitId) async {
     try {
+      // Untuk monthly calendar data
       DateTime now = DateTime.now();
-      DateTime startDate = DateTime(now.year, now.month, 1);
-      DateTime endDate = DateTime(now.year, now.month + 1, 0);
+      DateTime monthStartDate = DateTime(now.year, now.month, 1);
+      DateTime monthEndDate = DateTime(now.year, now.month + 1, 0);
 
       final habitLogForThisMonth = await ref
           .read(habitNotifierProvider.notifier)
           .fetchLogsForCalendar(
-            startDate: startDate,
-            endDate: endDate,
+            startDate: monthStartDate,
+            endDate: monthEndDate,
+            habitId: habitId,
+          );
+
+      // Untuk weekly performance, ambil data minggu ini (bisa lintas bulan)
+      final today = DateTime(now.year, now.month, now.day);
+      final startOfWeek = today.subtract(Duration(days: today.weekday - 1)); // Senin
+      final endOfWeek = startOfWeek.add(const Duration(days: 6)); // Minggu
+
+      final habitLogForThisWeek = await ref
+          .read(habitNotifierProvider.notifier)
+          .fetchLogsForCalendar(
+            startDate: startOfWeek,
+            endDate: endOfWeek,
             habitId: habitId,
           );
 
@@ -154,26 +168,121 @@ class _HabitDetailScreenState extends ConsumerState<HabitDetailScreen> {
           .read(habitNotifierProvider.notifier)
           .fetchHabitLogStreak(habitId: habitId);
 
-      final List<DateTime> localCompletionDates = habitLogForThisMonth.map((
-        dailyLog,
-      ) {
-        return dailyLog.logDate;
-      }).toList();
+      // Safe handling untuk empty list tanpa null check yang unnecessary
+      final List<DateTime> localCompletionDates = habitLogForThisMonth
+          .map((dailyLog) => dailyLog.logDate)
+          .toList();
 
       final completeDays = localCompletionDates.length;
 
-      print(localCompletionDates);
+      // Hitung weekly performance dari data log minggu ini
+      final weeklyPerformanceData = _calculateWeeklyPerformance(habitLogForThisWeek);
+
+      print('Weekly dates range: ${startOfWeek.toString().split(' ')[0]} to ${endOfWeek.toString().split(' ')[0]}');
+      print('Weekly performance data: $weeklyPerformanceData');
 
       if (mounted) {
         setState(() {
           _habitLogForThisMonth = habitLogForThisMonth;
           _completedDays = completeDays;
+          _weeklyPerformance = weeklyPerformanceData; // Set data yang benar
           _isLoading = false;
           _habitLogStreak = streak;
         });
       }
     } catch (e) {
       print('Error loading completion status: $e');
+      
+      // Set default values jika terjadi error
+      if (mounted) {
+        setState(() {
+          _habitLogForThisMonth = [];
+          _completedDays = 0;
+          _weeklyPerformance = List.filled(7, 0.0); // Default weekly performance
+          _isLoading = false;
+          _habitLogStreak = 0;
+        });
+      }
+    }
+  }
+
+  // Method untuk menghitung weekly performance berdasarkan data log minggu ini
+  List<double> _calculateWeeklyPerformance(List<DailyLogModel> weeklyLogs) {
+    try {
+      // Get start of current week (Monday)
+      final now = DateTime.now();
+      final today = DateTime(now.year, now.month, now.day);
+      final startOfWeek = today.subtract(Duration(days: today.weekday - 1));
+      
+      // Initialize performance array untuk 7 hari (Monday to Sunday)
+      List<double> weeklyPerformance = List.filled(7, 0.0);
+      
+      // Debug info
+      print('Calculating weekly performance for week: ${startOfWeek.toString().split(' ')[0]} to ${startOfWeek.add(Duration(days: 6)).toString().split(' ')[0]}');
+      print('Today is: ${today.toString().split(' ')[0]} (${_getDayName(today.weekday)})');
+      
+      // Hitung performa untuk setiap hari dalam seminggu
+      for (int dayIndex = 0; dayIndex < 7; dayIndex++) {
+        final targetDate = startOfWeek.add(Duration(days: dayIndex));
+        final dayName = _getDayName(targetDate.weekday);
+        
+        // Cari log untuk tanggal tersebut
+        final logForDay = weeklyLogs.where((log) {
+          final logDate = DateTime(log.logDate.year, log.logDate.month, log.logDate.day);
+          final targetDateNormalized = DateTime(targetDate.year, targetDate.month, targetDate.day);
+          return logDate.isAtSameMomentAs(targetDateNormalized);
+        }).toList();
+        
+        if (logForDay.isNotEmpty) {
+          // Hitung persentase berdasarkan status log
+          final log = logForDay.first;
+          switch (log.status) {
+            case LogStatus.success:
+              weeklyPerformance[dayIndex] = 100.0; // 100% jika berhasil
+              print('  $dayName (${targetDate.toString().split(' ')[0]}): 100% - SUCCESS');
+              break;
+            case LogStatus.failed:
+              weeklyPerformance[dayIndex] = 0.0;   // 0% jika gagal
+              print('  $dayName (${targetDate.toString().split(' ')[0]}): 0% - FAILED');
+              break;
+            case LogStatus.neutral:
+              weeklyPerformance[dayIndex] = 50.0;  // 50% jika neutral
+              print('  $dayName (${targetDate.toString().split(' ')[0]}): 50% - NEUTRAL');
+              break;
+          }
+        } else {
+          // Tidak ada log untuk hari ini
+          if (targetDate.isAfter(today)) {
+            // Hari yang belum terjadi
+            weeklyPerformance[dayIndex] = 0.0;
+            print('  $dayName (${targetDate.toString().split(' ')[0]}): 0% - FUTURE DAY');
+          } else {
+            // Hari yang sudah lewat tapi tidak ada log (dianggap missed)
+            weeklyPerformance[dayIndex] = 0.0;
+            print('  $dayName (${targetDate.toString().split(' ')[0]}): 0% - NO LOG (MISSED)');
+          }
+        }
+      }
+      
+      return weeklyPerformance;
+    } catch (e) {
+      print('Error calculating weekly performance: $e');
+      // Return default jika terjadi error
+      return List.filled(7, 0.0);
+    }
+  }
+
+  // Helper method untuk mendapatkan nama hari
+  String _getDayName(int weekday) {
+    switch (weekday) {
+      case 1: return 'Monday';
+      case 2: return 'Tuesday';
+      case 3: return 'Wednesday';
+      case 4: return 'Thursday';
+      case 5: return 'Friday';
+      case 6: return 'Saturday';
+      case 7: return 'Sunday';
+      default: return 'Unknown';
     }
   }
 
@@ -241,12 +350,31 @@ class _HabitDetailScreenState extends ConsumerState<HabitDetailScreen> {
                   WeeklyStreakWidget(streak: _habitLogStreak),
                   const SizedBox(height: 24),
 
-                  PerformanceChartWidget(weeklyPerformance: _weeklyPerformance,),
+                  PerformanceChartWidget(weeklyPerformance: _weeklyPerformance),
                   const SizedBox(height: 24),
 
-                  CalendarTrackerWidget(
-                    habitLogForThisMonth: _habitLogForThisMonth!,
-                  ),
+                  // Safe access dengan null check untuk CalendarTrackerWidget
+                  if (_habitLogForThisMonth != null)
+                    CalendarTrackerWidget(
+                      habitLogForThisMonth: _habitLogForThisMonth!,
+                    )
+                  else
+                    Container(
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        color: Colors.grey[100],
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Center(
+                        child: Text(
+                          'No habit log data available',
+                          style: TextStyle(
+                            color: Colors.grey,
+                            fontSize: 16,
+                          ),
+                        ),
+                      ),
+                    ),
                   const SizedBox(height: 16),
 
                   MotivationalQuotesWidget(),
