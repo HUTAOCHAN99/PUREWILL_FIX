@@ -160,8 +160,6 @@ class HabitHeader extends ConsumerWidget {
   }
 
   void _showUserProfileMenu(BuildContext context) {
-    bool darkMode = false; // Contoh state untuk dark mode
-    
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(
@@ -422,44 +420,6 @@ class HabitHeader extends ConsumerWidget {
                             _showComingSoonSnackbar(context, 'Statistics');
                           },
                         ),
-                        
-                        // Dark Mode dengan switch
-                        Container(
-                          margin: const EdgeInsets.symmetric(vertical: 8),
-                          decoration: BoxDecoration(
-                            color: Colors.grey[50],
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: ListTile(
-                            leading: Icon(
-                              darkMode ? Icons.dark_mode : Icons.light_mode,
-                              color: darkMode ? Colors.deepPurple : Colors.orange,
-                            ),
-                            title: Text(
-                              'Dark Mode',
-                              style: TextStyle(
-                                fontWeight: FontWeight.w500,
-                                color: darkMode ? Colors.white : Colors.black87,
-                              ),
-                            ),
-                            trailing: Switch(
-                              value: darkMode,
-                              onChanged: (value) {
-                                _toggleDarkMode(value);
-                                // setStateIfMounted(() {
-                                //   darkMode = value;
-                                // });
-                              },
-                              activeColor: Colors.deepPurple,
-                            ),
-                            onTap: () {
-                              _toggleDarkMode(!darkMode);
-                              // setStateIfMounted(() {
-                              //   darkMode = !darkMode;
-                              // });
-                            },
-                          ),
-                        ),
                       ],
                     ),
                   ),
@@ -590,15 +550,6 @@ class HabitHeader extends ConsumerWidget {
         ],
       ),
     );
-  }
-
-  void _toggleDarkMode(bool value) {
-    // Implement dark mode toggle
-    // Bisa menggunakan ThemeProvider atau Riverpod untuk state management
-    // Untuk sekarang, kita hanya log saja
-    debugPrint('Dark mode toggled: $value');
-    // Dalam aplikasi nyata, ini akan memanggil ThemeProvider
-    // Contoh: ref.read(themeProvider.notifier).toggleTheme();
   }
 
   void _showLogoutConfirmation(BuildContext context) {
