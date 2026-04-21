@@ -3,7 +3,9 @@ import 'package:purewill/data/repository/auth_repository.dart';
 import 'package:purewill/data/repository/habit_repository.dart';
 import 'package:purewill/data/repository/habit_session_repository.dart';
 import 'package:purewill/data/repository/user_repository.dart';
+import 'package:purewill/data/services/auth/biometric_service.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:purewill/data/repository/secure_storage_repository.dart';
 
 enum AuthStatus { initial, success, loading, failure }
 
@@ -28,6 +30,9 @@ class AuthViewModel extends StateNotifier<AuthState> {
   final UserRepository _userRepository;
   final HabitRepository _habitRepository;
   final HabitSessionRepository _habitSessionRepository;
+  
+  final BiometricService _biometricService = BiometricService();
+  final SecureStorageRepository _secureStorage = SecureStorageRepository();
 
   AuthViewModel(
     this._repository,
@@ -91,7 +96,6 @@ class AuthViewModel extends StateNotifier<AuthState> {
       state = state.copyWith(status: AuthStatus.loading, errorMessage: null);
       await _repository.logout();
 
-      // Reset state ke initial setelah logout berhasil
       state = AuthState(
         status: AuthStatus.initial,
         user: null,
@@ -220,5 +224,98 @@ class AuthViewModel extends StateNotifier<AuthState> {
     } catch (e) {
       state = state.copyWith(status: AuthStatus.failure, errorMessage: "error");
     }
+  }
+
+  // ============ METHOD BIOMETRIC (TAMBAHKAN INI) ============
+
+  /// Login with biometric (fingerprint)
+  Future<bool> loginWithBiometric() async {
+    try {
+      final isAvailable = await _biometricService.isBiometricAvailable();
+      if (!isAvailable) {
+        state = state.copyWith(
+          status: AuthStatus.failure,
+          errorMessage: 'Biometric authentication is not available on this device',
+        );
+        return false;
+      }
+
+      final savedCredentials = await _secureStorage.getSavedCredentials();
+      if (savedCredentials == null) {
+        state = state.copyWith(
+          status: AuthStatus.failure,
+          errorMessage: 'No saved login found. Please login first.',
+        );
+        return false;
+      }
+
+      final result = await _biometricService.authenticate(
+        reason: 'Authenticate to login to PureWill',
+        title: 'Login with Fingerprint',
+        subtitle: 'Place your finger on the sensor to continue',
+        cancelButtonText: 'Use Password Instead',
+      );
+
+      if (!result.success) {
+        state = state.copyWith(
+          status: AuthStatus.failure,
+          errorMessage: result.errorMessage ?? 'Biometric authentication failed',
+        );
+        return false;
+      }
+
+      state = state.copyWith(status: AuthStatus.loading);
+      
+      final user = await _repository.login(
+        email: savedCredentials.email,
+        password: savedCredentials.password,
+      );
+
+      if (user != null) {
+        state = state.copyWith(
+          status: AuthStatus.success,
+          errorMessage: null,
+          user: user,
+        );
+        return true;
+      } else {
+        state = state.copyWith(
+          status: AuthStatus.failure,
+          errorMessage: 'Failed to login with saved credentials',
+        );
+        return false;
+      }
+    } catch (e) {
+      state = state.copyWith(
+        status: AuthStatus.failure,
+        errorMessage: 'Biometric login failed: $e',
+      );
+      return false;
+    }
+  }
+
+  /// Check if biometric login is available and enabled
+  Future<bool> isBiometricLoginAvailable() async {
+    final isAvailable = await _biometricService.isBiometricAvailable();
+    final isEnabled = await _secureStorage.isBiometricEnabled();
+    return isAvailable && isEnabled;
+  }
+
+  /// Save credentials after successful login
+  Future<void> saveCredentialsForBiometric({
+    required String email,
+    required String password,
+    required bool enableBiometric,
+  }) async {
+    await _secureStorage.saveCredentials(
+      email: email,
+      password: password,
+      enableBiometric: enableBiometric,
+    );
+  }
+
+  /// Clear saved credentials on logout
+  Future<void> clearSavedCredentials() async {
+    await _secureStorage.clearCredentials();
   }
 }
