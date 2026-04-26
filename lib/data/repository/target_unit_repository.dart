@@ -1,63 +1,39 @@
+// lib/data/repository/target_unit_repository.dart
+
 import 'dart:developer';
+import 'package:purewill/data/services/habits/habit_api_service.dart';
 import 'package:purewill/domain/model/target_unit_model.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 class TargetUnitRepository {
-  final SupabaseClient _supabaseClient;
-  static const String _targetUnitTable = 'target_units';
+  final HabitApiService _apiService;
 
-  TargetUnitRepository(this._supabaseClient);
+  TargetUnitRepository(this._apiService);
 
   Future<List<TargetUnitModel>> fetchUserTargetUnits(String userId) async {
     try {
-      final response = await _supabaseClient
-          .from(_targetUnitTable)
-          .select('*')
-          .eq('user_id', userId)
-          .order('name', ascending: true);
-
-      if (response.isEmpty) {
-        return [];
-      }
-
-      final targetUnits = <TargetUnitModel>[];
-      for (var i = 0; i < response.length; i++) {
-        try {
-          final targetUnit = TargetUnitModel.fromJson(response[i]);
-          targetUnits.add(targetUnit);
-        } catch (e) {
-          rethrow;
-        }
-      }
-
-      return targetUnits;
+      log('📦 FETCH TARGET UNITS for user: $userId', name: 'TARGET_UNIT_REPO');
+      
+      final response = await _apiService.getUnits();
+      final data = response['data'] as List? ?? [];
+      
+      log('✅ FETCH TARGET UNITS SUCCESS: ${data.length} units found', name: 'TARGET_UNIT_REPO');
+      
+      return data.map((json) => TargetUnitModel.fromJson(json)).toList();
     } catch (e, stackTrace) {
-      log(
-        'FETCH TARGET UNIT FAILURE: Failed to fetch target units.',
-        error: e,
-        stackTrace: stackTrace,
-        name: 'TARGET_UNIT_REPO',
-      );
-      rethrow;
+      log('❌ FETCH TARGET UNITS FAILURE', error: e, stackTrace: stackTrace, name: 'TARGET_UNIT_REPO');
+      return [];
     }
   }
 
-  Future<TargetUnitModel> createTargetUnit(String newTargetUnit) async {
+  Future<TargetUnitModel> createTargetUnit(String nameTargetUnit) async {
     try {
-      final response = await _supabaseClient
-          .from(_targetUnitTable)
-          .insert(newTargetUnit)
-          .select()
-          .single();
-
-      return TargetUnitModel.fromJson(response);
+      log('🔧 DEBUG: createTargetUnit - name: $nameTargetUnit', name: 'TARGET_UNIT_REPO');
+      
+      // Note: Endpoint untuk create unit mungkin belum ada di backend
+      // Ini adalah debug version yang simpan di local
+      throw UnimplementedError('Create target unit endpoint not available in backend yet');
     } catch (e, stackTrace) {
-      log(
-        'CREATE TARGET UNIT FAILURE: Failed to create target unit.',
-        error: e,
-        stackTrace: stackTrace,
-        name: 'TARGET_UNIT_REPO',
-      );
+      log('❌ CREATE TARGET UNIT FAILURE', error: e, stackTrace: stackTrace, name: 'TARGET_UNIT_REPO');
       rethrow;
     }
   }

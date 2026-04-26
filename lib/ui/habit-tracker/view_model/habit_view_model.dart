@@ -1,3 +1,5 @@
+// lib/ui/habit-tracker/view_model/habit_view_model.dart
+
 import 'dart:developer';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/legacy.dart';
@@ -196,8 +198,6 @@ class HabitsViewModel extends StateNotifier<HabitsState> {
   Future<int> getNofapHabitStreak() async {
     try {
       final habitId = await _habitRepository.getNofapHabitId(_currentUserId);
-      // final streak = await _habitSessionRepository.fetchNofapHabitLongestStreak(habitId: habitId, userId:
-      // _currentUserId);
       final streak = await _habitSessionRepository.fetchNofapHabitLongestStreak(
         habitId: habitId,
         userId: _currentUserId,
@@ -211,7 +211,6 @@ class HabitsViewModel extends StateNotifier<HabitsState> {
   Future<int> getNofapHabitCurrentStreak() async {
     try {
       final habitId = await _habitRepository.getNofapHabitId(_currentUserId);
-      // final streak = await _habitSessionRepository.fetchNofapHabitCurrentStreak(habitId: habitId, userId: _currentUserId);
       final streak = await _habitSessionRepository.fetchNofapHabitCurrentStreak(
         habitId: habitId,
         userId: _currentUserId,
@@ -333,29 +332,33 @@ class HabitsViewModel extends StateNotifier<HabitsState> {
     state = state.copyWith(status: HabitStatus.loading, errorMessage: null);
 
     try {
-      final categories = await _categoryRepository.fetchCategories();
+      final categories = await _categoryRepository.fetchCategories(
+        _currentUserId,
+      );
 
       state = state.copyWith(
         status: HabitStatus.success,
-        caregories: categories,
+        caregories:
+            categories, // ✅ Perhatikan: pakai "caregories" bukan "categories"
       );
     } catch (e) {
       state = state.copyWith(
         status: HabitStatus.failure,
-        errorMessage: 'Failed to load categorise.',
+        errorMessage: 'Failed to load categories.',
       );
     }
   }
 
+  // ✅ PERBAIKI: toggleHabitCompletion - ubah actualValue dari double? ke int?
   Future<void> toggleHabitCompletion(HabitModel habit) async {
     try {
-      print("habit id to toggle: ${habit.id}");
+      debugPrint("habit id to toggle: ${habit.id}");
       final today = DateTime.now();
       final existingLog = await _dailyLogRepository.getTodayLogForHabit(
         habit.id,
       );
 
-      print(
+      debugPrint(
         "sebelum di toggle, status existing log: ${existingLog?.status.name}",
       );
 
@@ -368,16 +371,18 @@ class HabitsViewModel extends StateNotifier<HabitsState> {
               : existingLog.status == LogStatus.failed
               ? LogStatus.neutral
               : LogStatus.success,
-          actualValue: habit.targetValue?.toDouble(),
+          actualValue: habit.targetValue
+              ?.toInt(), // ✅ Ubah: toDouble() → toInt()
         );
 
-        print("setelah di toggle, status log jadi: ${log.status.name}");
+        debugPrint("setelah di toggle, status log jadi: ${log.status.name}");
       } else {
         await _dailyLogRepository.recordLog(
           habitId: habit.id,
           date: today,
           status: LogStatus.success,
-          actualValue: habit.targetValue?.toDouble(),
+          actualValue: habit.targetValue
+              ?.toInt(), // ✅ Ubah: toDouble() → toInt()
         );
       }
 
@@ -385,11 +390,12 @@ class HabitsViewModel extends StateNotifier<HabitsState> {
     } catch (e) {
       state = state.copyWith(
         status: HabitStatus.failure,
-        errorMessage: 'Failed to update habit status.' + e.toString(),
+        errorMessage: 'Failed to update habit status. $e',
       );
     }
   }
 
+  // ✅ PERBAIKI: completeHabitWithValue - ubah actualValue dari double ke int?
   Future<void> completeHabitWithValue({
     required int habitId,
     required double actualValue,
@@ -400,7 +406,7 @@ class HabitsViewModel extends StateNotifier<HabitsState> {
         habitId: habitId,
         date: DateTime.now(),
         status: LogStatus.success,
-        actualValue: actualValue,
+        actualValue: actualValue.toInt(), // ✅ Ubah: tambah .toInt()
       );
 
       await _habitRepository.updateHabitStatus(
@@ -670,7 +676,7 @@ class HabitsViewModel extends StateNotifier<HabitsState> {
         repeatDaily: repeatDaily,
         isSoundEnabled: isSoundEnabled,
         isVibrationEnabled: isVibrationEnabled,
-        createdAt: DateTime.now(), // TAMBAHKAN INI
+        createdAt: DateTime.now(),
       );
 
       final reminderSettingBefore = await _reminderSettingRepository

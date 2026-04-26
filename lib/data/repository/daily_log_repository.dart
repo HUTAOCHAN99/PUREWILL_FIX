@@ -1,124 +1,89 @@
+// lib/data/repository/daily_log_repository.dart
+
 import 'dart:developer';
 import 'package:purewill/domain/model/daily_log_model.dart';
 import 'package:purewill/domain/model/habit_model.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 class DailyLogRepository {
-  final SupabaseClient _supabaseClient;
-  static const String _logTableName = 'daily_logs';
+  // Local storage untuk debug
+  static final Map<int, List<DailyLogModel>> _localLogs = {};
+  static int _nextId = 1;
 
-  DailyLogRepository(this._supabaseClient);
-
+  DailyLogRepository();
 
   Future<void> addLogsForNewHabit(HabitModel habit) async {
-    try {
-      final logData = {
-        'habit_id': habit.id,
-        'log_date': DateTime.now().toIso8601String().substring(0, 10),
-        'status': LogStatus.neutral.name,
-        'actual_value': 0,
-        'created_at': DateTime.now().toIso8601String(),
-      };
-
-      await _supabaseClient
-          .from(_logTableName)
-          .insert(logData);
-
-      log(
-        'ADD LOGS FOR NEW HABIT SUCCESS: Log added for new habit ${habit.id}.',
-        name: 'DAILY_LOG_REPO',
-      );
-    } catch (e, stackTrace) {
-      log(
-        'ADD LOGS FOR NEW HABIT FAILURE: Failed to add logs for new habit ${habit.id}.',
-        error: e,
-        stackTrace: stackTrace,
-        name: 'DAILY_LOG_REPO',
-      );
-      rethrow;
-    }
+    log('🔧 DEBUG: addLogsForNewHabit - habit: ${habit.id} - ${habit.name}',
+        name: 'DAILY_LOG_DEBUG');
+    return Future.value();
   }
 
+  // ✅ PERBAIKI: actualValue dari double? menjadi int?
   Future<DailyLogModel> recordLog({
     required int habitId,
     required DateTime date,
     required LogStatus status,
-    double? actualValue,
+    int? actualValue,  // ✅ UBAH dari double? ke int?
   }) async {
-    try {
-      // print(
-        // "akan diubah statusnya ke : $status for habitId: $habitId on date: ${date.toIso8601String().substring(0, 10)}",
-      // );
+    log('🔧 DEBUG: recordLog - habitId: $habitId, date: ${date.toIso8601String()}, status: ${status.name}',
+        name: 'DAILY_LOG_DEBUG');
 
-      final logData = {
-        'habit_id': habitId,
-        'log_date': date.toIso8601String().substring(0, 10),
-        'status': status.name,
-        'actual_value': actualValue?.toInt(), // UBAH INI: convert ke int
-        'created_at': DateTime.now().toIso8601String(),
-      };
+    final logs = _localLogs[habitId] ?? [];
+    final existingIndex = logs.indexWhere(
+      (log) => log.logDate.year == date.year &&
+          log.logDate.month == date.month &&
+          log.logDate.day == date.day,
+    );
 
-      final response = await _supabaseClient
-          .from(_logTableName)
-          .upsert(logData, onConflict: 'habit_id, log_date')
-          .select()
-          .single();
-
-      // print("success record log response: $response");
-
-      return DailyLogModel.fromJson(response);
-    } catch (e, stackTrace) {
-      log(
-        'RECORD LOG FAILURE: Failed to record log for habit $habitId on ${date.toIso8601String().substring(0, 10)}.',
-        error: e,
-        stackTrace: stackTrace,
-        name: 'DAILY_LOG_REPO',
+    if (existingIndex != -1) {
+      final updated = logs[existingIndex].copyWith(
+        status: status,
+        actualValue: actualValue,
       );
-      rethrow;
+      logs[existingIndex] = updated;
+      return updated;
     }
+
+    final newLog = DailyLogModel(
+      id: _nextId++,
+      habitId: habitId,
+      logDate: date,
+      status: status,
+      actualValue: actualValue,
+      createdAt: DateTime.now(),
+    );
+    
+    _localLogs[habitId] = [...logs, newLog];
+    return newLog;
   }
 
   Future<List<DailyLogModel>> fetchLogsByHabit(int habitId) async {
-    try {
-      final response = await _supabaseClient
-          .from(_logTableName)
-          .select('*')
-          .eq('habit_id', habitId)
-          .order('log_date', ascending: false);
-      
-      if (response.isEmpty) {
-        return [];
-      }
-
-      return response.map((data) => DailyLogModel.fromJson(data)).toList();
-    } catch (e, stackTrace) {
-      log(
-        'FETCH LOGS FAILURE: Failed to fetch logs for habit $habitId.',
-        error: e,
-        stackTrace: stackTrace,
-        name: 'DAILY_LOG_REPO',
-      );
-      rethrow;
-    }
+    return _localLogs[habitId] ?? [];
   }
 
   Future<int> fetchHabitLogStreak(int habitId) async {
-    try {
-      final response = await _supabaseClient.rpc(
-        'get_current_habit_streak',
-        params: {'p_habit_id': habitId},
-      );
-      
-      return response;
-    } catch (e, stackTrace) {
-      log(
-        'FETCH HABIT STREAK FAILURE: Failed to fetch habit streak for habit $habitId.',
-        error: e,
-        stackTrace: stackTrace,
-        name: 'DAILY_LOG_REPO',
-      );
-      rethrow;
+    final logs = _localLogs[habitId] ?? [];
+    if (logs.isEmpty) return 0;
+    
+    final sortedLogs = List<DailyLogModel>.from(logs)
+      ..sort((a, b) => b.logDate.compareTo(a.logDate));
+    
+    int streak = 0;
+    final now = DateTime.now();
+    DateTime currentDate = DateTime(now.year, now.month, now.day);
+    
+    for (var log in sortedLogs) {
+      final logDate = DateTime(log.logDate.year, log.logDate.month, log.logDate.day);
+      if (logDate == currentDate && log.status == LogStatus.success) {
+        streak++;
+        currentDate = currentDate.subtract(const Duration(days: 1));
+      } else if (logDate == currentDate && log.status != LogStatus.success) {
+        break;
+      } else if (logDate != currentDate) {
+        break;
+      }
     }
+    
+    return streak;
   }
 
   Future<List<DailyLogModel>> fetchLogsByDateRange({
@@ -126,173 +91,75 @@ class DailyLogRepository {
     required DateTime startDate,
     required DateTime endDate,
   }) async {
-    try {
-      final response = await _supabaseClient
-          .from(_logTableName)
-          .select('*')
-          .eq('habit_id', habitId)
-          .gte('log_date', startDate.toIso8601String().substring(0, 10))
-          .lte('log_date', endDate.toIso8601String().substring(0, 10))
-          .order('log_date', ascending: true);
-
-      return response.map((data) => DailyLogModel.fromJson(data)).toList();
-    } catch (e, stackTrace) {
-      log(
-        'FETCH LOGS RANGE FAILURE: Failed to fetch logs for habit $habitId in range.',
-        error: e,
-        stackTrace: stackTrace,
-        name: 'DAILY_LOG_REPO',
-      );
-      rethrow;
-    }
+    final logs = _localLogs[habitId] ?? [];
+    return logs.where((log) {
+      return log.logDate.isAfter(startDate.subtract(const Duration(days: 1))) &&
+          log.logDate.isBefore(endDate.add(const Duration(days: 1)));
+    }).toList();
   }
 
   Future<List<DailyLogModel>> fetchLogsByDate(DateTime date) async {
-    try {
-      final response = await _supabaseClient
-          .from(_logTableName)
-          .select('*')
-          .eq('log_date', date.toIso8601String().substring(0, 10))
-          .order('created_at', ascending: false);
-
-      return response.map((data) => DailyLogModel.fromJson(data)).toList();
-    } catch (e, stackTrace) {
-      log(
-        'FETCH LOGS BY DATE FAILURE: Failed to fetch logs for date ${date.toIso8601String().substring(0, 10)}.',
-        error: e,
-        stackTrace: stackTrace,
-        name: 'DAILY_LOG_REPO',
-      );
-      rethrow;
-    }
+    final allLogs = _localLogs.values.expand((logs) => logs).toList();
+    return allLogs.where((log) {
+      return log.logDate.year == date.year &&
+          log.logDate.month == date.month &&
+          log.logDate.day == date.day;
+    }).toList();
   }
 
   Future<DailyLogModel?> getTodayLogForHabit(int habitId) async {
+    final today = DateTime.now();
+    final logs = _localLogs[habitId] ?? [];
     try {
-      // print("fetching today log for habitId: $habitId");
-      final today = DateTime.now().toIso8601String().substring(0, 10);
-
-      final response = await _supabaseClient
-          .from(_logTableName)
-          .select('*')
-          .eq('habit_id', habitId)
-          .eq('log_date', today)
-          .maybeSingle();
-
-      // print("anjing");
-      // print("response for getTodayLogForHabit: $response");
-
-      if (response != null) {
-        return DailyLogModel.fromJson(response);
-      }
+      return logs.firstWhere(
+        (log) =>
+            log.logDate.year == today.year &&
+            log.logDate.month == today.month &&
+            log.logDate.day == today.day,
+      );
+    } catch (e) {
       return null;
-    } catch (e, stackTrace) {
-      // print(e);
-      // print(stackTrace);
-      log(
-        'GET TODAY LOG FAILURE: Failed to fetch today log for habit $habitId.',
-        error: e,
-        stackTrace: stackTrace,
-        name: 'DAILY_LOG_REPO',
-      );
-      return null;
-    }
-  }
-
-  Future<void> deleteLog({required int habitId, required DateTime date}) async {
-    try {
-      await _supabaseClient
-          .from(_logTableName)
-          .delete()
-          .eq('habit_id', habitId)
-          .eq('log_date', date.toIso8601String().substring(0, 10));
-
-      log(
-        'DELETE LOG SUCCESS: Log deleted for habit $habitId on ${date.toIso8601String().substring(0, 10)}.',
-        name: 'DAILY_LOG_REPO',
-      );
-    } catch (e, stackTrace) {
-      log(
-        'DELETE LOG FAILURE: Failed to delete log for habit $habitId.',
-        error: e,
-        stackTrace: stackTrace,
-        name: 'DAILY_LOG_REPO',
-      );
-      rethrow;
     }
   }
 
   Future<void> deleteLogsByHabit(int habitId) async {
-    try {
-      await _supabaseClient
-          .from(_logTableName)
-          .delete()
-          .eq('habit_id', habitId);
-
-      log(
-        'DELETE LOGS BY HABIT SUCCESS: Logs deleted for habit $habitId.',
-        name: 'DAILY_LOG_REPO',
-      );
-    } catch (e, stackTrace) {
-      log(
-        'DELETE LOGS BY HABIT FAILURE: Failed to delete logs for habit $habitId.',
-        error: e,
-        stackTrace: stackTrace,
-        name: 'DAILY_LOG_REPO',
-      );
-      rethrow;
-    }
+    _localLogs.remove(habitId);
   }
 
   Future<void> deleteLogsBeforeDate({
     required int habitId,
     required DateTime date,
   }) async {
-    try {
-      await _supabaseClient
-          .from(_logTableName)
-          .delete()
-          .eq('habit_id', habitId)
-          .lt('log_date', date.toIso8601String().substring(0, 10));
-
-      log(
-        'DELETE LOGS BEFORE DATE SUCCESS: Logs deleted for habit $habitId before ${date.toIso8601String().substring(0, 10)}.',
-        name: 'DAILY_LOG_REPO',
-      );
-    } catch (e, stackTrace) {
-      log(
-        'DELETE LOGS BEFORE DATE FAILURE: Failed to delete logs for habit $habitId before date.',
-        error: e,
-        stackTrace: stackTrace,
-        name: 'DAILY_LOG_REPO',
-      );
-      rethrow;
-    }
+    final logs = _localLogs[habitId] ?? [];
+    _localLogs[habitId] = logs.where((log) => log.logDate.isAfter(date)).toList();
   }
 
   Future<void> deleteLogsAfterDate({
     required int habitId,
     required DateTime date,
   }) async {
-    try {
-      await _supabaseClient
-          .from(_logTableName)
-          .delete()
-          .eq('habit_id', habitId)
-          .gt('log_date', date.toIso8601String().substring(0, 10));
+    final logs = _localLogs[habitId] ?? [];
+    _localLogs[habitId] = logs.where((log) => log.logDate.isBefore(date)).toList();
+  }
+}
 
-      log(
-        'DELETE LOGS AFTER DATE SUCCESS: Logs deleted for habit $habitId after ${date.toIso8601String().substring(0, 10)}.',
-        name: 'DAILY_LOG_REPO',
-      );
-    } catch (e, stackTrace) {
-      log(
-        'DELETE LOGS AFTER DATE FAILURE: Failed to delete logs for habit $habitId after date.',
-        error: e,
-        stackTrace: stackTrace,
-        name: 'DAILY_LOG_REPO',
-      );
-      rethrow;
-    }
+// ✅ PERBAIKI: Extension helper - actualValue dari double? menjadi int?
+extension DailyLogModelCopyWith on DailyLogModel {
+  DailyLogModel copyWith({
+    int? id,
+    int? habitId,
+    DateTime? logDate,
+    LogStatus? status,
+    int? actualValue,  // ✅ UBAH dari double? ke int?
+    DateTime? createdAt,
+  }) {
+    return DailyLogModel(
+      id: id ?? this.id,
+      habitId: habitId ?? this.habitId,
+      logDate: logDate ?? this.logDate,
+      status: status ?? this.status,
+      actualValue: actualValue ?? this.actualValue,
+      createdAt: createdAt ?? this.createdAt,
+    );
   }
 }

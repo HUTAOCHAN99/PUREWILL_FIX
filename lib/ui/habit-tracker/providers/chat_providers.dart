@@ -1,28 +1,25 @@
-// lib/providers/chat_providers.dart
+// lib/ui/habit-tracker/providers/chat_providers.dart
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:purewill/data/repository/user_repository.dart';
-import 'package:purewill/domain/model/profile_model.dart';
 import 'package:purewill/data/services/chatbot/chatbot_service.dart';
+import 'package:purewill/domain/model/profile_model.dart';
+import 'package:purewill/domain/model/user_model.dart';
+import 'package:purewill/ui/auth/auth_provider.dart';
+import 'dart:developer';
 
 // ============ AUTH & USER PROVIDERS ============
 
-// Provider untuk mendapatkan Supabase client
-final supabaseClientProvider = Provider<SupabaseClient>((ref) {
-  return Supabase.instance.client;
-});
-
 // Provider untuk mendapatkan user repository
 final userRepositoryProvider = Provider<UserRepository>((ref) {
-  final supabaseClient = ref.watch(supabaseClientProvider);
-  return UserRepository(supabaseClient);
+  final apiService = ref.watch(authApiServiceProvider);
+  return UserRepository(apiService);
 });
 
-// Provider untuk mendapatkan current user dari Supabase Auth
-final currentUserProvider = Provider<User?>((ref) {
-  final supabase = ref.watch(supabaseClientProvider);
-  return supabase.auth.currentUser;
+// Provider untuk mendapatkan current user dari AuthState
+final currentUserProvider = Provider<UserModel?>((ref) {
+  final authState = ref.watch(authNotifierProvider);
+  return authState.user;
 });
 
 // Provider untuk mendapatkan profile dari current user
@@ -34,8 +31,8 @@ final currentProfileProvider = FutureProvider<ProfileModel?>((ref) async {
   try {
     final profile = await userRepository.fetchUserProfile(user.id);
     return profile;
-  } catch (e) {
-    print('❌ Error fetching profile: $e');
+  } catch (e, stackTrace) {
+    log('Error fetching profile: $e', name: 'CHAT_PROVIDER');
     return null;
   }
 });
@@ -49,8 +46,12 @@ final currentDisplayNameProvider = FutureProvider<String>((ref) async {
     return profile.fullName!;
   }
   
-  if (user?.email != null && user!.email!.isNotEmpty) {
-    return user.email!.split('@').first;
+  if (user?.fullName != null && user!.fullName!.isNotEmpty) {
+    return user.fullName!;
+  }
+  
+  if (user?.email != null && user!.email.isNotEmpty) {
+    return user.email.split('@').first;
   }
   
   return 'Pengguna';
@@ -61,7 +62,7 @@ final currentDisplayNameProvider = FutureProvider<String>((ref) async {
 // Provider untuk ChatBotService - instance akan hidup selama app
 final chatBotServiceProvider = Provider<ChatBotService>((ref) {
   return ChatBotService();
-}, name: 'chatBotService');
+});
 
 // Provider untuk menyimpan nama user di seluruh app
 final chatUserNameProvider = StateProvider<String?>((ref) => null);

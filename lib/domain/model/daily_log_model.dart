@@ -1,3 +1,5 @@
+// lib/domain/model/daily_log_model.dart
+
 enum LogStatus {
   neutral,
   success,
@@ -9,7 +11,7 @@ class DailyLogModel {
   final int habitId;
   final DateTime logDate;
   final LogStatus status; 
-  final double? actualValue;
+  final int? actualValue;  // ✅ UBAH dari double? menjadi int?
   final DateTime? createdAt;
 
   DailyLogModel({
@@ -34,14 +36,13 @@ class DailyLogModel {
     }
   }
 
-
   factory DailyLogModel.fromJson(Map<String, dynamic> json) {
     return DailyLogModel(
       id: json['id'],
       habitId: json['habit_id'],
       logDate: DateTime.parse(json['log_date']),
       status: parseLogStatus(json['status']),
-      actualValue: json['actual_value']?.toDouble(), 
+      actualValue: json['actual_value'] as int?,  // ✅ UBAH: toDouble() → as int?
       createdAt: json['created_at'] != null ? DateTime.parse(json['created_at']) : null,
     );
   }
@@ -50,7 +51,7 @@ class DailyLogModel {
     return {
       'habit_id': habitId,
       'log_date': logDate.toIso8601String().substring(0, 10),
-      'status': status,
+      'status': status.name,  // ✅ TAMBAHKAN .name
       'actual_value': actualValue,
       'created_at': createdAt?.toIso8601String(),
     };

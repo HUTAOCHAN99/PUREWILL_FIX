@@ -1,4 +1,6 @@
-import 'package:supabase_flutter/supabase_flutter.dart';
+// lib/data/repository/habit_session_repository.dart
+
+import 'dart:developer';
 
 class HabitSessionModel {
   final int id;
@@ -24,67 +26,49 @@ class HabitSessionModel {
   factory HabitSessionModel.fromJson(Map<String, dynamic> json) {
     return HabitSessionModel(
       id: json['id'] as int,
-      habitId: json['habit_id'] as int,
-      userId: json['user_id'] as String,
-      startDate: DateTime.parse(json['start_date'] as String),
-      endDate: json['end_date'] != null
-          ? DateTime.parse(json['end_date'] as String)
-          : null,
-      finalStreakLength: json['final_streak_length'] as int?,
-      relapseNotes: json['relapse_notes'] as String?,
-      isActive: json['is_active'] as bool,
+      habitId: json['habitId'] as int? ?? json['habit_id'] as int? ?? 0,
+      userId: json['userId'] as String? ?? json['user_id'] as String? ?? '',
+      startDate: DateTime.parse(json['startDate'] as String),
+      endDate: json['endDate'] != null ? DateTime.parse(json['endDate'] as String) : null,
+      finalStreakLength: json['finalStreakLength'] as int?,
+      relapseNotes: json['relapseNotes'] as String?,
+      isActive: json['isActive'] as bool? ?? json['is_active'] as bool? ?? false,
     );
-  }
-
-  Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'habit_id': habitId,
-      'user_id': userId,
-      'start_date': startDate.toIso8601String().split('T')[0],
-      'end_date': endDate?.toIso8601String().split('T')[0],
-      'final_streak_length': finalStreakLength,
-      'relapse_notes': relapseNotes,
-      'is_active': isActive,
-    };
   }
 }
 
 class HabitSessionRepository {
-  final SupabaseClient _supabaseClient;
+  static HabitSessionModel? _activeSession;
+  static final List<HabitSessionModel> _sessionHistory = [];
+  static int _nextId = 1;
 
-  HabitSessionRepository(this._supabaseClient);
+  HabitSessionRepository();
 
   Future<HabitSessionModel> addHabitSession({
     required int habitId,
     required String userId,
     required DateTime startDate,
   }) async {
-    try {
-      // Deactivate any existing active session for this habit and user
-      await _supabaseClient
-          .from('habit_sessions')
-          .update({'is_active': false})
-          .eq('habit_id', habitId)
-          .eq('user_id', userId)
-          .eq('is_active', true);
+    log('🔧 DEBUG: addHabitSession - habitId: $habitId, userId: $userId',
+        name: 'HABIT_SESSION_DEBUG');
 
-      // Create new active session
-      final response = await _supabaseClient
-          .from('habit_sessions')
-          .insert({
-            'habit_id': habitId,
-            'user_id': userId,
-            'start_date': startDate.toIso8601String().split('T')[0],
-            'is_active': true,
-          })
-          .select()
-          .single();
-
-      return HabitSessionModel.fromJson(response);
-    } catch (e) {
-      throw Exception('Failed to add habit session: $e');
+    if (_activeSession != null) {
+      _activeSession = _activeSession!.copyWith(
+        endDate: startDate,
+        isActive: false,
+      );
+      _sessionHistory.add(_activeSession!);
     }
+
+    _activeSession = HabitSessionModel(
+      id: _nextId++,
+      habitId: habitId,
+      userId: userId,
+      startDate: startDate,
+      isActive: true,
+    );
+
+    return _activeSession!;
   }
 
   Future<HabitSessionModel> updateHabitSession({
@@ -94,139 +78,95 @@ class HabitSessionRepository {
     String? relapseNotes,
     bool? isActive,
   }) async {
-    try {
-      final updateData = <String, dynamic>{};
+    log('🔧 DEBUG: updateHabitSession - sessionId: $sessionId',
+        name: 'HABIT_SESSION_DEBUG');
 
-      if (endDate != null) {
-        updateData['end_date'] = endDate.toIso8601String();
+    if (_activeSession?.id == sessionId) {
+      _activeSession = _activeSession!.copyWith(
+        endDate: endDate,
+        finalStreakLength: finalStreakLength,
+        relapseNotes: relapseNotes,
+        isActive: isActive ?? false,
+      );
+      if (isActive == false && _activeSession != null) {
+        _sessionHistory.add(_activeSession!);
+        final completed = _activeSession;
+        _activeSession = null;
+        return completed!;
       }
-
-      if (finalStreakLength != null) {
-        updateData['final_streak_length'] = finalStreakLength;
-      }
-
-      if (relapseNotes != null) {
-        updateData['relapse_notes'] = relapseNotes;
-      }
-
-      if (isActive != null) {
-        updateData['is_active'] = isActive;
-      }
-
-      if (updateData.isEmpty) {
-        throw Exception('No data to update');
-      }
-
-      final response = await _supabaseClient
-          .from('habit_sessions')
-          .update(updateData)
-          .eq('id', sessionId)
-          .select()
-          .single();
-
-      return HabitSessionModel.fromJson(response);
-    } catch (e) {
-      throw Exception('Failed to update habit session: $e');
+      return _activeSession!;
     }
+
+    final index = _sessionHistory.indexWhere((s) => s.id == sessionId);
+    if (index != -1) {
+      final old = _sessionHistory[index];
+      final updated = old.copyWith(
+        endDate: endDate,
+        finalStreakLength: finalStreakLength,
+        relapseNotes: relapseNotes,
+        isActive: isActive ?? old.isActive,
+      );
+      _sessionHistory[index] = updated;
+      return updated;
+    }
+
+    throw Exception('Session not found');
   }
 
   Future<int> fetchNofapHabitLongestStreak({
     required int habitId,
     required String userId,
   }) async {
-    try {
-      final response = await _supabaseClient.rpc(
-        'get_longest_streak',
-        params: {'p_habit_id': habitId, 'p_user_id': userId},
-      );
-
-      if (response == null) {
-        return 0;
+    int longest = 0;
+    for (var session in _sessionHistory) {
+      if (session.finalStreakLength != null && session.finalStreakLength! > longest) {
+        longest = session.finalStreakLength!;
       }
-
-      return response as int;
-    } catch (e) {
-      throw Exception('Failed to fetch longest streak: $e');
     }
+    if (_activeSession != null && _activeSession!.isActive) {
+      final current = DateTime.now().difference(_activeSession!.startDate).inDays;
+      if (current > longest) longest = current;
+    }
+    return longest;
   }
 
   Future<int> fetchNofapHabitCurrentStreak({
     required int habitId,
     required String userId,
   }) async {
-    try {
-      final response = await _supabaseClient.rpc(
-        'get_current_streak',
-        params: {'p_habit_id': habitId, 'p_user_id': userId},
-      );
-
-      if (response == null) {
-        return 0;
-      }
-
-      return response as int;
-    } catch (e) {
-      throw Exception('Failed to fetch current streak: $e');
+    if (_activeSession != null && _activeSession!.isActive) {
+      return DateTime.now().difference(_activeSession!.startDate).inDays;
     }
+    return 0;
   }
 
   Future<int> getRelapseCount({
     required int habitId,
     required String userId,
   }) async {
-    try {
-      final response = await _supabaseClient
-          .from('habit_sessions')
-          .select()
-          .eq('habit_id', habitId)
-          .eq('user_id', userId)
-          .not('end_date', 'is', null);
-
-      return (response as List).length;
-    } catch (e) {
-      throw Exception('Failed to get relapse count: $e');
-    }
+    return _sessionHistory.length;
   }
 
   Future<List<DateTime>> getSuccessDays({
     required int habitId,
     required String userId,
   }) async {
-    try {
-      final response = await _supabaseClient
-          .from('habit_sessions')
-          .select()
-          .eq('habit_id', habitId)
-          .eq('user_id', userId)
-          .not('end_date', 'is', null);
-
-      final sessions = (response as List)
-          .map((session) => HabitSessionModel.fromJson(session))
-          .toList();
-
-      final successDays = <DateTime>[];
-
-      for (var session in sessions) {
-        if (session.finalStreakLength != null &&
-            session.finalStreakLength! > 0 &&
-            session.endDate != null) {
-          for (int i = 0; i < session.finalStreakLength!; i++) {
-            successDays.add(session.startDate.add(Duration(days: i)));
-          }
+    final successDays = <DateTime>[];
+    for (var session in _sessionHistory) {
+      if (session.finalStreakLength != null && session.finalStreakLength! > 0) {
+        for (int i = 0; i < session.finalStreakLength!; i++) {
+          successDays.add(session.startDate.add(Duration(days: i)));
         }
       }
-
-      return successDays;
-    } catch (e) {
-      throw Exception('Failed to get success days: $e');
     }
+    return successDays;
   }
 
   Future<void> deleteHabitSession({required int sessionId}) async {
-    try {
-      await _supabaseClient.from('habit_sessions').delete().eq('id', sessionId);
-    } catch (e) {
-      throw Exception('Failed to delete habit session: $e');
+    if (_activeSession?.id == sessionId) {
+      _activeSession = null;
+    } else {
+      _sessionHistory.removeWhere((s) => s.id == sessionId);
     }
   }
 
@@ -234,43 +174,41 @@ class HabitSessionRepository {
     required int habitId,
     required String userId,
   }) async {
-    print("habitId: $habitId, userId: $userId");
-    try {
-      final response = await _supabaseClient
-          .from('habit_sessions')
-          .select()
-          .eq('habit_id', habitId)
-          .eq('user_id', userId)
-          .eq('is_active', true)
-          .maybeSingle();
-
-      if (response == null) {
-        return null;
-      }
-
-      return HabitSessionModel.fromJson(response);
-    } catch (e) {
-      throw Exception('Failed to get active habit session: $e');
+    if (_activeSession != null && _activeSession!.isActive) {
+      return _activeSession;
     }
+    return null;
   }
 
   Future<List<HabitSessionModel>> getHabitSessionHistory({
     required int habitId,
     required String userId,
   }) async {
-    try {
-      final response = await _supabaseClient
-          .from('habit_sessions')
-          .select()
-          .eq('habit_id', habitId)
-          .eq('user_id', userId)
-          .order('start_date', ascending: false);
+    return _sessionHistory;
+  }
+}
 
-      return (response as List)
-          .map((session) => HabitSessionModel.fromJson(session))
-          .toList();
-    } catch (e) {
-      throw Exception('Failed to get habit session history: $e');
-    }
+// Extension helper
+extension HabitSessionModelCopyWith on HabitSessionModel {
+  HabitSessionModel copyWith({
+    int? id,
+    int? habitId,
+    String? userId,
+    DateTime? startDate,
+    DateTime? endDate,
+    int? finalStreakLength,
+    String? relapseNotes,
+    bool? isActive,
+  }) {
+    return HabitSessionModel(
+      id: id ?? this.id,
+      habitId: habitId ?? this.habitId,
+      userId: userId ?? this.userId,
+      startDate: startDate ?? this.startDate,
+      endDate: endDate ?? this.endDate,
+      finalStreakLength: finalStreakLength ?? this.finalStreakLength,
+      relapseNotes: relapseNotes ?? this.relapseNotes,
+      isActive: isActive ?? this.isActive,
+    );
   }
 }

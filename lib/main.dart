@@ -1,3 +1,4 @@
+// lib/main.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -11,8 +12,6 @@ import 'package:purewill/ui/habit-tracker/screen/badge_xp_screen.dart';
 import 'package:purewill/ui/habit-tracker/screen/home_screen.dart';
 import 'package:purewill/ui/auth/screen/login_screen.dart';
 import 'package:purewill/ui/auth/screen/signup_screen.dart';
-import 'package:purewill/ui/auth/screen/resetpassword_screen.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 final badgeNotificationService = BadgeNotificationService();
 late BadgeService badgeService;
@@ -22,87 +21,72 @@ Future<void> main() async {
 
   // Load environment variables
   await dotenv.load(fileName: ".env");
+  
+  // Tampilkan konfigurasi API
+  _printApiConfig();
 
-  await Supabase.initialize(
-    url: dotenv.env['SUPABASE_URL']!,
-    anonKey: dotenv.env['SUPABASE_ANON_KEY']!,
-  );
-
-  WidgetsBinding.instance.addPostFrameCallback((_) async {
-    final user = Supabase.instance.client.auth.currentUser;
-    if (user != null) {
-      // Sync premium status saat app startup
-      final planRepo = PlanRepository();
-      await planRepo.syncPremiumStatus();
-
-      // Check badges untuk user
-      await checkUserBadges(user.id);
-    }
-  });
-  // Initialize Badge Notification Service
-  await badgeNotificationService.initialize(
-    onBadgeNotificationTap: (payload) {
-      // debugPrint('🎯 Badge notification tapped with payload: $payload');
-      _handleBadgeNotification(payload);
-    },
-  );
-
-  // Initialize Badge Service
-  badgeService = BadgeService(
-    Supabase.instance.client,
-    badgeNotificationService,
-  );
-
-  // debugPrint('✅ Badge Service initialized');
-
-  // Initialize existing Notification Service
-  final notificationService = LocalNotificationService();
-  await notificationService.initialize(
-    onNotificationTap: (payload) {
-      // debugPrint('🔔 General notification tapped with payload: $payload');
-      _handleNotificationPayload(payload);
-    },
-  );
-
-  // debugPrint('✅ Local Notification Service initialized');
-
-  // Handle notification pada app startup
-  await LocalNotificationService.handleNotificationOnStartup();
-
-  // Initialize Reminder Sync Service
-  await _initializeReminderSyncService();
+  // Initialize services
+  await _initializeServices();
 
   runApp(const ProviderScope(child: MyApp()));
 }
 
-// Handle badge notification payload
+void _printApiConfig() {
+  final host = dotenv.env['API_HOST'] ?? 'localhost';
+  final port = dotenv.env['API_PORT'] ?? '4000';
+  final baseUrl = 'http://$host:$port/api';
+  
+  debugPrint('═══════════════════════════════════════════');
+  debugPrint('🌐 API Configuration:');
+  debugPrint('   Host: $host');
+  debugPrint('   Port: $port');
+  debugPrint('   Base URL: $baseUrl');
+  debugPrint('═══════════════════════════════════════════');
+}
+
+Future<void> _initializeServices() async {
+  try {
+    // Initialize Badge Notification Service
+    await badgeNotificationService.initialize(
+      onBadgeNotificationTap: (payload) {
+        _handleBadgeNotification(payload);
+      },
+    );
+
+    // Initialize Notification Service
+    final notificationService = LocalNotificationService();
+    await notificationService.initialize(
+      onNotificationTap: (payload) {
+        _handleNotificationPayload(payload);
+      },
+    );
+
+    // Handle notification pada app startup
+    await LocalNotificationService.handleNotificationOnStartup();
+
+    // Initialize Reminder Sync Service
+    await _initializeReminderSyncService();
+
+    // Sync premium status
+    final planRepo = PlanRepository();
+    await planRepo.syncPremiumStatus();
+
+    debugPrint('✅ All services initialized successfully');
+  } catch (e) {
+    debugPrint('❌ Error initializing services: $e');
+  }
+}
+
 void _handleBadgeNotification(String? payload) {
   if (payload == null) return;
-
-  // debugPrint('🎯 Handling badge notification payload: $payload');
-
-  if (payload.startsWith('badge_')) {
-    final badgeId = payload.replaceFirst('badge_', '');
-    // debugPrint('   - Badge ID from notification: $badgeId');
-  } else if (payload.startsWith('progress_')) {
-    final badgeName = payload.replaceFirst('progress_', '');
-    // debugPrint('   - Progress notification for: $badgeName');
-  }
+  debugPrint('🎯 Handling badge notification payload: $payload');
 }
 
-// Handle general notification payload
 void _handleNotificationPayload(String? payload) {
   if (payload == null) return;
-
-  // debugPrint('🎯 Handling general notification payload: $payload');
-
-  if (payload.startsWith('habit_')) {
-    final habitId = payload.replaceFirst('habit_', '');
-    // debugPrint('   - Habit ID from notification: $habitId');
-  }
+  debugPrint('🎯 Handling general notification payload: $payload');
 }
 
-// Initialize Reminder Sync Service dengan retry mechanism
 Future<void> _initializeReminderSyncService() async {
   bool syncInitialized = false;
   int retryCount = 0;
@@ -112,16 +96,14 @@ Future<void> _initializeReminderSyncService() async {
     try {
       await ReminderSyncService().initialize();
       syncInitialized = true;
-      // debugPrint('✅ ReminderSyncService initialized successfully');
+      debugPrint('✅ ReminderSyncService initialized successfully');
     } catch (e, stackTrace) {
       retryCount++;
+      debugPrint('⚠️ ReminderSyncService initialization attempt $retryCount failed: $e');
       if (retryCount < maxRetries) {
-        // debugPrint('🔄 Retrying in 2 seconds...');
         await Future.delayed(const Duration(seconds: 2));
       } else {
-        // debugPrint(
-        // '⚠️ ReminderSyncService initialization failed after $maxRetries attempts',
-        // );
+        debugPrint('❌ ReminderSyncService initialization failed after $maxRetries attempts');
       }
     }
   }
@@ -145,7 +127,6 @@ class MyApp extends StatelessWidget {
         '/login': (context) => const LoginScreen(),
         '/home': (context) => const HomeScreen(),
         '/signup': (context) => const SignupScreen(),
-        '/signup-password': (context) => const ResetPasswordScreen(),
         '/badges': (context) => const BadgeXpScreen(),
         '/logout': (context) => const LoginScreen(),
       },
@@ -157,10 +138,10 @@ class MyApp extends StatelessWidget {
 // Function untuk check badges ketika user login
 Future<void> checkUserBadges(String userId) async {
   try {
-    // debugPrint('🔍 Checking badges for user: $userId');
+    debugPrint('🔍 Checking badges for user: $userId');
     await badgeService.checkAllBadges(userId);
   } catch (e) {
-    // debugPrint('❌ Error checking user badges: $e');
+    debugPrint('❌ Error checking user badges: $e');
   }
 }
 

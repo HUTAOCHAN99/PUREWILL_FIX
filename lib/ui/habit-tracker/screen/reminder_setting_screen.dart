@@ -1,3 +1,5 @@
+// lib/ui/habit-tracker/screen/reminder_setting_screen.dart
+
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -6,7 +8,6 @@ import 'package:purewill/data/services/local_notification_service.dart';
 import 'package:purewill/domain/model/habit_model.dart';
 import 'package:purewill/data/repository/reminder_setting_repository.dart';
 import 'package:purewill/domain/model/reminder_setting_model.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import '../controller/reminder_setting_controller.dart';
 
 class ReminderSettingScreen extends ConsumerStatefulWidget {
@@ -38,9 +39,10 @@ class _ReminderSettingScreenState extends ConsumerState<ReminderSettingScreen> {
   }
 
   void _initializeController() {
+    // ✅ Perbaiki: Hapus parameter Supabase
     _controller = ReminderSettingController(
       habit: widget.habit,
-      repository: ReminderSettingRepository(Supabase.instance.client),
+      repository: ReminderSettingRepository(),  // ✅ Debug version
       notificationService: LocalNotificationService(),
     )..addListener(_onControllerUpdate);
   }
@@ -173,7 +175,7 @@ class _ReminderSettingScreenState extends ConsumerState<ReminderSettingScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Live Clock Debug Section - DITAMBAHKAN
+          // Live Clock Debug Section
           _buildLiveClockSection(),
 
           const SizedBox(height: 16),
@@ -207,7 +209,7 @@ class _ReminderSettingScreenState extends ConsumerState<ReminderSettingScreen> {
     );
   }
 
-  // WIDGET BARU: Live Clock Section
+  // WIDGET: Live Clock Section
   Widget _buildLiveClockSection() {
     return Card(
       elevation: 2,
@@ -221,7 +223,6 @@ class _ReminderSettingScreenState extends ConsumerState<ReminderSettingScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Section Header
             const Row(
               children: [
                 Icon(Icons.access_time, size: 20, color: Colors.orange),
@@ -239,7 +240,6 @@ class _ReminderSettingScreenState extends ConsumerState<ReminderSettingScreen> {
 
             const SizedBox(height: 12),
 
-            // Current Time Display
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -292,7 +292,6 @@ class _ReminderSettingScreenState extends ConsumerState<ReminderSettingScreen> {
 
             const SizedBox(height: 8),
 
-            // Timezone Info
             FutureBuilder<String>(
               future: _getTimezoneInfo(),
               builder: (context, snapshot) {
@@ -309,7 +308,6 @@ class _ReminderSettingScreenState extends ConsumerState<ReminderSettingScreen> {
 
             const SizedBox(height: 8),
 
-            // Selected Time Comparison
             _buildTimeComparison(),
           ],
         ),
@@ -317,7 +315,6 @@ class _ReminderSettingScreenState extends ConsumerState<ReminderSettingScreen> {
     );
   }
 
-  // Method untuk mendapatkan info timezone
   Future<String> _getTimezoneInfo() async {
     try {
       final timezoneOffset = _currentTime.timeZoneOffset;
@@ -332,12 +329,10 @@ class _ReminderSettingScreenState extends ConsumerState<ReminderSettingScreen> {
     }
   }
 
-  // Widget untuk perbandingan waktu yang dipilih dengan waktu sekarang
   Widget _buildTimeComparison() {
     final selectedTime = _controller.selectedTime;
     final now = _currentTime;
 
-    // Buat DateTime dengan waktu yang dipilih untuk hari ini
     final selectedDateTime = DateTime(
       now.year,
       now.month,
@@ -356,8 +351,7 @@ class _ReminderSettingScreenState extends ConsumerState<ReminderSettingScreen> {
     IconData statusIcon;
 
     if (isPast) {
-      statusText =
-          'Selected time was ${_formatDuration(absoluteDifference)} ago';
+      statusText = 'Selected time was ${_formatDuration(absoluteDifference)} ago';
       statusColor = Colors.red;
       statusIcon = Icons.schedule;
     } else {
@@ -427,7 +421,6 @@ class _ReminderSettingScreenState extends ConsumerState<ReminderSettingScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Habit Info Card
         Card(
           color: Colors.blue[50],
           child: Padding(
@@ -458,7 +451,6 @@ class _ReminderSettingScreenState extends ConsumerState<ReminderSettingScreen> {
 
         const SizedBox(height: 16),
 
-        // Status Info
         _buildStatusInfo(),
       ],
     );
@@ -518,7 +510,6 @@ class _ReminderSettingScreenState extends ConsumerState<ReminderSettingScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Section Header
             const Row(
               children: [
                 Icon(Icons.settings, size: 20, color: Colors.blue),
@@ -536,17 +527,14 @@ class _ReminderSettingScreenState extends ConsumerState<ReminderSettingScreen> {
 
             const SizedBox(height: 16),
 
-            // Enable/Disable Toggle
             _buildEnableToggle(),
 
             const SizedBox(height: 16),
 
-            // Time Picker
             _buildTimePicker(),
 
             const SizedBox(height: 16),
 
-            // Snooze Settings
             _buildSnoozeSettings(),
           ],
         ),
@@ -616,7 +604,6 @@ class _ReminderSettingScreenState extends ConsumerState<ReminderSettingScreen> {
         ),
         const SizedBox(height: 12),
 
-        // Snooze Options
         Column(
           children: [
             for (int i = 0; i < _controller.snoozeOptions.length; i++)
@@ -731,7 +718,6 @@ class _ReminderSettingScreenState extends ConsumerState<ReminderSettingScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Section Header
             const Row(
               children: [
                 Icon(Icons.tune, size: 20, color: Colors.purple),
@@ -749,7 +735,6 @@ class _ReminderSettingScreenState extends ConsumerState<ReminderSettingScreen> {
 
             const SizedBox(height: 16),
 
-            // Repeat Daily
             _buildAdvancedOption(
               title: 'Repeat Daily',
               subtitle: 'Send reminder every day at the same time',
@@ -760,7 +745,6 @@ class _ReminderSettingScreenState extends ConsumerState<ReminderSettingScreen> {
 
             const Divider(height: 1),
 
-            // Sound
             _buildAdvancedOption(
               title: 'Sound',
               subtitle: 'Play sound with notification',
@@ -771,7 +755,6 @@ class _ReminderSettingScreenState extends ConsumerState<ReminderSettingScreen> {
 
             const Divider(height: 1),
 
-            // Vibration
             _buildAdvancedOption(
               title: 'Vibration',
               subtitle: 'Vibrate device with notification',
@@ -837,7 +820,6 @@ class _ReminderSettingScreenState extends ConsumerState<ReminderSettingScreen> {
 
             const SizedBox(height: 16),
 
-            // Test Buttons
             Column(
               children: [
                 _buildTestButton(

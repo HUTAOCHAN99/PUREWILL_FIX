@@ -1,22 +1,26 @@
+// lib/ui/auth/view_model/auth_view_model.dart
+
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/legacy.dart';
 import 'package:purewill/data/repository/auth_repository.dart';
 import 'package:purewill/data/repository/habit_repository.dart';
 import 'package:purewill/data/repository/habit_session_repository.dart';
 import 'package:purewill/data/repository/user_repository.dart';
 import 'package:purewill/data/services/auth/biometric_service.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:purewill/data/repository/secure_storage_repository.dart';
+import 'package:purewill/domain/model/auth_model.dart';
+import 'package:purewill/domain/model/user_model.dart';
 
 enum AuthStatus { initial, success, loading, failure }
 
 class AuthState {
   final AuthStatus status;
   final String? errorMessage;
-  final User? user;
+  final UserModel? user;
 
   AuthState({this.status = AuthStatus.initial, this.errorMessage, this.user});
 
-  AuthState copyWith({AuthStatus? status, String? errorMessage, User? user}) {
+  AuthState copyWith({AuthStatus? status, String? errorMessage, UserModel? user}) {
     return AuthState(
       status: status ?? this.status,
       errorMessage: errorMessage ?? this.errorMessage,
@@ -43,7 +47,6 @@ class AuthViewModel extends StateNotifier<AuthState> {
 
   Future<void> login(String email, String password) async {
     try {
-      print("email: $email, password: $password");
       state = state.copyWith(status: AuthStatus.loading, errorMessage: null);
       final user = await _repository.login(email: email, password: password);
       if (user != null) {
@@ -60,34 +63,73 @@ class AuthViewModel extends StateNotifier<AuthState> {
       );
       rethrow;
     } catch (e) {
-      state = state.copyWith(status: AuthStatus.failure, errorMessage: "error");
+      state = state.copyWith(status: AuthStatus.failure, errorMessage: "Login failed");
       rethrow;
     }
   }
 
-  Future<void> signup(String fullname, String email, String password) async {
+  /// ✅ UPDATE: Signup dengan parameter yang sesuai dengan AuthRepository
+  Future<void> signup({
+    required String fullname,
+    required String username,
+    required String email,
+    required String password,
+    required String passwordConfirmation,
+    required String gender,
+    required DateTime birthDate,
+  }) async {
     try {
+      if (kDebugMode) {
+        print('═══════════════════════════════════════════');
+        print('🔐 [AUTH] SIGNUP STARTED');
+        print('📝 Fullname: $fullname');
+        print('📝 Username: $username');
+        print('📧 Email: $email');
+        print('⚥ Gender: $gender');
+        print('📅 BirthDate: $birthDate');
+        print('═══════════════════════════════════════════');
+      }
+      
       state = state.copyWith(status: AuthStatus.loading, errorMessage: null);
+      
+      // Panggil repository.signup dengan parameter yang benar
       final user = await _repository.signup(
         fullname: fullname,
+        username: username,
         email: email,
         password: password,
+        passwordConfirmation: passwordConfirmation,
+        gender: gender,
+        birthDate: birthDate,
       );
 
-      await _habitRepository.initializeDefaultHabitsForUser(user!.id);
-
-      state = state.copyWith(
-        status: AuthStatus.success,
-        errorMessage: null,
-        user: user,
-      );
+      if (user != null) {
+        if (kDebugMode) print('✅ SIGNUP SUCCESS - User ID: ${user.id}');
+        
+        // Initialize default habits for new user
+        await _habitRepository.initializeDefaultHabitsForUser(user.id);
+        if (kDebugMode) print('✅ Default habits initialized');
+        
+        state = state.copyWith(
+          status: AuthStatus.success,
+          errorMessage: null,
+          user: user,
+        );
+      } else {
+        throw AuthException('Failed to create user account');
+      }
     } on AuthException catch (e) {
+      if (kDebugMode) print('❌ SIGNUP AUTH EXCEPTION: ${e.message}');
       state = state.copyWith(
         status: AuthStatus.failure,
         errorMessage: e.message,
       );
     } catch (e) {
-      state = state.copyWith(status: AuthStatus.failure, errorMessage: "error");
+      if (kDebugMode) print('❌ SIGNUP ERROR: $e');
+      state = state.copyWith(
+        status: AuthStatus.failure,
+        errorMessage: "Signup failed: $e",
+      );
     }
   }
 
@@ -95,7 +137,8 @@ class AuthViewModel extends StateNotifier<AuthState> {
     try {
       state = state.copyWith(status: AuthStatus.loading, errorMessage: null);
       await _repository.logout();
-
+      await clearSavedCredentials();
+      
       state = AuthState(
         status: AuthStatus.initial,
         user: null,
@@ -114,121 +157,8 @@ class AuthViewModel extends StateNotifier<AuthState> {
     }
   }
 
-  Future<void> verifySignupOtp(String email, String otp) async {
-    try {
-      state = state.copyWith(status: AuthStatus.loading, errorMessage: null);
-      final user = await _repository.verifySignupOTP(email: email, otp: otp);
+  // ============ BIOMETRIC METHODS ============
 
-      await _userRepository.createUserProfile(
-        userId: user!.id,
-        fullName: user.userMetadata!["full_name"],
-      );
-
-      state = state.copyWith(
-        status: AuthStatus.success,
-        errorMessage: null,
-        user: user,
-      );
-    } on AuthException catch (e) {
-      state = state.copyWith(
-        status: AuthStatus.failure,
-        errorMessage: e.message,
-      );
-    } catch (e) {
-      state = state.copyWith(status: AuthStatus.failure, errorMessage: "error");
-      print(e.toString());
-    }
-  }
-
-  Future<void> resendSignupOTP(String email) async {
-    try {
-      state = state.copyWith(status: AuthStatus.loading, errorMessage: null);
-      await _repository.resendSignupOTP(email: email);
-      state = state.copyWith(status: AuthStatus.success, errorMessage: null);
-    } on AuthException catch (e) {
-      state = state.copyWith(
-        status: AuthStatus.failure,
-        errorMessage: e.message,
-      );
-    } catch (e) {
-      state = state.copyWith(status: AuthStatus.failure, errorMessage: "error");
-    }
-  }
-
-  Future<void> sendPasswordResetOTP(String email) async {
-    try {
-      state = state.copyWith(status: AuthStatus.loading, errorMessage: null);
-      await _repository.sendPasswordResetOTP(email: email);
-      state = state.copyWith(status: AuthStatus.success, errorMessage: null);
-    } on AuthException catch (e) {
-      state = state.copyWith(
-        status: AuthStatus.failure,
-        errorMessage: e.message,
-      );
-    } catch (e) {
-      state = state.copyWith(status: AuthStatus.failure, errorMessage: "error");
-    }
-  }
-
-  Future<void> verifyPasswordResetOtp(String email, String otp) async {
-    try {
-      state = state.copyWith(status: AuthStatus.loading, errorMessage: null);
-      final user = await _repository.verifyPasswordResetOtp(
-        email: email,
-        otp: otp,
-      );
-      state = state.copyWith(
-        status: AuthStatus.success,
-        errorMessage: null,
-        user: user,
-      );
-    } on AuthException catch (e) {
-      state = state.copyWith(
-        status: AuthStatus.failure,
-        errorMessage: e.message,
-      );
-    } catch (e) {
-      state = state.copyWith(status: AuthStatus.failure, errorMessage: "error");
-    }
-  }
-
-  Future<void> resendPasswordResetOtp(String email) async {
-    try {
-      state = state.copyWith(status: AuthStatus.loading, errorMessage: null);
-      await _repository.resendPasswordResetOtp(email: email);
-      state = state.copyWith(status: AuthStatus.success, errorMessage: null);
-    } on AuthException catch (e) {
-      state = state.copyWith(
-        status: AuthStatus.failure,
-        errorMessage: e.message,
-      );
-    } catch (e) {
-      state = state.copyWith(status: AuthStatus.failure, errorMessage: "error");
-    }
-  }
-
-  Future<void> updatePassword(String newPassword) async {
-    try {
-      state = state.copyWith(status: AuthStatus.loading, errorMessage: null);
-      final user = await _repository.updatePassword(newPassword: newPassword);
-      state = state.copyWith(
-        status: AuthStatus.success,
-        errorMessage: null,
-        user: user,
-      );
-    } on AuthException catch (e) {
-      state = state.copyWith(
-        status: AuthStatus.failure,
-        errorMessage: e.message,
-      );
-    } catch (e) {
-      state = state.copyWith(status: AuthStatus.failure, errorMessage: "error");
-    }
-  }
-
-  // ============ METHOD BIOMETRIC (TAMBAHKAN INI) ============
-
-  /// Login with biometric (fingerprint)
   Future<bool> loginWithBiometric() async {
     try {
       final isAvailable = await _biometricService.isBiometricAvailable();
@@ -294,14 +224,12 @@ class AuthViewModel extends StateNotifier<AuthState> {
     }
   }
 
-  /// Check if biometric login is available and enabled
   Future<bool> isBiometricLoginAvailable() async {
     final isAvailable = await _biometricService.isBiometricAvailable();
     final isEnabled = await _secureStorage.isBiometricEnabled();
     return isAvailable && isEnabled;
   }
 
-  /// Save credentials after successful login
   Future<void> saveCredentialsForBiometric({
     required String email,
     required String password,
@@ -314,7 +242,6 @@ class AuthViewModel extends StateNotifier<AuthState> {
     );
   }
 
-  /// Clear saved credentials on logout
   Future<void> clearSavedCredentials() async {
     await _secureStorage.clearCredentials();
   }

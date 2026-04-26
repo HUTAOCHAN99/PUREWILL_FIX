@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:purewill/data/services/auth/biometric_service.dart';
+import 'package:purewill/domain/model/auth_model.dart';
 import 'package:purewill/ui/auth/auth_provider.dart';
 import 'package:purewill/ui/auth/screen/signup_screen.dart';
-import 'package:purewill/ui/auth/screen/resetpassword_screen.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:purewill/ui/auth/view_model/auth_view_model.dart';
 
@@ -19,12 +19,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   bool _isBiometricAvailable = false;
   bool _isBiometricLoginLoading = false;
   
-  final TextEditingController _emailController = TextEditingController(
-    text: "abimanyuputrar265@gmail.com",
-  );
-  final TextEditingController _passwordController = TextEditingController(
-    text: "Rumah_12345",
-  );
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   final ScrollController _scrollController = ScrollController();
   
@@ -97,13 +93,35 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     }
   }
 
-  void _showSnackBar(String message) {
+  void _showSnackBar(String message, {bool isError = false}) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
         duration: const Duration(seconds: 3),
         behavior: SnackBarBehavior.floating,
+        backgroundColor: isError ? Colors.red : Colors.green,
       ),
+    );
+  }
+
+  void _showFeatureUnavailableDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Fitur Tidak Tersedia'),
+          content: const Text(
+            'Maaf, fitur reset password sedang dalam pengembangan. '
+            'Silakan hubungi customer support untuk bantuan.'
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('OK'),
+            ),
+          ],
+        );
+      },
     );
   }
 
@@ -139,10 +157,15 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         '/home',
         (Route<dynamic> route) => false,
       );
+    } on AuthException catch (e) {
+      if (mounted) {
+        _showSnackBar("Login failed: ${e.message}", isError: true);
+      }
     } catch (e) {
       if (mounted) {
         _showSnackBar(
           "Login failed: ${authState.errorMessage ?? 'Unknown error'}",
+          isError: true,
         );
       }
     }
@@ -464,17 +487,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                             height: 0,
                                           ),
                                         ),
-                                        onTap: () {
-                                          Future.delayed(
-                                            const Duration(milliseconds: 300),
-                                            () {
-                                              _scrollController.animateTo(
-                                                _scrollController.position.maxScrollExtent,
-                                                duration: const Duration(milliseconds: 300),
-                                                curve: Curves.easeOut,
-                                              );
-                                            },
-                                          );
+                                        validator: (value) {
+                                          if (value == null || value.isEmpty) {
+                                            return ' ';
+                                          }
+                                          if (!value.contains('@')) {
+                                            return ' ';
+                                          }
+                                          return null;
                                         },
                                       ),
                                     ),
@@ -538,17 +558,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                             height: 0,
                                           ),
                                         ),
-                                        onTap: () {
-                                          Future.delayed(
-                                            const Duration(milliseconds: 300),
-                                            () {
-                                              _scrollController.animateTo(
-                                                _scrollController.position.maxScrollExtent,
-                                                duration: const Duration(milliseconds: 300),
-                                                curve: Curves.easeOut,
-                                              );
-                                            },
-                                          );
+                                        validator: (value) {
+                                          if (value == null || value.isEmpty) {
+                                            return ' ';
+                                          }
+                                          return null;
                                         },
                                       ),
                                     ),
@@ -609,17 +623,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
                               SizedBox(height: 8),
 
+                              // Forgot Password - DISABLED with dialog
                               Align(
                                 alignment: Alignment.centerRight,
                                 child: GestureDetector(
-                                  onTap: () {
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (context) => ResetPasswordScreen(),
-                                      ),
-                                    );
-                                  },
+                                  onTap: _showFeatureUnavailableDialog,
                                   child: const Text(
                                     "Forgot Password?",
                                     style: TextStyle(
@@ -684,7 +692,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                       Navigator.push(
                                         context,
                                         MaterialPageRoute(
-                                          builder: (context) => SignupScreen(),
+                                          builder: (context) => const SignupScreen(),
                                         ),
                                       );
                                     },

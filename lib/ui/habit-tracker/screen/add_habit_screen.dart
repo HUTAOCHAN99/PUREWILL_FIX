@@ -1,3 +1,4 @@
+// lib/ui/habit-tracker/screen/add_habit_screen.dart
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
@@ -7,6 +8,7 @@ import 'package:purewill/ui/habit-tracker/habit_provider.dart';
 import 'package:purewill/domain/model/habit_model.dart';
 import 'package:purewill/ui/habit-tracker/widget/category_dropdown.dart';
 import 'package:purewill/ui/habit-tracker/widget/save_button.dart';
+import 'package:purewill/ui/auth/auth_provider.dart';
 
 class AddHabitScreen extends ConsumerStatefulWidget {
   const AddHabitScreen({super.key, this.defaultHabit});
@@ -84,6 +86,7 @@ class _AddHabitScreenState extends ConsumerState<AddHabitScreen> {
     _nameController.dispose();
     _targetValueController.dispose();
     _customUnitController.dispose();
+    _noteController.dispose();
     super.dispose();
   }
 
@@ -92,7 +95,7 @@ class _AddHabitScreenState extends ConsumerState<AddHabitScreen> {
       context: context,
       initialTime: _reminderTime ?? TimeOfDay.now(),
     );
-    if (picked != null) {
+    if (picked != null && mounted) {
       setState(() {
         _reminderTime = picked;
       });
@@ -101,49 +104,54 @@ class _AddHabitScreenState extends ConsumerState<AddHabitScreen> {
 
   Future<void> _saveHabit() async {
     if (_formKey.currentState!.validate()) {
-      // print("tombol save ditekan");
       final viewModel = ref.read(habitNotifierProvider.notifier);
 
-      // print('=== SAVING HABIT ===');
-      // print('Name: ${_nameController.text}');
-      // print('Category: $_selectedCategoryId');
-      // print('Frequency: $_selectedFrequency');
-      // print('Target Value: $_targetValue');
-      // print('Unit: $finalUnit');
-      // print('Reminder Enabled: $_reminderEnabled');
-      // print('Reminder Time: $_reminderTime');
-      // print('==================');
-
-      final supabaseClient = ref.read(supabaseClientProvider);
-      final currentUser = supabaseClient.auth.currentUser;
+      // Get current user from AuthViewModel, not from Supabase
+      final authState = ref.read(authNotifierProvider);
+      final currentUser = authState.user;
 
       if (currentUser == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Error: User not logged in')),
-        );
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Error: User not logged in')),
+          );
+        }
         return;
       }
 
-      await ref
-          .read(habitNotifierProvider.notifier)
-          .addHabit(
-            name: _nameController.text,
-            frequency: _selectedFrequency,
-            categoryId: _selectedCategoryId,
-            startDate: _startDate ?? DateTime.now(),
-            endDate: _endDateEnabled ? _endDate : null,
-            notes: _noteController.text,
-            targetValue: _targetValue,
-            reminderEnabled: _reminderEnabled,
-            reminderTime: _reminderTime,
+      try {
+        await ref
+            .read(habitNotifierProvider.notifier)
+            .addHabit(
+              name: _nameController.text,
+              frequency: _selectedFrequency,
+              categoryId: _selectedCategoryId,
+              startDate: _startDate ?? DateTime.now(),
+              endDate: _endDateEnabled ? _endDate : null,
+              notes: _noteController.text,
+              targetValue: _targetValue,
+              reminderEnabled: _reminderEnabled,
+              reminderTime: _reminderTime,
+            );
+
+        await viewModel.loadUserHabits();
+
+        if (mounted) {
+          Navigator.of(context).pop();
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Habit berhasil ditambahkan!')),
           );
-
-      viewModel.loadUserHabits();
-
-      Navigator.of(context).pop();
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Habit berhasil ditambahkan!')),
-      );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Failed to add habit: $e'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
     }
   }
 
@@ -169,20 +177,17 @@ class _AddHabitScreenState extends ConsumerState<AddHabitScreen> {
           onPressed: () => Navigator.of(context).pop(),
         ),
       ),
-
       body: Stack(
         children: [
           Positioned.fill(
             child: Image.asset('assets/images/home/bg.png', fit: BoxFit.cover),
           ),
-
           Positioned.fill(
             child: BackdropFilter(
               filter: ImageFilter.blur(sigmaX: 8.0, sigmaY: 8.0),
-              child: Container(color: Colors.black.withOpacity(0.1)),
+              child: Container(color: Colors.black.withValues(alpha: 0.1)),
             ),
           ),
-
           SafeArea(
             child: Form(
               key: _formKey,
@@ -205,7 +210,7 @@ class _AddHabitScreenState extends ConsumerState<AddHabitScreen> {
                         borderRadius: BorderRadius.circular(12),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.1),
+                            color: Colors.black.withValues(alpha: 0.1),
                             blurRadius: 10,
                             offset: const Offset(0, 4),
                           ),
@@ -216,7 +221,7 @@ class _AddHabitScreenState extends ConsumerState<AddHabitScreen> {
                         decoration: InputDecoration(
                           hintText: 'e.g. Morning Meditation',
                           filled: true,
-                          fillColor: Colors.white.withOpacity(0.95),
+                          fillColor: Colors.white.withValues(alpha: 0.95),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
                             borderSide: BorderSide.none,
@@ -253,7 +258,7 @@ class _AddHabitScreenState extends ConsumerState<AddHabitScreen> {
                         borderRadius: BorderRadius.circular(12),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.1),
+                            color: Colors.black.withValues(alpha: 0.1),
                             blurRadius: 10,
                             offset: const Offset(0, 4),
                           ),
@@ -262,12 +267,12 @@ class _AddHabitScreenState extends ConsumerState<AddHabitScreen> {
                       child: Container(
                         width: double.infinity,
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.95),
+                          color: Colors.white.withValues(alpha: 0.95),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: CategoryDropdown(
                           userCategories: userCategories,
-                          selectedCategoryId: 1,
+                          selectedCategoryId: _selectedCategoryId ?? 1,
                           onChanged: _handleCategoryChange,
                         ),
                       ),
@@ -292,7 +297,7 @@ class _AddHabitScreenState extends ConsumerState<AddHabitScreen> {
                               borderRadius: BorderRadius.circular(12),
                               boxShadow: [
                                 BoxShadow(
-                                  color: Colors.black.withOpacity(0.1),
+                                  color: Colors.black.withValues(alpha: 0.1),
                                   blurRadius: 10,
                                   offset: const Offset(0, 4),
                                 ),
@@ -300,7 +305,7 @@ class _AddHabitScreenState extends ConsumerState<AddHabitScreen> {
                             ),
                             child: Container(
                               decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.95),
+                                color: Colors.white.withValues(alpha: 0.95),
                                 borderRadius: BorderRadius.circular(12),
                               ),
                               child: RadioListTile<String>(
@@ -311,9 +316,11 @@ class _AddHabitScreenState extends ConsumerState<AddHabitScreen> {
                                 value: frequency['value']!,
                                 groupValue: _selectedFrequency,
                                 onChanged: (value) {
-                                  setState(() {
-                                    _selectedFrequency = value!;
-                                  });
+                                  if (value != null) {
+                                    setState(() {
+                                      _selectedFrequency = value;
+                                    });
+                                  }
                                 },
                                 contentPadding: const EdgeInsets.symmetric(
                                   horizontal: 8,
@@ -344,7 +351,7 @@ class _AddHabitScreenState extends ConsumerState<AddHabitScreen> {
                               borderRadius: BorderRadius.circular(12),
                               boxShadow: [
                                 BoxShadow(
-                                  color: Colors.black.withOpacity(0.1),
+                                  color: Colors.black.withValues(alpha: 0.1),
                                   blurRadius: 10,
                                   offset: const Offset(0, 4),
                                 ),
@@ -352,7 +359,7 @@ class _AddHabitScreenState extends ConsumerState<AddHabitScreen> {
                             ),
                             child: Container(
                               decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.95),
+                                color: Colors.white.withValues(alpha: 0.95),
                                 borderRadius: BorderRadius.circular(12),
                               ),
                               child: TextFormField(
@@ -400,7 +407,7 @@ class _AddHabitScreenState extends ConsumerState<AddHabitScreen> {
                               borderRadius: BorderRadius.circular(12),
                               boxShadow: [
                                 BoxShadow(
-                                  color: Colors.black.withOpacity(0.1),
+                                  color: Colors.black.withValues(alpha: 0.1),
                                   blurRadius: 10,
                                   offset: const Offset(0, 4),
                                 ),
@@ -408,7 +415,7 @@ class _AddHabitScreenState extends ConsumerState<AddHabitScreen> {
                             ),
                             child: Container(
                               decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.95),
+                                color: Colors.white.withValues(alpha: 0.95),
                                 borderRadius: BorderRadius.circular(12),
                               ),
                               child: DropdownButtonFormField<String>(
@@ -472,7 +479,7 @@ class _AddHabitScreenState extends ConsumerState<AddHabitScreen> {
                           borderRadius: BorderRadius.circular(12),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.1),
+                              color: Colors.black.withValues(alpha: 0.1),
                               blurRadius: 10,
                               offset: const Offset(0, 4),
                             ),
@@ -480,7 +487,7 @@ class _AddHabitScreenState extends ConsumerState<AddHabitScreen> {
                         ),
                         child: Container(
                           decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.95),
+                            color: Colors.white.withValues(alpha: 0.95),
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: TextFormField(
@@ -530,7 +537,7 @@ class _AddHabitScreenState extends ConsumerState<AddHabitScreen> {
                         borderRadius: BorderRadius.circular(12),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.1),
+                            color: Colors.black.withValues(alpha: 0.1),
                             blurRadius: 10,
                             offset: const Offset(0, 4),
                           ),
@@ -539,7 +546,7 @@ class _AddHabitScreenState extends ConsumerState<AddHabitScreen> {
                       child: Container(
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.95),
+                          color: Colors.white.withValues(alpha: 0.95),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Column(
@@ -641,7 +648,7 @@ class _AddHabitScreenState extends ConsumerState<AddHabitScreen> {
                         borderRadius: BorderRadius.circular(12),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.1),
+                            color: Colors.black.withValues(alpha: 0.1),
                             blurRadius: 10,
                             offset: const Offset(0, 4),
                           ),
@@ -655,7 +662,7 @@ class _AddHabitScreenState extends ConsumerState<AddHabitScreen> {
                             firstDate: DateTime(2020),
                             lastDate: DateTime(2030),
                           );
-                          if (picked != null) {
+                          if (picked != null && mounted) {
                             setState(() {
                               _startDate = picked;
                             });
@@ -668,7 +675,7 @@ class _AddHabitScreenState extends ConsumerState<AddHabitScreen> {
                             vertical: 12,
                           ),
                           decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.95),
+                            color: Colors.white.withValues(alpha: 0.95),
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Row(
@@ -702,7 +709,7 @@ class _AddHabitScreenState extends ConsumerState<AddHabitScreen> {
                         borderRadius: BorderRadius.circular(12),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.1),
+                            color: Colors.black.withValues(alpha: 0.1),
                             blurRadius: 10,
                             offset: const Offset(0, 4),
                           ),
@@ -711,7 +718,7 @@ class _AddHabitScreenState extends ConsumerState<AddHabitScreen> {
                       child: Container(
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.95),
+                          color: Colors.white.withValues(alpha: 0.95),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Column(
@@ -765,7 +772,7 @@ class _AddHabitScreenState extends ConsumerState<AddHabitScreen> {
                                     firstDate: _startDate ?? DateTime.now(),
                                     lastDate: DateTime(2030),
                                   );
-                                  if (picked != null) {
+                                  if (picked != null && mounted) {
                                     setState(() {
                                       _endDate = picked;
                                     });
@@ -829,7 +836,7 @@ class _AddHabitScreenState extends ConsumerState<AddHabitScreen> {
                         borderRadius: BorderRadius.circular(12),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.1),
+                            color: Colors.black.withValues(alpha: 0.1),
                             blurRadius: 10,
                             offset: const Offset(0, 4),
                           ),
@@ -841,7 +848,7 @@ class _AddHabitScreenState extends ConsumerState<AddHabitScreen> {
                         decoration: InputDecoration(
                           hintText: 'Add your notes here...',
                           filled: true,
-                          fillColor: Colors.white.withOpacity(0.95),
+                          fillColor: Colors.white.withValues(alpha: 0.95),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
                             borderSide: BorderSide.none,

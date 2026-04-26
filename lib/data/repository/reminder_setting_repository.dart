@@ -1,159 +1,91 @@
+// lib/data/repository/reminder_setting_repository.dart
+
 import 'dart:developer';
 import 'package:purewill/domain/model/reminder_setting_model.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 class ReminderSettingRepository {
-  final SupabaseClient _supabaseClient;
-  static const String _reminderSettingTableName = 'reminder_settings';
+  static final Map<int, ReminderSettingModel> _localSettings = {};
+  static int _nextId = 1;
 
-  ReminderSettingRepository(this._supabaseClient);
+  ReminderSettingRepository();
 
-  Future<ReminderSettingModel> createReminderSetting(
-    ReminderSettingModel reminderSetting,
-  ) async {
-    try {
-      final reminderSettingData = reminderSetting.toJson();
+  Future<ReminderSettingModel> createReminderSetting(ReminderSettingModel setting) async {
+    log('🔧 DEBUG: createReminderSetting - habitId: ${setting.habitId}',
+        name: 'REMINDER_DEBUG');
 
-      // Remove id if empty (for create new)
-      if (reminderSetting.id.isEmpty) {
-        reminderSettingData.remove('id');
-      }
+    final newSetting = ReminderSettingModel(
+      id: _nextId.toString(),
+      habitId: setting.habitId,
+      isEnabled: setting.isEnabled,
+      time: setting.time,
+      snoozeDuration: setting.snoozeDuration,
+      repeatDaily: setting.repeatDaily,
+      isSoundEnabled: setting.isSoundEnabled,
+      isVibrationEnabled: setting.isVibrationEnabled,
+      createdAt: DateTime.now(),
+    );
 
-      // debugPrint('📦 CREATE REMINDER REQUEST DATA: $reminderSettingData');
-
-      final response = await _supabaseClient
-          .from(_reminderSettingTableName)
-          .insert(reminderSettingData)
-          .select()
-          .single();
-
-      // debugPrint('📦 CREATE REMINDER RESPONSE: $response');
-      
-      return ReminderSettingModel.fromJson(response);
-    } catch (e, stackTrace) {
-      log(
-        'CREATE REMINDER SETTING FAILURE: Failed to create reminder setting for habit ${reminderSetting.habitId}.',
-        error: e,
-        stackTrace: stackTrace,
-        name: 'REMINDER_SETTING_REPO',
-      );
-      rethrow;
-    }
+    _localSettings[setting.habitId] = newSetting;
+    _nextId++;
+    return newSetting;
   }
 
-  Future<ReminderSettingModel> fetchReminderSettingsByHabit(
-    int habitId,
-  ) async {
-    try {
-      // debugPrint('📦 FETCHING REMINDERS FOR HABIT: $habitId');
+  Future<ReminderSettingModel> fetchReminderSettingsByHabit(int habitId) async {
+    log('🔧 DEBUG: fetchReminderSettingsByHabit - habitId: $habitId',
+        name: 'REMINDER_DEBUG');
 
-      final response = await _supabaseClient
-          .from(_reminderSettingTableName)
-          .select('*')
-          .eq('habit_id', habitId)
-          .order('time', ascending: true)
-          .single();
+    final existing = _localSettings[habitId];
+    if (existing != null) return existing;
 
-      return ReminderSettingModel.fromJson(response);
-    } catch (e, stackTrace) {
-      log(
-        'FETCH REMINDER SETTINGS FAILURE: Failed to fetch reminder settings for habit $habitId.',
-        error: e,
-        stackTrace: stackTrace,
-        name: 'REMINDER_SETTING_REPO',
-      );
-      rethrow;
-    }
+    return ReminderSettingModel(
+      id: '',
+      habitId: habitId,
+      isEnabled: false,
+      time: DateTime.now(),
+      snoozeDuration: 5,
+      repeatDaily: true,
+      isSoundEnabled: true,
+      isVibrationEnabled: true,
+      createdAt: DateTime.now(),
+    );
   }
 
   Future<void> updateReminderSetting({
     required String reminderSettingId,
     required Map<String, dynamic> updates,
   }) async {
-    try {
-      // debugPrint('📦 UPDATING REMINDER: $reminderSettingId');
+    log('🔧 DEBUG: updateReminderSetting - id: $reminderSettingId',
+        name: 'REMINDER_DEBUG');
 
-      final cleanUpdates = Map<String, dynamic>.from(updates);
-      cleanUpdates.remove('id');
-      cleanUpdates.remove('created_at');
-      cleanUpdates.remove('habit_id');
-
-      // Convert ID to int for Supabase query
-      final intId = int.tryParse(reminderSettingId);
-      if (intId == null) {
-        throw Exception('Invalid reminder setting ID: $reminderSettingId');
-      }
-
-      await _supabaseClient
-          .from(_reminderSettingTableName)
-          .update(cleanUpdates)
-          .eq('id', intId);
-
-      // debugPrint('✅ UPDATE REMINDER SETTING SUCCESS: Reminder setting $reminderSettingId updated');
-    } catch (e, stackTrace) {
-      log(
-        'UPDATE REMINDER SETTING FAILURE: Failed to update reminder setting $reminderSettingId.',
-        error: e,
-        stackTrace: stackTrace,
-        name: 'REMINDER_SETTING_REPO',
-      );
-      rethrow;
-    }
+    final entry = _localSettings.entries.firstWhere(
+      (entry) => entry.value.id == reminderSettingId,
+    );
+    
+    final current = entry.value;
+    final updated = ReminderSettingModel(
+      id: current.id,
+      habitId: current.habitId,
+      isEnabled: updates['is_enabled'] as bool? ?? current.isEnabled,
+      time: updates['time'] as DateTime? ?? current.time,
+      snoozeDuration: updates['snooze_duration'] as int? ?? current.snoozeDuration,
+      repeatDaily: updates['repeat_daily'] as bool? ?? current.repeatDaily,
+      isSoundEnabled: updates['is_sound_enabled'] as bool? ?? current.isSoundEnabled,
+      isVibrationEnabled: updates['is_vibration_enabled'] as bool? ?? current.isVibrationEnabled,
+      createdAt: current.createdAt,
+    );
+    
+    _localSettings[updated.habitId] = updated;
   }
 
   Future<void> deleteReminderSetting(int habitId) async {
-    try {
-      // debugPrint('📦 DELETING REMINDER: $reminderSettingId');
-
-      // final intId = int.tryParse(reminderSettingId);
-      // if (intId == null) {
-      //   throw Exception('Invalid reminder setting ID: $reminderSettingId');
-      // }
-
-      await _supabaseClient
-          .from(_reminderSettingTableName)
-          .delete()
-// <<<<<<< HEAD
-          .eq('habit_id', habitId);
-
-      log(
-        'DELETE REMINDER SETTING SUCCESS: Reminder setting $habitId deleted.',
-        name: 'REMINDER_SETTING_REPO',
-      );
-// =======
-          // .eq('id', intId);
-
-      // debugPrint('✅ DELETE REMINDER SETTING SUCCESS: Reminder setting $reminderSettingId deleted.');
-// >>>>>>> f2d2932ae1d617906d117abaeeb90fd7045aea0c
-    } catch (e, stackTrace) {
-      log(
-        'DELETE REMINDER SETTING FAILURE: Failed to delete reminder setting $habitId.',
-        error: e,
-        stackTrace: stackTrace,
-        name: 'REMINDER_SETTING_REPO',
-      );
-      rethrow;
-    }
+    log('🔧 DEBUG: deleteReminderSetting - habitId: $habitId',
+        name: 'REMINDER_DEBUG');
+    _localSettings.remove(habitId);
   }
 
   Future<void> deleteAllReminderSettingsForHabit(int habitId) async {
-    try {
-      // debugPrint('📦 DELETING ALL REMINDERS FOR HABIT: $habitId');
-
-      await _supabaseClient
-          .from(_reminderSettingTableName)
-          .delete()
-          .eq('habit_id', habitId);
-
-      // debugPrint('✅ DELETE ALL REMINDERS SUCCESS: All reminders deleted for habit $habitId.');
-    } catch (e, stackTrace) {
-      log(
-        'DELETE ALL REMINDER SETTINGS FAILURE: Failed to delete all reminder settings for habit $habitId.',
-        error: e,
-        stackTrace: stackTrace,
-        name: 'REMINDER_SETTING_REPO',
-      );
-      rethrow;
-    }
+    log('🔧 DEBUG: deleteAllReminderSettingsForHabit - habitId: $habitId',
+        name: 'REMINDER_DEBUG');
+    _localSettings.remove(habitId);
   }
 }
