@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'dart:developer';
 import 'dart:ui';
 import 'package:purewill/domain/model/habit_model.dart';
-import 'package:purewill/domain/model/daily_log_model.dart';
+import 'package:purewill/domain/model/habit_log_model.dart';
 import 'package:purewill/ui/habit-tracker/habit_provider.dart';
 import 'package:purewill/ui/habit-tracker/screen/community_selection_screen.dart';
 import 'package:purewill/ui/habit-tracker/screen/consultation_screen.dart';
@@ -13,9 +14,6 @@ import 'package:purewill/ui/habit-tracker/widget/clean_bottom_navigation_bar.dar
 import 'package:purewill/ui/habit-tracker/screen/habit_detail_screen.dart';
 import 'package:purewill/ui/habit-tracker/screen/add_habit_screen.dart';
 import 'package:purewill/ui/habit-tracker/screen/nofap_screen.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:purewill/data/services/badge_service.dart';
-import 'package:purewill/data/services/badge_notification_service.dart';
 import 'package:purewill/utils/habit_icon_helper.dart';
 
 class HabitScreen extends ConsumerStatefulWidget {
@@ -28,17 +26,9 @@ class _HabitScreenState extends ConsumerState<HabitScreen> {
   final _currentIndex = 1;
   Map<int, LogStatus> _todayCompletionStatus = {};
 
-  final badgeNotificationService = BadgeNotificationService();
-  late BadgeService badgeService;
-
   @override
   void initState() {
     super.initState();
-
-    badgeService = BadgeService(
-      Supabase.instance.client,
-      badgeNotificationService,
-    );
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(habitNotifierProvider.notifier).loadUserHabits();
@@ -67,28 +57,31 @@ class _HabitScreenState extends ConsumerState<HabitScreen> {
     );
   }
 
+  void _logNotImplemented(String mechanism) {
+    log(
+      '$mechanism: belum di impelemtnasikan di habit service',
+      name: 'HABIT_SERVICE_MIGRATION',
+    );
+  }
+
   void _onNavBarTap(int index) {
     if (index == 0) {
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(builder: (context) => const HomeScreen()),
       );
     } else if (index == 1) {
-      // Already on Habit Screen, do nothing
       return;
     } else if (index == 2) {
-      // Navigate to NoFap Screen
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(builder: (context) => const NoFapScreen()),
       );
     } else if (index == 3) {
-      // Navigate to Community Screen
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(
           builder: (context) => const CommunitySelectionScreen(),
         ),
       );
     } else if (index == 4) {
-      // Navigate to Consultation Screen
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(builder: (context) => const ConsultationScreen()),
       );
@@ -130,10 +123,7 @@ class _HabitScreenState extends ConsumerState<HabitScreen> {
         children: [
           // Background image
           Positioned.fill(
-            child: Image.asset(
-              'assets/images/home/bg.png',
-              fit: BoxFit.cover,
-            ),
+            child: Image.asset('assets/images/home/bg.png', fit: BoxFit.cover),
           ),
           // Blur effect overlay
           Positioned.fill(
@@ -420,9 +410,9 @@ class _HabitScreenState extends ConsumerState<HabitScreen> {
   }
 
   void _addHabit() {
-    Navigator.of(context).push(
-      MaterialPageRoute(builder: (context) => const AddHabitScreen()),
-    );
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (context) => const AddHabitScreen()));
   }
 
   void _handleHabitTap(HabitModel habit) {
@@ -454,12 +444,8 @@ class _HabitScreenState extends ConsumerState<HabitScreen> {
           .toggleHabitCompletion(habit);
 
       if (newStatus) {
-        final user = Supabase.instance.client.auth.currentUser;
-        if (user != null) {
-          await Future.delayed(const Duration(milliseconds: 500));
-          await badgeService.checkAllBadges(user.id);
-          _showSnackBar('Habit completed!');
-        }
+        _logNotImplemented('badge check after habit completion');
+        _showSnackBar('Habit completed!');
       }
     } catch (e) {
       final previousStatus =
@@ -500,34 +486,25 @@ class _HabitScreenState extends ConsumerState<HabitScreen> {
         if (userHabits.isEmpty) {
           return _buildCustomEmptyState();
         }
-
-        final defaultHabits = userHabits.where((h) => h.isDefault).toList();
         final userCustomHabits = userHabits.where((h) => !h.isDefault).toList();
-        final sortedHabits = [...defaultHabits, ...userCustomHabits];
 
         return Column(
-          children: sortedHabits.map((habit) {
+          children: userCustomHabits.map((habit) {
             // Tentukan kategori berdasarkan categoryId
             final categoryName = _determineCategory(habit);
 
             // Dapatkan icon dan warna dari habit_icon_helper berdasarkan kategori
             final iconData = HabitIconHelper.getHabitIcon(categoryName);
-            final color = HabitIconHelper.getHabitColor(categoryName);
-
-            // Hitung persentase progress (dummy calculation - bisa disesuaikan dengan logika real)
-            final todayStatus =
-                _todayCompletionStatus[habit.id] ?? LogStatus.neutral;
-            final progressPercentage = todayStatus == LogStatus.success
-                ? 1.0
-                : 0.0;
+            final fallbackColor = HabitIconHelper.getHabitColor(categoryName);
+            final resolvedColor =
+                _parseCategoryColor(habit.category?.color) ?? fallbackColor;
 
             return HabitScreenCard(
               icon: iconData,
               title: habit.name,
               subtitle: _buildHabitSubtitle(habit),
-              color: color,
-              progressPercentage: progressPercentage,
-              category: categoryName,
+              color: resolvedColor,
+              categoryName: habit.category?.name,
               onTap: () => _handleHabitTap(habit),
             );
           }).toList(),
@@ -541,8 +518,9 @@ class _HabitScreenState extends ConsumerState<HabitScreen> {
   // Method untuk menentukan kategori habit
   String _determineCategory(HabitModel habit) {
     // Prioritas 1: Jika habit punya categoryId, mapping ke nama kategori
-    if (habit.categoryId != null) {
-      final categoryName = _mapCategoryIdToName(habit.categoryId!);
+    final categoryId = habit.category?.id;
+    if (categoryId != null) {
+      final categoryName = _mapCategoryIdToName(categoryId);
       return categoryName;
     }
 
@@ -587,5 +565,25 @@ class _HabitScreenState extends ConsumerState<HabitScreen> {
       return '${habit.targetValue}';
     }
     return 'Daily habit';
+  }
+
+  Color? _parseCategoryColor(String? rawColor) {
+    if (rawColor == null || rawColor.trim().isEmpty) {
+      return null;
+    }
+
+    var hex = rawColor.trim().replaceFirst('#', '');
+    if (hex.length == 6) {
+      hex = 'FF$hex';
+    }
+    if (hex.length != 8) {
+      return null;
+    }
+
+    final value = int.tryParse(hex, radix: 16);
+    if (value == null) {
+      return null;
+    }
+    return Color(value);
   }
 }

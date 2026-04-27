@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:purewill/domain/model/daily_log_model.dart';
+import 'package:purewill/domain/model/habit_log_model.dart';
 
 class CalendarTrackerWidget extends StatelessWidget {
-  final List<DailyLogModel> habitLogForThisMonth;
+  final List<HabitLogModel> habitLogForThisMonth;
 
   const CalendarTrackerWidget({super.key, required this.habitLogForThisMonth});
 

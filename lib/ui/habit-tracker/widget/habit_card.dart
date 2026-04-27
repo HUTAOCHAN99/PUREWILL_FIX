@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:percent_indicator/linear_percent_indicator.dart';
-import 'package:purewill/domain/model/daily_log_model.dart';
+import 'package:purewill/domain/model/habit_model.dart';
 
 class HabitCard extends StatelessWidget {
   final IconData icon;
@@ -8,7 +8,7 @@ class HabitCard extends StatelessWidget {
   final String subtitle;
   final double progress;
   final Color color;
-  final LogStatus status;
+  final TodayLogStatus status;
   final bool isDefault;
   final String category; 
   final VoidCallback? onTap;
@@ -55,12 +55,12 @@ class HabitCard extends StatelessWidget {
               children: [
                 CircleAvatar(
                   radius: 20,
-                  backgroundColor: status == LogStatus.success
+                  backgroundColor: status == TodayLogStatus.success
                       ? color.withOpacity(0.2)
                       : color.withOpacity(0.1),
                   child: Icon(
                     icon,
-                    color: status == LogStatus.success ? color : color.withOpacity(0.7),
+                    color: status == TodayLogStatus.success ? color : color.withOpacity(0.7),
                     size: 22,
                   ),
                 ),
@@ -81,7 +81,7 @@ class HabitCard extends StatelessWidget {
                       ),
                     ),
                   ),
-                if (status == LogStatus.success) 
+                if (status == TodayLogStatus.success) 
                   Positioned(
                     right: -2,
                     top: -2,
@@ -100,7 +100,7 @@ class HabitCard extends StatelessWidget {
                     ),
                   ),
 
-                if (status == LogStatus.failed) 
+                if (status == TodayLogStatus.failed) 
                   Positioned(
                     right: -2,
                     top: -2,
@@ -133,8 +133,8 @@ class HabitCard extends StatelessWidget {
                           style: TextStyle(
                             fontWeight: FontWeight.w600,
                             fontSize: 16,
-                            color: status == LogStatus.success ? Colors.grey : Colors.black,
-                            decoration: status == LogStatus.success
+                            color: status == TodayLogStatus.success ? Colors.grey : Colors.black,
+                            decoration: status == TodayLogStatus.success
                                 ? TextDecoration.lineThrough
                                 : null,
                           ),
@@ -155,8 +155,8 @@ class HabitCard extends StatelessWidget {
                         child: Text(
                           subtitle,
                           style: TextStyle(
-                            color: status == LogStatus.success ? Colors.green : status == LogStatus.failed ? Colors.red : Colors.grey,
-                            fontWeight: status == LogStatus.success
+                            color: status == TodayLogStatus.success ? Colors.green : status == TodayLogStatus.failed ? Colors.red : Colors.grey,
+                            fontWeight: status == TodayLogStatus.success
                                 ? FontWeight.w500
                                 : FontWeight.normal,
                           ),
@@ -190,7 +190,7 @@ class HabitCard extends StatelessWidget {
                   LinearPercentIndicator(
                     lineHeight: 6,
                     percent: 1,
-                    progressColor: status == LogStatus.success ? Colors.green : status == LogStatus.failed ? Colors.red : color,
+                    progressColor: status == TodayLogStatus.success ? Colors.green : status == TodayLogStatus.failed ? Colors.red : color,
                     backgroundColor: Colors.grey[200]!,
                     barRadius: const Radius.circular(8),
                   ),
@@ -207,20 +207,20 @@ class HabitCard extends StatelessWidget {
                   width: 28,
                   height: 28,
                   decoration: BoxDecoration(
-                    color: status == LogStatus.success? Colors.green : status == LogStatus.failed ? Colors.red : Colors.transparent,
+                    color: status == TodayLogStatus.success? Colors.green : status == TodayLogStatus.failed ? Colors.red : Colors.transparent,
                     shape: BoxShape.circle,
                     border: Border.all(
-                      color: status == LogStatus.success? Colors.green : status == LogStatus.failed ? Colors.red :  Colors.grey[400]!,
+                      color: status == TodayLogStatus.success? Colors.green : status == TodayLogStatus.failed ? Colors.red :  Colors.grey[400]!,
                       width: 2,
                     ),
                   ),
-                  child: status == LogStatus.success
+                  child: status == TodayLogStatus.success
                       ? const Icon(
                           Icons.check,
                           color: Colors.white,
                           size: 20,
                         )
-                      : status == LogStatus.failed
+                      : status == TodayLogStatus.failed
                           ? const Icon(
                               Icons.close,
                               color: Colors.white,

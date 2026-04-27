@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:purewill/domain/model/daily_log_model.dart';
+import 'package:purewill/domain/model/habit_log_model.dart';
 import 'package:purewill/domain/model/habit_model.dart';
 import 'package:purewill/ui/habit-tracker/view_model/habit_view_model.dart';
 import 'package:purewill/ui/habit-tracker/widget/habit_card.dart';
 import 'package:purewill/utils/habit_icon_helper.dart';
 
 class HabitCardsList extends StatelessWidget {
-  final HabitsState habitsState;
+  final HabitStatus status;
+  final String? errorMessage;
   final Map<int, LogStatus> todayCompletionStatus;
   final List<HabitModel> habits;
   final void Function(HabitModel habit) onHabitTap;
@@ -17,7 +18,8 @@ class HabitCardsList extends StatelessWidget {
 
   const HabitCardsList({
     super.key,
-    required this.habitsState,
+    required this.status,
+    this.errorMessage,
     required this.todayCompletionStatus,
     required this.habits,
     required this.onHabitTap,
@@ -29,7 +31,7 @@ class HabitCardsList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    switch (habitsState.status) {
+    switch (status) {
       case HabitStatus.loading:
         return const Center(
           child: Padding(
@@ -39,13 +41,11 @@ class HabitCardsList extends StatelessWidget {
         );
 
       case HabitStatus.failure:
-        return buildErrorState?.call(
-              habitsState.errorMessage ?? 'Unknown error',
-            ) ??
-            _defaultErrorState(habitsState.errorMessage ?? 'Unknown error');
+        return buildErrorState?.call(errorMessage ?? 'Unknown error') ??
+            _defaultErrorState(errorMessage ?? 'Unknown error');
 
       case HabitStatus.success:
-        if (habitsState.todayHabit.isEmpty) {
+        if (habits.isEmpty) {
           return buildEmptyState?.call() ?? _defaultEmptyState();
         }
 
@@ -55,8 +55,7 @@ class HabitCardsList extends StatelessWidget {
 
         return Column(
           children: sortedHabits.map((habit) {
-            final todayStatus =
-                todayCompletionStatus[habit.id] ?? LogStatus.neutral;
+            final todayLogStatus = _resolveTodayLogStatus(habit);
             final categoryName = _determineCategory(habit);
             final iconData = HabitIconHelper.getHabitIcon(categoryName);
             final color = HabitIconHelper.getHabitColor(categoryName);
@@ -66,8 +65,8 @@ class HabitCardsList extends StatelessWidget {
               title: habit.name,
               subtitle: _buildHabitSubtitle(habit),
               color: color,
-              progress: todayStatus == LogStatus.success ? 1.0 : 0.0,
-              status: todayStatus,
+              progress: todayLogStatus == TodayLogStatus.success ? 1.0 : 0.0,
+              status: todayLogStatus,
               category: categoryName,
               isDefault: habit.isDefault,
               onTap: () => onHabitTap(habit),
@@ -80,11 +79,28 @@ class HabitCardsList extends StatelessWidget {
     }
   }
 
+  TodayLogStatus _resolveTodayLogStatus(HabitModel habit) {
+    final localStatus = todayCompletionStatus[habit.id];
+    if (localStatus == null) {
+      return habit.todayLogStatus;
+    }
+
+    switch (localStatus) {
+      case LogStatus.success:
+        return TodayLogStatus.success;
+      case LogStatus.failed:
+        return TodayLogStatus.failed;
+      case LogStatus.neutral:
+        return TodayLogStatus.netural;
+    }
+  }
+
   String _determineCategory(HabitModel habit) {
-    if (habit.categoryId != null) {
-      final categoryName = _mapCategoryIdToName(habit.categoryId!);
+    final categoryId = habit.category?.id;
+    if (categoryId != null) {
+      final categoryName = _mapCategoryIdToName(categoryId);
       // print(
-      //   'Habit ${habit.name}: categoryId ${habit.categoryId} -> $categoryName',
+      //   'Habit ${habit.name}: categoryId ${habit.category?.id} -> $categoryName',
       // );
       return categoryName;
     }

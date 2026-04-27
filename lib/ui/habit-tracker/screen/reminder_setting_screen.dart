@@ -8,6 +8,8 @@ import 'package:purewill/data/services/local_notification_service.dart';
 import 'package:purewill/domain/model/habit_model.dart';
 import 'package:purewill/data/repository/reminder_setting_repository.dart';
 import 'package:purewill/domain/model/reminder_setting_model.dart';
+import 'package:purewill/ui/auth/auth_provider.dart';
+import 'package:purewill/ui/habit-tracker/habit_provider.dart';
 import '../controller/reminder_setting_controller.dart';
 
 class ReminderSettingScreen extends ConsumerStatefulWidget {
@@ -39,11 +41,17 @@ class _ReminderSettingScreenState extends ConsumerState<ReminderSettingScreen> {
   }
 
   void _initializeController() {
-    // ✅ Perbaiki: Hapus parameter Supabase
+    final habitApiService = ref.read(habitApiServiceProvider);
+    final token = ref.read(authRepositoryProvider).accessToken;
+    if (token != null && token.isNotEmpty) {
+      habitApiService.setAccessToken(token);
+    }
+
     _controller = ReminderSettingController(
       habit: widget.habit,
-      repository: ReminderSettingRepository(),  // ✅ Debug version
+      repository: ReminderSettingRepository(),
       notificationService: LocalNotificationService(),
+      habitApiService: habitApiService,
     )..addListener(_onControllerUpdate);
   }
 
@@ -351,7 +359,8 @@ class _ReminderSettingScreenState extends ConsumerState<ReminderSettingScreen> {
     IconData statusIcon;
 
     if (isPast) {
-      statusText = 'Selected time was ${_formatDuration(absoluteDifference)} ago';
+      statusText =
+          'Selected time was ${_formatDuration(absoluteDifference)} ago';
       statusColor = Colors.red;
       statusIcon = Icons.schedule;
     } else {

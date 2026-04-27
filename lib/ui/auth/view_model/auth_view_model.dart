@@ -3,9 +3,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/legacy.dart';
 import 'package:purewill/data/repository/auth_repository.dart';
-import 'package:purewill/data/repository/habit_repository.dart';
-import 'package:purewill/data/repository/habit_session_repository.dart';
-import 'package:purewill/data/repository/user_repository.dart';
 import 'package:purewill/data/services/auth/biometric_service.dart';
 import 'package:purewill/data/repository/secure_storage_repository.dart';
 import 'package:purewill/domain/model/auth_model.dart';
@@ -20,7 +17,11 @@ class AuthState {
 
   AuthState({this.status = AuthStatus.initial, this.errorMessage, this.user});
 
-  AuthState copyWith({AuthStatus? status, String? errorMessage, UserModel? user}) {
+  AuthState copyWith({
+    AuthStatus? status,
+    String? errorMessage,
+    UserModel? user,
+  }) {
     return AuthState(
       status: status ?? this.status,
       errorMessage: errorMessage ?? this.errorMessage,
@@ -31,19 +32,32 @@ class AuthState {
 
 class AuthViewModel extends StateNotifier<AuthState> {
   final AuthRepository _repository;
-  final UserRepository _userRepository;
-  final HabitRepository _habitRepository;
-  final HabitSessionRepository _habitSessionRepository;
-  
+
   final BiometricService _biometricService = BiometricService();
   final SecureStorageRepository _secureStorage = SecureStorageRepository();
 
-  AuthViewModel(
-    this._repository,
-    this._userRepository,
-    this._habitRepository,
-    this._habitSessionRepository,
-  ) : super(AuthState());
+  AuthViewModel(this._repository) : super(AuthState());
+
+  Future<void> restoreSession() async {
+    try {
+      final restoredUser = await _repository.restoreSession();
+      if (restoredUser == null) {
+        return;
+      }
+
+      state = state.copyWith(
+        status: AuthStatus.success,
+        errorMessage: null,
+        user: restoredUser,
+      );
+    } catch (e) {
+      state = state.copyWith(
+        status: AuthStatus.initial,
+        errorMessage: null,
+        user: null,
+      );
+    }
+  }
 
   Future<void> login(String email, String password) async {
     try {
@@ -63,7 +77,10 @@ class AuthViewModel extends StateNotifier<AuthState> {
       );
       rethrow;
     } catch (e) {
-      state = state.copyWith(status: AuthStatus.failure, errorMessage: "Login failed");
+      state = state.copyWith(
+        status: AuthStatus.failure,
+        errorMessage: "Login failed",
+      );
       rethrow;
     }
   }
@@ -89,9 +106,9 @@ class AuthViewModel extends StateNotifier<AuthState> {
         print('📅 BirthDate: $birthDate');
         print('═══════════════════════════════════════════');
       }
-      
+
       state = state.copyWith(status: AuthStatus.loading, errorMessage: null);
-      
+
       // Panggil repository.signup dengan parameter yang benar
       final user = await _repository.signup(
         fullname: fullname,
@@ -105,11 +122,9 @@ class AuthViewModel extends StateNotifier<AuthState> {
 
       if (user != null) {
         if (kDebugMode) print('✅ SIGNUP SUCCESS - User ID: ${user.id}');
-        
-        // Initialize default habits for new user
-        await _habitRepository.initializeDefaultHabitsForUser(user.id);
+
         if (kDebugMode) print('✅ Default habits initialized');
-        
+
         state = state.copyWith(
           status: AuthStatus.success,
           errorMessage: null,
@@ -138,7 +153,7 @@ class AuthViewModel extends StateNotifier<AuthState> {
       state = state.copyWith(status: AuthStatus.loading, errorMessage: null);
       await _repository.logout();
       await clearSavedCredentials();
-      
+
       state = AuthState(
         status: AuthStatus.initial,
         user: null,
@@ -165,7 +180,8 @@ class AuthViewModel extends StateNotifier<AuthState> {
       if (!isAvailable) {
         state = state.copyWith(
           status: AuthStatus.failure,
-          errorMessage: 'Biometric authentication is not available on this device',
+          errorMessage:
+              'Biometric authentication is not available on this device',
         );
         return false;
       }
@@ -189,13 +205,14 @@ class AuthViewModel extends StateNotifier<AuthState> {
       if (!result.success) {
         state = state.copyWith(
           status: AuthStatus.failure,
-          errorMessage: result.errorMessage ?? 'Biometric authentication failed',
+          errorMessage:
+              result.errorMessage ?? 'Biometric authentication failed',
         );
         return false;
       }
 
       state = state.copyWith(status: AuthStatus.loading);
-      
+
       final user = await _repository.login(
         email: savedCredentials.email,
         password: savedCredentials.password,

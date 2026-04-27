@@ -1,14 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:purewill/data/services/local_notification_service.dart';
+import 'package:purewill/data/services/habits/habit_api_service.dart';
 import 'package:purewill/domain/model/habit_model.dart';
 import 'package:purewill/domain/model/reminder_setting_model.dart';
 import 'package:purewill/data/repository/reminder_setting_repository.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 class ReminderSettingController with ChangeNotifier {
   final HabitModel habit;
   final ReminderSettingRepository _repository;
   final LocalNotificationService _notificationService;
+  final HabitApiService _habitApiService;
 
   ReminderSettingModel? _reminderSetting;
   bool _isLoading = true;
@@ -29,8 +30,10 @@ class ReminderSettingController with ChangeNotifier {
     required this.habit,
     required ReminderSettingRepository repository,
     required LocalNotificationService notificationService,
+    required HabitApiService habitApiService,
   }) : _repository = repository,
-       _notificationService = notificationService {
+       _notificationService = notificationService,
+       _habitApiService = habitApiService {
     _initialize();
   }
 
@@ -95,7 +98,7 @@ class ReminderSettingController with ChangeNotifier {
     _vibrationEnabled = model.isVibrationEnabled;
 
     // debugPrint(
-      // '✅ Form initialized with time: ${_selectedTime.hour}:${_selectedTime.minute}',
+    // '✅ Form initialized with time: ${_selectedTime.hour}:${_selectedTime.minute}',
     // );
   }
 
@@ -107,7 +110,7 @@ class ReminderSettingController with ChangeNotifier {
     if (time.hour < now.hour ||
         (time.hour == now.hour && time.minute <= now.minute)) {
       // debugPrint(
-        // '⚠️  WARNING: Selected time ($time) is in the past compared to current time ($now)',
+      // '⚠️  WARNING: Selected time ($time) is in the past compared to current time ($now)',
       // );
       // debugPrint('💡 TIP: Set reminder for at least 1-2 minutes from now');
     }
@@ -115,7 +118,7 @@ class ReminderSettingController with ChangeNotifier {
     _selectedTime = time;
     _hasChanges = true;
     // debugPrint(
-      // '🕐 Time changed to: ${getTimeString(time)} (Current: ${getTimeString(now)})',
+    // '🕐 Time changed to: ${getTimeString(time)} (Current: ${getTimeString(now)})',
     // );
     notifyListeners();
   }
@@ -192,7 +195,7 @@ class ReminderSettingController with ChangeNotifier {
 
       // debugPrint('💾 SAVING REMINDER:');
       // debugPrint(
-        // '   - Selected Time: ${_selectedTime.hour}:${_selectedTime.minute}',
+      // '   - Selected Time: ${_selectedTime.hour}:${_selectedTime.minute}',
       // );
       // debugPrint('   - Scheduled DateTime: $scheduledDateTime');
       // debugPrint('   - Device Now: $now');
@@ -201,7 +204,6 @@ class ReminderSettingController with ChangeNotifier {
 
       // Delete old reminder if exists
       if (_reminderSetting != null && _reminderSetting!.id.isNotEmpty) {
-
         await _repository.deleteReminderSetting(_reminderSetting!.id.hashCode);
       }
 
@@ -233,7 +235,7 @@ class ReminderSettingController with ChangeNotifier {
 
       _hasChanges = false;
       // debugPrint('✅ Reminder settings saved successfully');
-    } catch (e, stackTrace) {
+    } catch (e) {
       // debugPrint('❌ Error saving settings: $e');
       // debugPrint('Stack trace: $stackTrace');
       rethrow;
@@ -252,13 +254,10 @@ class ReminderSettingController with ChangeNotifier {
     // debugPrint('   - Reminder Time: $timeString');
 
     try {
-      await Supabase.instance.client
-          .from('habits')
-          .update({
-            'reminder_enabled': reminderEnabled,
-            'reminder_time': timeString,
-          })
-          .eq('id', habit.id);
+      await _habitApiService.updateHabit(habit.id, {
+        'reminderEnabled': reminderEnabled,
+        'reminderTime': timeString,
+      });
 
       // debugPrint('✅ Habit update completed');
     } catch (e) {
@@ -296,7 +295,7 @@ class ReminderSettingController with ChangeNotifier {
       );
 
       // debugPrint('✅ Notification scheduling completed');
-    } catch (e, stackTrace) {
+    } catch (e) {
       // debugPrint('❌ ERROR in scheduling: $e');
       // debugPrint('Stack trace: $stackTrace');
 
@@ -354,7 +353,7 @@ class ReminderSettingController with ChangeNotifier {
         // debugPrint('   3. Notification was cancelled');
       } else {
         // debugPrint(
-          // '   📊 Found $ourNotifications notifications for this habit',
+        // '   📊 Found $ourNotifications notifications for this habit',
         // );
       }
     } catch (e) {
@@ -364,7 +363,7 @@ class ReminderSettingController with ChangeNotifier {
 
   Future<void> checkPermissions() async {
     try {
-      final hasPermission = await _notificationService.checkPermissions();
+      await _notificationService.checkPermissions();
       // debugPrint('   - Permission granted: $hasPermission');
     } catch (e) {
       // debugPrint('❌ Error checking permissions: $e');
@@ -376,10 +375,10 @@ class ReminderSettingController with ChangeNotifier {
     try {
       await _repository.deleteAllReminderSettingsForHabit(habit.id);
 
-      await Supabase.instance.client
-          .from('habits')
-          .update({'reminder_enabled': false, 'reminder_time': null})
-          .eq('id', habit.id);
+      await _habitApiService.updateHabit(habit.id, {
+        'reminderEnabled': false,
+        'reminderTime': null,
+      });
 
       await _notificationService.cancelHabitNotifications(habit.id);
 

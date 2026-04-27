@@ -11,10 +11,7 @@ import 'package:purewill/ui/habit-tracker/widget/save_button.dart';
 class EditHabitScreen extends ConsumerStatefulWidget {
   final HabitModel habit;
 
-  const EditHabitScreen({
-    super.key,
-    required this.habit,
-  });
+  const EditHabitScreen({super.key, required this.habit});
 
   @override
   ConsumerState<EditHabitScreen> createState() => _EditHabitScreenState();
@@ -23,9 +20,10 @@ class EditHabitScreen extends ConsumerStatefulWidget {
 class _EditHabitScreenState extends ConsumerState<EditHabitScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
+  final _notesController = TextEditingController();
   final _targetValueController = TextEditingController();
   final _customUnitController = TextEditingController();
-  
+
   int? _selectedCategoryId;
   String _selectedFrequency = 'daily';
   int _targetValue = 30;
@@ -41,17 +39,17 @@ class _EditHabitScreenState extends ConsumerState<EditHabitScreen> {
 
   final List<String> _unitOptions = [
     'glasses',
-    'pages', 
+    'pages',
     'minutes',
     'hours',
-    'other' 
+    'other',
   ];
 
   @override
   void initState() {
     super.initState();
     _initializeFormWithHabitData();
-    
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(habitNotifierProvider.notifier).loadCategories();
     });
@@ -59,13 +57,14 @@ class _EditHabitScreenState extends ConsumerState<EditHabitScreen> {
 
   void _initializeFormWithHabitData() {
     final habit = widget.habit;
-    
+
     _nameController.text = habit.name;
+    _notesController.text = habit.notes ?? '';
     _targetValue = habit.targetValue ?? 30;
     _targetValueController.text = _targetValue.toString();
     _selectedFrequency = habit.frequency;
-    _selectedCategoryId = habit.categoryId;
-    
+    _selectedCategoryId = habit.category?.id;
+
     if (habit.unit != null) {
       if (_unitOptions.contains(habit.unit)) {
         _selectedUnit = habit.unit!;
@@ -76,7 +75,7 @@ class _EditHabitScreenState extends ConsumerState<EditHabitScreen> {
         _customUnitController.text = habit.unit!;
       }
     }
-    
+
     _reminderEnabled = habit.reminderEnabled;
     _reminderTime = habit.reminderTime;
   }
@@ -84,6 +83,7 @@ class _EditHabitScreenState extends ConsumerState<EditHabitScreen> {
   @override
   void dispose() {
     _nameController.dispose();
+    _notesController.dispose();
     _targetValueController.dispose();
     _customUnitController.dispose();
     super.dispose();
@@ -103,66 +103,55 @@ class _EditHabitScreenState extends ConsumerState<EditHabitScreen> {
 
   Future<void> _updateHabit() async {
     if (_formKey.currentState!.validate()) {
-      // print("tombol update ditekan"); 
-      
+      // print("tombol update ditekan");
+
       try {
         final viewModel = ref.read(habitNotifierProvider.notifier);
+        final originalHabit = widget.habit;
 
-        String? finalUnit;
-        if (_selectedUnit == 'other' && _customUnitController.text.isNotEmpty) {
-          finalUnit = _customUnitController.text.trim();
-        } else if (_selectedUnit != 'other') {
-          finalUnit = _selectedUnit;
+        final updateData = <String, dynamic>{};
+
+        final name = _nameController.text.trim();
+        if (name != originalHabit.name) {
+          updateData['name'] = name;
         }
 
-        // print('=== UPDATING HABIT ===');
-        // print('Habit ID: ${widget.habit.id}');
-        // print('Name: ${_nameController.text}');
-        // print('Category: $_selectedCategoryId');
-        // print('Frequency: $_selectedFrequency');
-        // print('Target Value: $_targetValue');
-        // print('Unit: $finalUnit');
-        // print('Reminder Enabled: $_reminderEnabled');
-        // print('Reminder Time: $_reminderTime');
-        // print('==================');
-
-        final updateData = <String, dynamic>{
-          'name': _nameController.text,
-          'frecuency_type': _selectedFrequency,
-          'category_id': _selectedCategoryId,
-          'target_value': _targetValue,
-          'unit': finalUnit,
-          'reminder_enabled': _reminderEnabled,
-        };
-
-        if (_reminderEnabled && _reminderTime != null) {
-          updateData['reminder_time'] = 
-            '${_reminderTime!.hour.toString().padLeft(2, '0')}:${_reminderTime!.minute.toString().padLeft(2, '0')}';
-        } else {
-          updateData['reminder_time'] = null;
+        final notes = _notesController.text.trim();
+        final originalNotes = originalHabit.notes?.trim() ?? '';
+        if (notes != originalNotes && notes.isNotEmpty) {
+          updateData['notes'] = notes;
         }
 
-        // print('=== UPDATE DATA ===');
-        // print(updateData);
-        // print('==================');
+        if (_selectedFrequency != originalHabit.frequency) {
+          updateData['frequencyType'] = _selectedFrequency.toUpperCase();
+        }
 
-        await viewModel.updateHabits(
+        if (_selectedCategoryId != null &&
+            _selectedCategoryId != originalHabit.category?.id) {
+          updateData['categoryId'] = _selectedCategoryId;
+        }
+
+        if (_targetValue != originalHabit.targetValue) {
+          updateData['targetValue'] = _targetValue;
+        }
+
+        if (_reminderEnabled != originalHabit.reminderEnabled) {
+          updateData['reminderEnabled'] = _reminderEnabled;
+        }
+
+        await viewModel.updateHabitFields(
           habitId: widget.habit.id,
-          newName: _nameController.text,
-          newFrequency: _selectedFrequency,
-          newCategoryId: _selectedCategoryId,
-          newTargetValue: _targetValue,
+          updates: updateData,
         );
 
         // print('=== HABIT UPDATED SUCCESS ===');
 
         if (mounted) {
-          Navigator.of(context).pop();
+          Navigator.of(context).pop(true);
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Habit berhasil diperbarui!')),
           );
         }
-
       } catch (error) {
         // print('=== HABIT UPDATE ERROR: $error ===');
         if (mounted) {
@@ -267,6 +256,55 @@ class _EditHabitScreenState extends ConsumerState<EditHabitScreen> {
                     const SizedBox(height: 24),
 
                     const Text(
+                      'Notes',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.black87,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Container(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(12),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.1),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: TextFormField(
+                        controller: _notesController,
+                        maxLines: 4,
+                        maxLength: 500,
+                        decoration: InputDecoration(
+                          hintText: 'Add notes for this habit',
+                          filled: true,
+                          fillColor: Colors.white.withOpacity(0.95),
+                          counterStyle: TextStyle(color: Colors.grey[700]),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide.none,
+                          ),
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 12,
+                          ),
+                        ),
+                        validator: (value) {
+                          final notes = value?.trim() ?? '';
+                          if (notes.isNotEmpty && notes.length < 5) {
+                            return 'Notes must be at least 5 characters';
+                          }
+                          return null;
+                        },
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+
+                    const Text(
                       'Category',
                       style: TextStyle(
                         fontSize: 16,
@@ -293,9 +331,9 @@ class _EditHabitScreenState extends ConsumerState<EditHabitScreen> {
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: CategoryDropdown(
-                          userCategories: userCategories, 
-                          selectedCategoryId: _selectedCategoryId, 
-                          onChanged: _handleCategoryChange
+                          userCategories: userCategories,
+                          selectedCategoryId: _selectedCategoryId,
+                          onChanged: _handleCategoryChange,
                         ),
                       ),
                     ),
@@ -419,7 +457,7 @@ class _EditHabitScreenState extends ConsumerState<EditHabitScreen> {
                           ),
                         ),
                         const SizedBox(width: 12),
-                        
+
                         Expanded(
                           flex: 3,
                           child: Container(
@@ -459,7 +497,9 @@ class _EditHabitScreenState extends ConsumerState<EditHabitScreen> {
                                         child: Text(
                                           unit == 'other' ? 'Other...' : unit,
                                           style: TextStyle(
-                                            color: unit == 'other' ? Colors.blue : Colors.black,
+                                            color: unit == 'other'
+                                                ? Colors.blue
+                                                : Colors.black,
                                           ),
                                         ),
                                       ),
@@ -480,7 +520,7 @@ class _EditHabitScreenState extends ConsumerState<EditHabitScreen> {
                         ),
                       ],
                     ),
-                    
+
                     if (_showCustomUnit) ...[
                       const SizedBox(height: 12),
                       const Text(
@@ -524,7 +564,8 @@ class _EditHabitScreenState extends ConsumerState<EditHabitScreen> {
                               fillColor: Colors.transparent,
                             ),
                             validator: (value) {
-                              if (_selectedUnit == 'other' && (value == null || value.isEmpty)) {
+                              if (_selectedUnit == 'other' &&
+                                  (value == null || value.isEmpty)) {
                                 return 'Please enter custom unit';
                               }
                               return null;
@@ -533,10 +574,14 @@ class _EditHabitScreenState extends ConsumerState<EditHabitScreen> {
                         ),
                       ),
                     ],
-                    
+
                     const SizedBox(height: 8),
                     Text(
-                      'Target: $_targetValue ${_showCustomUnit && _customUnitController.text.isNotEmpty ? _customUnitController.text : _selectedUnit != 'other' ? _selectedUnit : ''}',
+                      'Target: $_targetValue ${_showCustomUnit && _customUnitController.text.isNotEmpty
+                          ? _customUnitController.text
+                          : _selectedUnit != 'other'
+                          ? _selectedUnit
+                          : ''}',
                       style: TextStyle(
                         fontSize: 12,
                         color: Colors.grey[600],
@@ -646,10 +691,7 @@ class _EditHabitScreenState extends ConsumerState<EditHabitScreen> {
                     ),
                     const SizedBox(height: 24),
 
-                    SaveButton(
-                      onPressed: _updateHabit,
-                      text: 'Update Habit',
-                    )
+                    SaveButton(onPressed: _updateHabit, text: 'Update Habit'),
                   ],
                 ),
               ),

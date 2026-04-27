@@ -1,5 +1,4 @@
 import 'package:flutter_riverpod/legacy.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:purewill/domain/model/plan_model.dart';
 import 'package:purewill/domain/model/profile_model.dart';
 import 'package:purewill/data/repository/plan_repository.dart';
@@ -65,14 +64,7 @@ class PlanNotifier extends StateNotifier<PlanState> {
 
   // Auto load ketika user sudah login
   void _autoLoad() async {
-    final user = Supabase.instance.client.auth.currentUser;
-    if (user != null) {
-      // print('🔄 PlanNotifier: Auto-loading for user ${user.email}');
-      await loadPlans();
-    } else {
-      // print('⚠️ PlanNotifier: No user logged in, loading plans only');
-      await loadPlans();
-    }
+    await loadPlans();
   }
 
   // Load plans dan status user
@@ -81,10 +73,9 @@ class PlanNotifier extends StateNotifier<PlanState> {
       // print('🔄 PlanNotifier.loadPlans() called');
       state = state.copyWith(isLoading: true, error: null);
 
-      final user = Supabase.instance.client.auth.currentUser;
-      // print('👤 Current user: ${user?.id} - ${user?.email}');
+      final userId = _planRepository.getCurrentUserId();
 
-      if (user == null) {
+      if (userId == null) {
         // print('⚠️ No user logged in, loading public plans only');
         final plans = await _planRepository.getPlans();
         state = state.copyWith(
@@ -106,7 +97,7 @@ class PlanNotifier extends StateNotifier<PlanState> {
       // print('✅ Current plan: ${currentPlan?.name ?? "None"}');
 
       // print('📥 Checking premium status...');
-      final isPremium = await _planRepository.isUserPremium(user.id);
+      final isPremium = await _planRepository.isUserPremium(userId);
       // print('✅ Is premium: $isPremium');
 
       // Get user profile
@@ -132,7 +123,7 @@ class PlanNotifier extends StateNotifier<PlanState> {
       // print('   - Current plan: ${state.currentPlan?.name}');
       // print('   - Is premium: ${state.isUserPremium}');
       // print('   - Has error: ${state.error != null}');
-    } catch (e, stackTrace) {
+    } catch (e) {
       print('❌ Error in PlanNotifier.loadPlans(): $e');
       // print('Stack trace: $stackTrace');
 
@@ -155,7 +146,7 @@ class PlanNotifier extends StateNotifier<PlanState> {
       // Reload data setelah subscribe
       // print('✅ Subscription successful, reloading data...');
       await loadPlans();
-    } catch (e, stackTrace) {
+    } catch (e) {
       // print('❌ Error subscribing to plan: $e');
       // print('Stack trace: $stackTrace');
       state = state.copyWith(
@@ -177,7 +168,7 @@ class PlanNotifier extends StateNotifier<PlanState> {
       // Reload data setelah cancel
       // print('✅ Cancellation successful, reloading data...');
       await loadPlans();
-    } catch (e, stackTrace) {
+    } catch (e) {
       // print('❌ Error cancelling subscription: $e');
       // print('Stack trace: $stackTrace');
       state = state.copyWith(
@@ -191,10 +182,10 @@ class PlanNotifier extends StateNotifier<PlanState> {
   // Check if user is premium
   Future<bool> checkPremiumStatus() async {
     try {
-      final user = Supabase.instance.client.auth.currentUser;
-      if (user == null) return false;
+      final userId = _planRepository.getCurrentUserId();
+      if (userId == null) return false;
 
-      return await _planRepository.isUserPremium(user.id);
+      return await _planRepository.isUserPremium(userId);
     } catch (e) {
       // print('❌ Error checking premium status: $e');
       return false;

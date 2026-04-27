@@ -15,8 +15,15 @@ class CategoryDropdown extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    
-      if (userCategories.isEmpty) {
+      final uniqueCategories = <int, CategoryModel>{
+        for (final category in userCategories) category.id: category,
+      }.values.toList();
+
+      final hasSelectedCategory = selectedCategoryId != null &&
+          uniqueCategories.any((category) => category.id == selectedCategoryId);
+      final safeSelectedCategoryId = hasSelectedCategory ? selectedCategoryId : null;
+
+      if (uniqueCategories.isEmpty) {
           return Container(
             padding: const EdgeInsets.symmetric(
               horizontal: 16,
@@ -50,7 +57,7 @@ class CategoryDropdown extends StatelessWidget {
   
 
         return DropdownButtonFormField<int>(
-          value: selectedCategoryId,
+          value: safeSelectedCategoryId,
           decoration: InputDecoration(
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
@@ -72,7 +79,7 @@ class CategoryDropdown extends StatelessWidget {
                 style: TextStyle(color: Colors.grey),
               ),
             ),
-            ...userCategories.map((category) {
+            ...uniqueCategories.map((category) {
               return DropdownMenuItem(
                 value: category.id,
                 child: Text(

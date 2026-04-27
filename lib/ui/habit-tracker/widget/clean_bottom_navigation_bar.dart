@@ -49,16 +49,16 @@ class CleanBottomNavigationBar extends StatelessWidget {
               activeIcon: Icon(Icons.local_fire_department),
               label: 'NoFap',
             ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.people_outline),
-              activeIcon: Icon(Icons.people),
-              label: 'Komunitas',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.chat_outlined),
-              activeIcon: Icon(Icons.chat),
-              label: 'Konsultasi',
-            ),
+            // BottomNavigationBarItem(
+            //   icon: Icon(Icons.people_outline),
+            //   activeIcon: Icon(Icons.people),
+            //   label: 'Komunitas',
+            // ),
+            // BottomNavigationBarItem(
+            //   icon: Icon(Icons.chat_outlined),
+            //   activeIcon: Icon(Icons.chat),
+            //   label: 'Konsultasi',
+            // ),
           ],
         ),
       ),

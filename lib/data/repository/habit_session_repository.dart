@@ -29,10 +29,13 @@ class HabitSessionModel {
       habitId: json['habitId'] as int? ?? json['habit_id'] as int? ?? 0,
       userId: json['userId'] as String? ?? json['user_id'] as String? ?? '',
       startDate: DateTime.parse(json['startDate'] as String),
-      endDate: json['endDate'] != null ? DateTime.parse(json['endDate'] as String) : null,
+      endDate: json['endDate'] != null
+          ? DateTime.parse(json['endDate'] as String)
+          : null,
       finalStreakLength: json['finalStreakLength'] as int?,
       relapseNotes: json['relapseNotes'] as String?,
-      isActive: json['isActive'] as bool? ?? json['is_active'] as bool? ?? false,
+      isActive:
+          json['isActive'] as bool? ?? json['is_active'] as bool? ?? false,
     );
   }
 }
@@ -44,13 +47,19 @@ class HabitSessionRepository {
 
   HabitSessionRepository();
 
+  void _logNotImplemented(String mechanism) {
+    log(
+      '$mechanism: belum di impelemtnasikan di habit service',
+      name: 'HABIT_SERVICE_MIGRATION',
+    );
+  }
+
   Future<HabitSessionModel> addHabitSession({
     required int habitId,
     required String userId,
     required DateTime startDate,
   }) async {
-    log('🔧 DEBUG: addHabitSession - habitId: $habitId, userId: $userId',
-        name: 'HABIT_SESSION_DEBUG');
+    _logNotImplemented('habit session addHabitSession');
 
     if (_activeSession != null) {
       _activeSession = _activeSession!.copyWith(
@@ -78,8 +87,7 @@ class HabitSessionRepository {
     String? relapseNotes,
     bool? isActive,
   }) async {
-    log('🔧 DEBUG: updateHabitSession - sessionId: $sessionId',
-        name: 'HABIT_SESSION_DEBUG');
+    _logNotImplemented('habit session updateHabitSession');
 
     if (_activeSession?.id == sessionId) {
       _activeSession = _activeSession!.copyWith(
@@ -117,14 +125,18 @@ class HabitSessionRepository {
     required int habitId,
     required String userId,
   }) async {
+    _logNotImplemented('habit session fetchNofapHabitLongestStreak');
     int longest = 0;
     for (var session in _sessionHistory) {
-      if (session.finalStreakLength != null && session.finalStreakLength! > longest) {
+      if (session.finalStreakLength != null &&
+          session.finalStreakLength! > longest) {
         longest = session.finalStreakLength!;
       }
     }
     if (_activeSession != null && _activeSession!.isActive) {
-      final current = DateTime.now().difference(_activeSession!.startDate).inDays;
+      final current = DateTime.now()
+          .difference(_activeSession!.startDate)
+          .inDays;
       if (current > longest) longest = current;
     }
     return longest;
@@ -134,6 +146,7 @@ class HabitSessionRepository {
     required int habitId,
     required String userId,
   }) async {
+    _logNotImplemented('habit session fetchNofapHabitCurrentStreak');
     if (_activeSession != null && _activeSession!.isActive) {
       return DateTime.now().difference(_activeSession!.startDate).inDays;
     }
@@ -144,6 +157,7 @@ class HabitSessionRepository {
     required int habitId,
     required String userId,
   }) async {
+    _logNotImplemented('habit session getRelapseCount');
     return _sessionHistory.length;
   }
 
@@ -151,6 +165,7 @@ class HabitSessionRepository {
     required int habitId,
     required String userId,
   }) async {
+    _logNotImplemented('habit session getSuccessDays');
     final successDays = <DateTime>[];
     for (var session in _sessionHistory) {
       if (session.finalStreakLength != null && session.finalStreakLength! > 0) {
@@ -163,6 +178,7 @@ class HabitSessionRepository {
   }
 
   Future<void> deleteHabitSession({required int sessionId}) async {
+    _logNotImplemented('habit session deleteHabitSession');
     if (_activeSession?.id == sessionId) {
       _activeSession = null;
     } else {
@@ -174,6 +190,7 @@ class HabitSessionRepository {
     required int habitId,
     required String userId,
   }) async {
+    _logNotImplemented('habit session getActiveHabitSession');
     if (_activeSession != null && _activeSession!.isActive) {
       return _activeSession;
     }
@@ -184,6 +201,7 @@ class HabitSessionRepository {
     required int habitId,
     required String userId,
   }) async {
+    _logNotImplemented('habit session getHabitSessionHistory');
     return _sessionHistory;
   }
 }

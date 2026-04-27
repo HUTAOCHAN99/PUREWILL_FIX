@@ -6,6 +6,8 @@ class SecureStorageRepository {
   static const String _keyPassword = 'saved_password';
   static const String _keyBiometricEnabled = 'biometric_enabled';
   static const String _keyLastLoginEmail = 'last_login_email';
+  static const String _keyAccessToken = 'access_token';
+  static const String _keyRefreshTokenCookie = 'refresh_token_cookie';
 
   final FlutterSecureStorage _storage = const FlutterSecureStorage();
 
@@ -23,6 +25,24 @@ class SecureStorageRepository {
     } else {
       await clearCredentials();
     }
+  }
+
+  /// Save access token securely
+  Future<void> saveAccessToken(String token) async {
+    await _storage.write(key: _keyAccessToken, value: token);
+  }
+
+  /// Get stored access token
+  Future<String?> getAccessToken() async {
+    return await _storage.read(key: _keyAccessToken);
+  }
+
+  Future<void> saveRefreshTokenCookie(String cookie) async {
+    await _storage.write(key: _keyRefreshTokenCookie, value: cookie);
+  }
+
+  Future<String?> getRefreshTokenCookie() async {
+    return await _storage.read(key: _keyRefreshTokenCookie);
   }
 
   /// Get saved credentials for biometric login
@@ -61,6 +81,20 @@ class SecureStorageRepository {
     await _storage.delete(key: _keyBiometricEnabled);
   }
 
+  /// Clear stored access token
+  Future<void> clearAccessToken() async {
+    await _storage.delete(key: _keyAccessToken);
+  }
+
+  Future<void> clearRefreshTokenCookie() async {
+    await _storage.delete(key: _keyRefreshTokenCookie);
+  }
+
+  Future<void> clearSessionTokens() async {
+    await clearAccessToken();
+    await clearRefreshTokenCookie();
+  }
+
   /// Disable biometric login
   Future<void> disableBiometric() async {
     await clearCredentials();
@@ -79,8 +113,5 @@ class SavedCredentials {
   final String email;
   final String password;
 
-  SavedCredentials({
-    required this.email,
-    required this.password,
-  });
+  SavedCredentials({required this.email, required this.password});
 }

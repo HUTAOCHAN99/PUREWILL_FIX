@@ -5,8 +5,7 @@ class HabitScreenCard extends StatelessWidget {
   final String title;
   final String subtitle;
   final Color color;
-  final double progressPercentage;
-  final String category;
+  final String? categoryName;
   final VoidCallback onTap;
 
   const HabitScreenCard({
@@ -15,8 +14,7 @@ class HabitScreenCard extends StatelessWidget {
     required this.title,
     required this.subtitle,
     required this.color,
-    required this.progressPercentage,
-    required this.category,
+    this.categoryName,
     required this.onTap,
   });
 
@@ -80,53 +78,28 @@ class HabitScreenCard extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                   ),
 
-                  const SizedBox(height: 8),
+                  if (categoryName != null && categoryName!.trim().isNotEmpty)
+                    const SizedBox(height: 8),
 
-                  // Category and Progress Row
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      // Category Badge
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: color.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text(
-                          category,
-                          style: TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.w500,
-                            color: color,
-                          ),
+                  if (categoryName != null && categoryName!.trim().isNotEmpty)
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: color.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        categoryName!,
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w500,
+                          color: color,
                         ),
                       ),
-
-                      // Progress Percentage
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: _getProgressColor().withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text(
-                          '${(progressPercentage * 100).toInt()}%',
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                            color: _getProgressColor(),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
+                    ),
                 ],
               ),
             ),
@@ -141,15 +114,5 @@ class HabitScreenCard extends StatelessWidget {
         ),
       ),
     );
-  }
-
-  Color _getProgressColor() {
-    if (progressPercentage >= 0.8) {
-      return Colors.green;
-    } else if (progressPercentage >= 0.5) {
-      return Colors.orange;
-    } else {
-      return Colors.red;
-    }
   }
 }

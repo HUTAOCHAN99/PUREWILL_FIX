@@ -9,9 +9,17 @@ class ReminderSettingRepository {
 
   ReminderSettingRepository();
 
-  Future<ReminderSettingModel> createReminderSetting(ReminderSettingModel setting) async {
-    log('🔧 DEBUG: createReminderSetting - habitId: ${setting.habitId}',
-        name: 'REMINDER_DEBUG');
+  void _logNotImplemented(String mechanism) {
+    log(
+      '$mechanism: belum di impelemtnasikan di habit service',
+      name: 'HABIT_SERVICE_MIGRATION',
+    );
+  }
+
+  Future<ReminderSettingModel> createReminderSetting(
+    ReminderSettingModel setting,
+  ) async {
+    _logNotImplemented('reminder createReminderSetting');
 
     final newSetting = ReminderSettingModel(
       id: _nextId.toString(),
@@ -31,8 +39,7 @@ class ReminderSettingRepository {
   }
 
   Future<ReminderSettingModel> fetchReminderSettingsByHabit(int habitId) async {
-    log('🔧 DEBUG: fetchReminderSettingsByHabit - habitId: $habitId',
-        name: 'REMINDER_DEBUG');
+    _logNotImplemented('reminder fetchReminderSettingsByHabit');
 
     final existing = _localSettings[habitId];
     if (existing != null) return existing;
@@ -54,38 +61,39 @@ class ReminderSettingRepository {
     required String reminderSettingId,
     required Map<String, dynamic> updates,
   }) async {
-    log('🔧 DEBUG: updateReminderSetting - id: $reminderSettingId',
-        name: 'REMINDER_DEBUG');
+    _logNotImplemented('reminder updateReminderSetting');
 
     final entry = _localSettings.entries.firstWhere(
       (entry) => entry.value.id == reminderSettingId,
     );
-    
+
     final current = entry.value;
     final updated = ReminderSettingModel(
       id: current.id,
       habitId: current.habitId,
       isEnabled: updates['is_enabled'] as bool? ?? current.isEnabled,
       time: updates['time'] as DateTime? ?? current.time,
-      snoozeDuration: updates['snooze_duration'] as int? ?? current.snoozeDuration,
+      snoozeDuration:
+          updates['snooze_duration'] as int? ?? current.snoozeDuration,
       repeatDaily: updates['repeat_daily'] as bool? ?? current.repeatDaily,
-      isSoundEnabled: updates['is_sound_enabled'] as bool? ?? current.isSoundEnabled,
-      isVibrationEnabled: updates['is_vibration_enabled'] as bool? ?? current.isVibrationEnabled,
+      isSoundEnabled:
+          updates['is_sound_enabled'] as bool? ?? current.isSoundEnabled,
+      isVibrationEnabled:
+          updates['is_vibration_enabled'] as bool? ??
+          current.isVibrationEnabled,
       createdAt: current.createdAt,
     );
-    
+
     _localSettings[updated.habitId] = updated;
   }
 
   Future<void> deleteReminderSetting(int habitId) async {
-    log('🔧 DEBUG: deleteReminderSetting - habitId: $habitId',
-        name: 'REMINDER_DEBUG');
+    _logNotImplemented('reminder deleteReminderSetting');
     _localSettings.remove(habitId);
   }
 
   Future<void> deleteAllReminderSettingsForHabit(int habitId) async {
-    log('🔧 DEBUG: deleteAllReminderSettingsForHabit - habitId: $habitId',
-        name: 'REMINDER_DEBUG');
+    _logNotImplemented('reminder deleteAllReminderSettingsForHabit');
     _localSettings.remove(habitId);
   }
 }

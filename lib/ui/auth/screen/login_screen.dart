@@ -8,7 +8,7 @@ import 'package:purewill/ui/auth/view_model/auth_view_model.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
-  
+
   @override
   ConsumerState<LoginScreen> createState() => _LoginScreenState();
 }
@@ -18,12 +18,16 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   bool _enableBiometric = false;
   bool _isBiometricAvailable = false;
   bool _isBiometricLoginLoading = false;
-  
-  final TextEditingController _emailController = TextEditingController();
-  final TextEditingController _passwordController = TextEditingController();
+
+  final TextEditingController _emailController = TextEditingController(
+    text: 'user1@purewill.dev',
+  );
+  final TextEditingController _passwordController = TextEditingController(
+    text: 'Password123!',
+  );
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   final ScrollController _scrollController = ScrollController();
-  
+
   final BiometricService _biometricService = BiometricService();
 
   @override
@@ -44,8 +48,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   Future<void> _checkSavedLogin() async {
     final authViewModel = ref.read(authNotifierProvider.notifier);
-    final isBiometricLoginAvailable = await authViewModel.isBiometricLoginAvailable();
-    
+    final isBiometricLoginAvailable = await authViewModel
+        .isBiometricLoginAvailable();
+
     if (isBiometricLoginAvailable && mounted) {
       Future.delayed(const Duration(milliseconds: 500), () {
         _loginWithBiometric();
@@ -66,9 +71,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
       if (success && mounted) {
         _showSnackBar("Biometric Login Successful!");
-        
+
         await Future.delayed(const Duration(milliseconds: 500));
-        
+
         if (mounted) {
           Navigator.pushNamedAndRemoveUntil(
             context,
@@ -112,7 +117,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           title: const Text('Fitur Tidak Tersedia'),
           content: const Text(
             'Maaf, fitur reset password sedang dalam pengembangan. '
-            'Silakan hubungi customer support untuk bantuan.'
+            'Silakan hubungi customer support untuk bantuan.',
           ),
           actions: [
             TextButton(
@@ -127,9 +132,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   Future<void> _login() async {
     final authState = ref.watch(authNotifierProvider);
-    
+
     if (!_formKey.currentState!.validate()) return;
-    
+
     try {
       await ref
           .read(authNotifierProvider.notifier)
@@ -139,11 +144,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
       // Save credentials if biometric is enabled
       if (_enableBiometric) {
-        await ref.read(authNotifierProvider.notifier).saveCredentialsForBiometric(
-          email: _emailController.text.trim(),
-          password: _passwordController.text.trim(),
-          enableBiometric: true,
-        );
+        await ref
+            .read(authNotifierProvider.notifier)
+            .saveCredentialsForBiometric(
+              email: _emailController.text.trim(),
+              password: _passwordController.text.trim(),
+              enableBiometric: true,
+            );
       }
 
       _showSnackBar("Login Berhasil!");
@@ -283,7 +290,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                     width: screenWidth * 0.15,
                                     height: screenWidth * 0.12,
                                     decoration: BoxDecoration(
-                                      color: const Color.fromRGBO(82, 140, 207, 1),
+                                      color: const Color.fromRGBO(
+                                        82,
+                                        140,
+                                        207,
+                                        1,
+                                      ),
                                       borderRadius: BorderRadius.circular(16),
                                       border: Border.all(
                                         color: Colors.grey[300]!,
@@ -304,7 +316,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                   SizedBox(width: 4),
                                   Column(
                                     mainAxisAlignment: MainAxisAlignment.center,
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       Text(
                                         "Welcome Back",
@@ -344,7 +357,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                               ),
 
                               // Biometric Login Button
-                              if (_isBiometricAvailable && !_isBiometricLoginLoading)
+                              if (_isBiometricAvailable &&
+                                  !_isBiometricLoginLoading)
                                 Padding(
                                   padding: const EdgeInsets.only(bottom: 16),
                                   child: SizedBox(
@@ -373,7 +387,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                           width: 1,
                                         ),
                                         shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(8),
+                                          borderRadius: BorderRadius.circular(
+                                            8,
+                                          ),
                                         ),
                                       ),
                                     ),
@@ -397,7 +413,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                           width: 1,
                                         ),
                                         shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(8),
+                                          borderRadius: BorderRadius.circular(
+                                            8,
+                                          ),
                                         ),
                                       ),
                                       child: const SizedBox(
@@ -414,7 +432,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                               // Divider
                               if (_isBiometricAvailable)
                                 Padding(
-                                  padding: const EdgeInsets.symmetric(vertical: 8),
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 8,
+                                  ),
                                   child: Row(
                                     children: [
                                       Expanded(
@@ -424,7 +444,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                         ),
                                       ),
                                       Padding(
-                                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 12,
+                                        ),
                                         child: Text(
                                           'OR',
                                           style: TextStyle(
@@ -447,10 +469,20 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                               Container(
                                 height: 40,
                                 decoration: BoxDecoration(
-                                  color: const Color.fromARGB(255, 254, 254, 254),
+                                  color: const Color.fromARGB(
+                                    255,
+                                    254,
+                                    254,
+                                    254,
+                                  ),
                                   borderRadius: BorderRadius.circular(8),
                                   border: Border.all(
-                                    color: const Color.fromARGB(217, 217, 217, 255),
+                                    color: const Color.fromARGB(
+                                      217,
+                                      217,
+                                      217,
+                                      255,
+                                    ),
                                     width: 1,
                                   ),
                                   boxShadow: [
@@ -466,6 +498,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                     Expanded(
                                       child: TextFormField(
                                         controller: _emailController,
+                                        readOnly: true,
                                         style: const TextStyle(
                                           color: Colors.black,
                                           fontSize: 16,
@@ -473,10 +506,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                         decoration: InputDecoration(
                                           border: InputBorder.none,
                                           isCollapsed: true,
-                                          contentPadding: const EdgeInsets.symmetric(
-                                            horizontal: 16,
-                                            vertical: 10,
-                                          ),
+                                          contentPadding:
+                                              const EdgeInsets.symmetric(
+                                                horizontal: 16,
+                                                vertical: 10,
+                                              ),
                                           hintText: "Enter your email address",
                                           hintStyle: TextStyle(
                                             color: Colors.grey[500],
@@ -512,15 +546,25 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                               ),
 
                               SizedBox(height: 16),
-                              
+
                               // Password field
                               Container(
                                 height: 40,
                                 decoration: BoxDecoration(
-                                  color: const Color.fromARGB(255, 254, 254, 254),
+                                  color: const Color.fromARGB(
+                                    255,
+                                    254,
+                                    254,
+                                    254,
+                                  ),
                                   borderRadius: BorderRadius.circular(8),
                                   border: Border.all(
-                                    color: const Color.fromARGB(217, 217, 217, 255),
+                                    color: const Color.fromARGB(
+                                      217,
+                                      217,
+                                      217,
+                                      255,
+                                    ),
                                     width: 1,
                                   ),
                                   boxShadow: [
@@ -537,6 +581,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                       child: TextFormField(
                                         controller: _passwordController,
                                         obscureText: _obscurePassword,
+                                        readOnly: true,
                                         style: const TextStyle(
                                           color: Colors.black,
                                           fontSize: 16,
@@ -544,10 +589,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                         decoration: InputDecoration(
                                           border: InputBorder.none,
                                           isCollapsed: true,
-                                          contentPadding: const EdgeInsets.symmetric(
-                                            horizontal: 16,
-                                            vertical: 10,
-                                          ),
+                                          contentPadding:
+                                              const EdgeInsets.symmetric(
+                                                horizontal: 16,
+                                                vertical: 10,
+                                              ),
                                           hintText: "Enter your password",
                                           hintStyle: TextStyle(
                                             color: Colors.grey[500],
@@ -603,7 +649,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                               _enableBiometric = value ?? false;
                                             });
                                           },
-                                          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                          materialTapTargetSize:
+                                              MaterialTapTargetSize.shrinkWrap,
                                           visualDensity: VisualDensity.compact,
                                         ),
                                       ),
@@ -634,7 +681,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                       color: Color.fromRGBO(82, 140, 207, 1),
                                       fontSize: 12,
                                       decoration: TextDecoration.underline,
-                                      decorationColor: Color.fromRGBO(82, 140, 207, 1),
+                                      decorationColor: Color.fromRGBO(
+                                        82,
+                                        140,
+                                        207,
+                                        1,
+                                      ),
                                     ),
                                   ),
                                 ),
@@ -649,7 +701,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: Colors.black,
                                     foregroundColor: Colors.white,
-                                    padding: const EdgeInsets.symmetric(vertical: 12),
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 12,
+                                    ),
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(8),
                                     ),
@@ -666,9 +720,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                           width: 20,
                                           child: CircularProgressIndicator(
                                             strokeWidth: 2,
-                                            valueColor: AlwaysStoppedAnimation<Color>(
-                                              Colors.white,
-                                            ),
+                                            valueColor:
+                                                AlwaysStoppedAnimation<Color>(
+                                                  Colors.white,
+                                                ),
                                           ),
                                         )
                                       : const Text("Login"),
@@ -692,7 +747,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                       Navigator.push(
                                         context,
                                         MaterialPageRoute(
-                                          builder: (context) => const SignupScreen(),
+                                          builder: (context) =>
+                                              const SignupScreen(),
                                         ),
                                       );
                                     },
@@ -703,7 +759,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                         fontWeight: FontWeight.bold,
                                         fontSize: 14,
                                         decoration: TextDecoration.underline,
-                                        decorationColor: Color.fromRGBO(82, 140, 207, 1),
+                                        decorationColor: Color.fromRGBO(
+                                          82,
+                                          140,
+                                          207,
+                                          1,
+                                        ),
                                       ),
                                     ),
                                   ),

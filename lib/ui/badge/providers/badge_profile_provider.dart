@@ -93,7 +93,7 @@ final userProfileProvider = FutureProvider<UserProfile>((ref) async {
   } catch (e, stack) {
     // debugPrint('❌ Error loading user profile: $e');
     // debugPrint('Stack trace: $stack');
-    throw Exception('Failed to load user profile: $e');
+    throw Exception('Failed to load user profile fdfdfdfdf: $e');
   }
 });
 

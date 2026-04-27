@@ -18,13 +18,22 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
   String _selectedGender = 'MALE';
-  DateTime? _selectedBirthDate;
-  
-  final TextEditingController _fullNameController = TextEditingController();
-  final TextEditingController _usernameController = TextEditingController();
-  final TextEditingController _emailController = TextEditingController();
-  final TextEditingController _passwordController = TextEditingController();
-  final TextEditingController _confirmPasswordController = TextEditingController();
+  DateTime? _selectedBirthDate = DateTime(1998, 1, 15);
+
+  final TextEditingController _fullNameController = TextEditingController(
+    text: 'Rahaditya Putra',
+  );
+  final TextEditingController _usernameController = TextEditingController(
+    text: 'rahaditya.putra',
+  );
+  final TextEditingController _emailController = TextEditingController(
+    text: 'rahaditya.putra@example.com',
+  );
+  final TextEditingController _passwordController = TextEditingController(
+    text: 'Password123!',
+  );
+  final TextEditingController _confirmPasswordController =
+      TextEditingController(text: 'Password123!');
   final ScrollController _scrollController = ScrollController();
 
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
@@ -60,7 +69,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
         );
       },
     );
-    
+
     if (picked != null && mounted) {
       setState(() {
         _selectedBirthDate = picked;
@@ -70,44 +79,46 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
 
   Future<void> _signUp() async {
     if (!_formKey.currentState!.validate()) return;
-    
+
     // Validasi password confirmation
-    if (_passwordController.text.trim() != _confirmPasswordController.text.trim()) {
+    if (_passwordController.text.trim() !=
+        _confirmPasswordController.text.trim()) {
       _showSnackBar("Password and confirmation do not match!", isError: true);
       return;
     }
-    
+
     // Validasi birth date
     if (_selectedBirthDate == null) {
       _showSnackBar("Please select your birth date!", isError: true);
       return;
     }
-    
+
     try {
-      await ref.read(authNotifierProvider.notifier).signup(
-        fullname: _fullNameController.text.trim(),
-        username: _usernameController.text.trim(),
-        email: _emailController.text.trim(),
-        password: _passwordController.text.trim(),
-        passwordConfirmation: _confirmPasswordController.text.trim(),
-        gender: _selectedGender,
-        birthDate: _selectedBirthDate!,
-      );
-      
+      await ref
+          .read(authNotifierProvider.notifier)
+          .signup(
+            fullname: _fullNameController.text.trim(),
+            username: _usernameController.text.trim(),
+            email: _emailController.text.trim(),
+            password: _passwordController.text.trim(),
+            passwordConfirmation: _confirmPasswordController.text.trim(),
+            gender: _selectedGender,
+            birthDate: _selectedBirthDate!,
+          );
+
       if (!mounted) return;
-      
+
       _showSnackBar("Registration Successful! Please login.");
-      
+
       await Future.delayed(const Duration(seconds: 1));
-      
+
       if (!mounted) return;
-      
+
       Navigator.pushAndRemoveUntil(
         context,
         MaterialPageRoute(builder: (context) => const LoginScreen()),
         (Route<dynamic> route) => false,
       );
-      
     } on AuthException catch (e) {
       _showSnackBar("Registration Failed: ${e.message}", isError: true);
     } catch (e) {
@@ -229,7 +240,12 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                                     width: screenWidth * 0.12,
                                     height: screenWidth * 0.10,
                                     decoration: BoxDecoration(
-                                      color: const Color.fromRGBO(82, 140, 207, 1),
+                                      color: const Color.fromRGBO(
+                                        82,
+                                        140,
+                                        207,
+                                        1,
+                                      ),
                                       borderRadius: BorderRadius.circular(12),
                                     ),
                                     child: Center(
@@ -243,7 +259,8 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                                   ),
                                   const SizedBox(width: 8),
                                   Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       Text(
                                         "Start Your",
@@ -257,7 +274,12 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                                         style: TextStyle(
                                           fontSize: screenWidth * 0.04,
                                           fontWeight: FontWeight.bold,
-                                          color: const Color.fromRGBO(82, 140, 207, 1),
+                                          color: const Color.fromRGBO(
+                                            82,
+                                            140,
+                                            207,
+                                            1,
+                                          ),
                                         ),
                                       ),
                                     ],
@@ -336,7 +358,11 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                                 child: Row(
                                   children: [
                                     const SizedBox(width: 12),
-                                    Icon(Icons.person_outline, size: 20, color: Colors.grey[600]),
+                                    Icon(
+                                      Icons.person_outline,
+                                      size: 20,
+                                      color: Colors.grey[600],
+                                    ),
                                     const SizedBox(width: 8),
                                     const Text(
                                       "Gender:",
@@ -351,7 +377,9 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                                         child: DropdownButton<String>(
                                           value: _selectedGender,
                                           isExpanded: true,
-                                          icon: const Icon(Icons.arrow_drop_down),
+                                          icon: const Icon(
+                                            Icons.arrow_drop_down,
+                                          ),
                                           iconSize: 24,
                                           elevation: 16,
                                           style: const TextStyle(
@@ -364,12 +392,15 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                                             });
                                           },
                                           items: <String>['MALE', 'FEMALE']
-                                              .map<DropdownMenuItem<String>>((String value) {
-                                            return DropdownMenuItem<String>(
-                                              value: value,
-                                              child: Text(value),
-                                            );
-                                          }).toList(),
+                                              .map<DropdownMenuItem<String>>((
+                                                String value,
+                                              ) {
+                                                return DropdownMenuItem<String>(
+                                                  value: value,
+                                                  child: Text(value),
+                                                );
+                                              })
+                                              .toList(),
                                         ),
                                       ),
                                     ),
@@ -384,7 +415,9 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                                 onTap: _selectBirthDate,
                                 child: Container(
                                   height: 45,
-                                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                  ),
                                   decoration: BoxDecoration(
                                     color: Colors.white,
                                     borderRadius: BorderRadius.circular(8),
@@ -395,19 +428,29 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                                   ),
                                   child: Row(
                                     children: [
-                                      Icon(Icons.cake, size: 20, color: Colors.grey[600]),
+                                      Icon(
+                                        Icons.cake,
+                                        size: 20,
+                                        color: Colors.grey[600],
+                                      ),
                                       const SizedBox(width: 8),
                                       Text(
                                         _selectedBirthDate == null
                                             ? "Birth Date"
                                             : "${_selectedBirthDate!.day}/${_selectedBirthDate!.month}/${_selectedBirthDate!.year}",
                                         style: TextStyle(
-                                          color: _selectedBirthDate == null ? Colors.grey : Colors.black,
+                                          color: _selectedBirthDate == null
+                                              ? Colors.grey
+                                              : Colors.black,
                                           fontSize: 14,
                                         ),
                                       ),
                                       const Spacer(),
-                                      const Icon(Icons.calendar_today, size: 18, color: Colors.grey),
+                                      const Icon(
+                                        Icons.calendar_today,
+                                        size: 18,
+                                        color: Colors.grey,
+                                      ),
                                     ],
                                   ),
                                 ),
@@ -453,7 +496,8 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                                 },
                                 onToggleObscure: () {
                                   setState(() {
-                                    _obscureConfirmPassword = !_obscureConfirmPassword;
+                                    _obscureConfirmPassword =
+                                        !_obscureConfirmPassword;
                                   });
                                 },
                               ),
@@ -468,7 +512,9 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: Colors.black,
                                     foregroundColor: Colors.white,
-                                    padding: const EdgeInsets.symmetric(vertical: 14),
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 14,
+                                    ),
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(8),
                                     ),
@@ -508,7 +554,8 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                                     onTap: () => Navigator.pushReplacement(
                                       context,
                                       MaterialPageRoute(
-                                        builder: (context) => const LoginScreen(),
+                                        builder: (context) =>
+                                            const LoginScreen(),
                                       ),
                                     ),
                                     child: const Text(
@@ -565,10 +612,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: Colors.grey[300]!,
-          width: 1,
-        ),
+        border: Border.all(color: Colors.grey[300]!, width: 1),
       ),
       child: Row(
         children: [

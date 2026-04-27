@@ -12,6 +12,10 @@ final planRepositoryProvider = Provider<PlanRepository>((ref) {
 class PlanRepository {
   final supabase = Supabase.instance.client;
 
+  String? getCurrentUserId() {
+    return supabase.auth.currentUser?.id;
+  }
+
   Future<List<PlanModel>> getPlans() async {
     try {
       final response = await supabase
@@ -60,10 +64,9 @@ class PlanRepository {
           .single();
 
       final isPremium = response['is_premium_user'] ?? false;
-      final planId = response['current_plan_id'];
 
       // print(
-        // '📊 Premium check - is_premium_user: $isPremium, current_plan_id: $planId',
+      // '📊 Premium check - is_premium_user: $isPremium, current_plan_id: $planId',
       // );
 
       return isPremium;
@@ -212,7 +215,7 @@ class PlanRepository {
           .eq('user_id', user.id);
 
       // print(
-        // '✅ User ${user.id} upgraded to ${isPremium ? 'PREMIUM' : 'FREE'} plan',
+      // '✅ User ${user.id} upgraded to ${isPremium ? 'PREMIUM' : 'FREE'} plan',
       // );
     } catch (e) {
       // print('Error subscribing to plan: $e');
@@ -306,7 +309,7 @@ class PlanRepository {
       // Simulasi proses pembayaran
       // print('💰 Processing payment for plan $planId with $paymentMethod');
       await Future.delayed(const Duration(seconds: 2));
-      
+
       // Simulasi 95% success rate
       final random = Random().nextDouble();
       if (random < 0.95) {

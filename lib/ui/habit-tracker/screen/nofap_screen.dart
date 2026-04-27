@@ -7,6 +7,7 @@ import 'package:purewill/ui/habit-tracker/widget/clean_bottom_navigation_bar.dar
 import 'package:purewill/ui/habit-tracker/screen/habit_screen.dart';
 import 'package:purewill/ui/habit-tracker/screen/consultation_screen.dart';
 import 'package:purewill/ui/habit-tracker/screen/home_screen.dart';
+import 'package:purewill/ui/habit-tracker/view_model/nofap_view_model.dart';
 
 class NoFapScreen extends ConsumerStatefulWidget {
   const NoFapScreen({super.key});
@@ -16,40 +17,14 @@ class NoFapScreen extends ConsumerStatefulWidget {
 }
 
 class _NoFapScreenState extends ConsumerState<NoFapScreen> {
-  int _currentIndex = 2; // Set to 2 because this is the NoFap screen (center)
-
-  int _currentStreak = 0;
-  int _longestStreak = 0;
-  int _totalRelapses = 0;
-
-  String _motivationalQuote =
-      "The greatest victory is that which requires no battle. - Sun Tzu";
-  bool _isHabitStarted = false; // Track if habit is started or not
-  List<String> _benefits = [
-    "Increased energy and motivation",
-    "Better focus and concentration",
-    "Improved self-confidence",
-    "Better sleep quality",
-    "Enhanced social interactions",
-  ];
-
-  // Mock calendar data for the month
-  List<DateTime> _successDays = [
-    DateTime.now().subtract(const Duration(days: 1)),
-    DateTime.now().subtract(const Duration(days: 2)),
-    DateTime.now().subtract(const Duration(days: 3)),
-    DateTime.now().subtract(const Duration(days: 4)),
-    DateTime.now().subtract(const Duration(days: 5)),
-    DateTime.now().subtract(const Duration(days: 6)),
-    DateTime.now().subtract(const Duration(days: 7)),
-  ];
+  final int _currentIndex = 2; // Set to 2 because this is the NoFap screen.
 
   @override
   void initState() {
     super.initState();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _loadNofapHabitLogs();
+      ref.read(nofapNotifierProvider.notifier).loadCurrentSession();
     });
   }
 
@@ -83,40 +58,6 @@ class _NoFapScreenState extends ConsumerState<NoFapScreen> {
     }
   }
 
-  void _loadNofapHabitLogs() async {
-
-    final habitId = await ref
-        .read(habitNotifierProvider.notifier)
-        .getNofapHabitId();
-
-
-    final longestStreak = await ref
-        .read(habitNotifierProvider.notifier)
-        .getNofapHabitStreak();
-    final currentStreak = await ref
-        .read(habitNotifierProvider.notifier)
-        .getNofapHabitCurrentStreak();
-
-    final isHabitStarted = await ref
-        .read(habitNotifierProvider.notifier)
-        .isHabitStarted(habitId: habitId);
-    final totalRelapses = await ref
-        .read(habitNotifierProvider.notifier)
-        .getRelapseCountNofapHabit();
-
-    final successDays = await ref
-        .read(habitNotifierProvider.notifier)
-        .getSuccessDaysNofapHabit();
-
-    setState(() {
-      _currentStreak = currentStreak;
-      _totalRelapses = totalRelapses;
-      _longestStreak = longestStreak;
-      _successDays = successDays;
-      _isHabitStarted = isHabitStarted;
-    });
-  }
-
   void _resetStreak() {
     showDialog(
       context: context,
@@ -145,19 +86,9 @@ class _NoFapScreenState extends ConsumerState<NoFapScreen> {
               child: const Text('Cancel'),
             ),
             TextButton(
-              onPressed: () {
-                setState(() {
-                  _currentStreak = 0;
-                  _totalRelapses += 1;
-                  _successDays.clear();
-                });
+              onPressed: () async {
                 Navigator.of(context).pop();
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Streak reset. Stay strong and try again!'),
-                    backgroundColor: Colors.orange,
-                  ),
-                );
+                await _relapseCurrentSession('Streak reset from nofap screen');
               },
               style: TextButton.styleFrom(
                 backgroundColor: Colors.red,
@@ -172,7 +103,9 @@ class _NoFapScreenState extends ConsumerState<NoFapScreen> {
   }
 
   void _handleHabitAction() {
-    if (_isHabitStarted) {
+    final isHabitStarted = ref.read(nofapNotifierProvider).isHabitStarted;
+
+    if (isHabitStarted) {
       _stopHabit();
     } else {
       _startHabit();
@@ -180,7 +113,7 @@ class _NoFapScreenState extends ConsumerState<NoFapScreen> {
   }
 
   void _startHabit() {
-    ref.watch(habitNotifierProvider.notifier).startNofapHabit();
+    // ref.watch(habitNotifierProvider.notifier).startNofapHabit();
 
     showDialog(
       context: context,
@@ -209,20 +142,9 @@ class _NoFapScreenState extends ConsumerState<NoFapScreen> {
               child: const Text('Cancel'),
             ),
             TextButton(
-              onPressed: () {
-                setState(() {
-                  _isHabitStarted = true;
-                  _currentStreak = 0;
-                  // _startDate = DateTime.now();
-                  _successDays.clear();
-                });
+              onPressed: () async {
                 Navigator.of(context).pop();
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('NoFap journey started! You got this!'),
-                    backgroundColor: Colors.green,
-                  ),
-                );
+                await _startCurrentSession();
               },
               style: TextButton.styleFrom(
                 backgroundColor: Colors.green,
@@ -236,10 +158,8 @@ class _NoFapScreenState extends ConsumerState<NoFapScreen> {
     );
   }
 
-  
-
   void _stopHabit() {
-    ref.watch(habitNotifierProvider.notifier).stopNofapHabit();
+    // ref.watch(habitNotifierProvider.notifier).stopNofapHabit();
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -267,22 +187,10 @@ class _NoFapScreenState extends ConsumerState<NoFapScreen> {
               child: const Text('Cancel'),
             ),
             TextButton(
-              onPressed: () {
-                setState(() {
-                  _currentStreak = 0;
-                  _totalRelapses += 1;
-                  // _lastRelapseDate = DateTime.now();
-                  _successDays.clear();
-                  _isHabitStarted = false;
-                });
+              onPressed: () async {
                 Navigator.of(context).pop();
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text(
-                      'It\'s okay! Tomorrow is a fresh start. You can do this!',
-                    ),
-                    backgroundColor: Colors.orange,
-                  ),
+                await _relapseCurrentSession(
+                  'Relapse reported from nofap screen',
                 );
               },
               style: TextButton.styleFrom(
@@ -297,8 +205,77 @@ class _NoFapScreenState extends ConsumerState<NoFapScreen> {
     );
   }
 
+  Future<void> _startCurrentSession() async {
+    try {
+      await ref.read(nofapNotifierProvider.notifier).startSession();
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('NoFap journey started! You got this!'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          title: const Text('Session Belum Bisa Dimulai'),
+          content: const Text(
+            'Sesi NoFap belum bisa dimulai lagi sekarang. Silakan coba session NoFap di kemudian hari.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('OK'),
+            ),
+          ],
+        ),
+      );
+    }
+  }
+
+  Future<void> _relapseCurrentSession(String notes) async {
+    try {
+      await ref
+          .read(nofapNotifierProvider.notifier)
+          .stopCurrentSession(relapseNotes: notes);
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'It\'s okay! Tomorrow is a fresh start. You can do this!',
+          ),
+          backgroundColor: Colors.orange,
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to update NoFap session: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final nofapState = ref.watch(nofapNotifierProvider);
+    final currentStreak = nofapState.currentStreak;
+    final longestStreak = nofapState.longestStreak;
+    final totalRelapses = nofapState.totalRelapses;
+    final isHabitStarted = nofapState.isHabitStarted;
+    final successDays = nofapState.successDays;
+
     return Scaffold(
       appBar: AppBar(
         backgroundColor: const Color.fromRGBO(176, 230, 216, 1),
@@ -319,7 +296,7 @@ class _NoFapScreenState extends ConsumerState<NoFapScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh, color: Colors.red),
-            onPressed: _resetStreak,
+            onPressed: isHabitStarted ? _resetStreak : null,
             tooltip: 'Reset Streak',
           ),
         ],
@@ -349,11 +326,18 @@ class _NoFapScreenState extends ConsumerState<NoFapScreen> {
           SafeArea(
             child: RefreshIndicator(
               onRefresh: () async {
-                await Future.delayed(const Duration(seconds: 1));
+                await ref
+                    .read(nofapNotifierProvider.notifier)
+                    .loadCurrentSession();
               },
               child: ListView(
                 padding: const EdgeInsets.all(20),
                 children: [
+                  if (nofapState.status == NofapStatus.failure &&
+                      nofapState.errorMessage != null) ...[
+                    _buildErrorCard(nofapState.errorMessage!),
+                    const SizedBox(height: 16),
+                  ],
                   // Current Streak Card
                   Container(
                     padding: const EdgeInsets.all(24),
@@ -381,7 +365,7 @@ class _NoFapScreenState extends ConsumerState<NoFapScreen> {
                         ),
                         const SizedBox(height: 12),
                         Text(
-                          '$_currentStreak',
+                          '$currentStreak',
                           style: const TextStyle(
                             fontSize: 48,
                             fontWeight: FontWeight.bold,
@@ -390,10 +374,7 @@ class _NoFapScreenState extends ConsumerState<NoFapScreen> {
                         ),
                         const Text(
                           'Days Clean',
-                          style: TextStyle(
-                            fontSize: 16,
-                            color: Colors.white70,
-                          ),
+                          style: TextStyle(fontSize: 16, color: Colors.white70),
                         ),
                       ],
                     ),
@@ -407,7 +388,7 @@ class _NoFapScreenState extends ConsumerState<NoFapScreen> {
                       Expanded(
                         child: _buildStatCard(
                           'Longest Streak',
-                          '$_longestStreak days',
+                          '$longestStreak days',
                           Icons.military_tech,
                           Colors.amber,
                         ),
@@ -416,7 +397,7 @@ class _NoFapScreenState extends ConsumerState<NoFapScreen> {
                       Expanded(
                         child: _buildStatCard(
                           'Total Relapses',
-                          '$_totalRelapses',
+                          '$totalRelapses',
                           Icons.warning,
                           Colors.orange,
                         ),
@@ -449,7 +430,7 @@ class _NoFapScreenState extends ConsumerState<NoFapScreen> {
                         ),
                         const SizedBox(height: 12),
                         Text(
-                          _motivationalQuote,
+                          nofapState.motivationalQuote,
                           style: const TextStyle(
                             fontSize: 16,
                             fontStyle: FontStyle.italic,
@@ -490,7 +471,7 @@ class _NoFapScreenState extends ConsumerState<NoFapScreen> {
                           ),
                         ),
                         const SizedBox(height: 16),
-                        ...(_benefits
+                        ...(nofapState.benefits
                             .map(
                               (benefit) => Padding(
                                 padding: const EdgeInsets.only(bottom: 12),
@@ -548,7 +529,7 @@ class _NoFapScreenState extends ConsumerState<NoFapScreen> {
                           ),
                         ),
                         const SizedBox(height: 16),
-                        _buildCalendarGrid(),
+                        _buildCalendarGrid(successDays),
                       ],
                     ),
                   ),
@@ -588,10 +569,7 @@ class _NoFapScreenState extends ConsumerState<NoFapScreen> {
                         const SizedBox(height: 8),
                         const Text(
                           'Take deep breaths, go for a walk, or call a friend.',
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Colors.black87,
-                          ),
+                          style: TextStyle(fontSize: 14, color: Colors.black87),
                           textAlign: TextAlign.center,
                         ),
                         const SizedBox(height: 16),
@@ -640,15 +618,29 @@ class _NoFapScreenState extends ConsumerState<NoFapScreen> {
 
       // Floating Action Button
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: _handleHabitAction,
-        backgroundColor: _isHabitStarted
+        onPressed: nofapState.status == NofapStatus.loading
+            ? null
+            : _handleHabitAction,
+        backgroundColor: isHabitStarted
             ? Colors.red.shade600
             : Colors.green.shade600,
         foregroundColor: Colors.white,
-        icon: Icon(_isHabitStarted ? Icons.stop : Icons.play_arrow),
-        label: Text(_isHabitStarted ? 'Relapse' : 'Start'),
+        icon: Icon(isHabitStarted ? Icons.stop : Icons.play_arrow),
+        label: Text(isHabitStarted ? 'Relapse' : 'Start'),
         heroTag: "nofap_action_fab",
       ),
+    );
+  }
+
+  Widget _buildErrorCard(String message) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.red.shade50,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.red.shade200),
+      ),
+      child: Text(message, style: TextStyle(color: Colors.red.shade700)),
     );
   }
 
@@ -694,7 +686,7 @@ class _NoFapScreenState extends ConsumerState<NoFapScreen> {
     );
   }
 
-  Widget _buildCalendarGrid() {
+  Widget _buildCalendarGrid(List<DateTime> successDays) {
     final now = DateTime.now();
     final lastDayOfMonth = DateTime(now.year, now.month + 1, 0);
     final daysInMonth = lastDayOfMonth.day;
@@ -735,7 +727,7 @@ class _NoFapScreenState extends ConsumerState<NoFapScreen> {
             final day = index + 1;
             final currentDate = DateTime(now.year, now.month, day);
             final isToday = day == now.day;
-            final isSuccess = _successDays.any(
+            final isSuccess = successDays.any(
               (successDay) =>
                   successDay.year == currentDate.year &&
                   successDay.month == currentDate.month &&
@@ -748,8 +740,8 @@ class _NoFapScreenState extends ConsumerState<NoFapScreen> {
                 color: isSuccess
                     ? Colors.green.shade400
                     : isToday
-                        ? Colors.blue.shade200
-                        : Colors.grey.shade200,
+                    ? Colors.blue.shade200
+                    : Colors.grey.shade200,
                 borderRadius: BorderRadius.circular(8),
                 border: isToday
                     ? Border.all(color: Colors.blue, width: 2)
@@ -764,8 +756,8 @@ class _NoFapScreenState extends ConsumerState<NoFapScreen> {
                     color: isSuccess
                         ? Colors.white
                         : isToday
-                            ? Colors.blue.shade800
-                            : Colors.black87,
+                        ? Colors.blue.shade800
+                        : Colors.black87,
                   ),
                 ),
               ),

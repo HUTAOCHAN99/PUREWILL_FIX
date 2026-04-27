@@ -4,6 +4,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:purewill/domain/model/category_model.dart';
+import 'package:purewill/domain/model/target_unit_model.dart';
 import 'package:purewill/ui/habit-tracker/habit_provider.dart';
 import 'package:purewill/domain/model/habit_model.dart';
 import 'package:purewill/ui/habit-tracker/widget/category_dropdown.dart';
@@ -45,20 +46,6 @@ class _AddHabitScreenState extends ConsumerState<AddHabitScreen> {
     {'value': 'monthly', 'label': 'Monthly'},
   ];
 
-  final List<String> _unitOptions = [
-    'glasses',
-    'cups',
-    'minutes',
-    'hours',
-    'km',
-    'steps',
-    'pages',
-    'times',
-    'sets',
-    'reps',
-    'other',
-  ];
-
   @override
   void initState() {
     super.initState();
@@ -77,7 +64,8 @@ class _AddHabitScreenState extends ConsumerState<AddHabitScreen> {
     }
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(habitNotifierProvider.notifier).loadCategories();
+      ref.read(addHabitNotifierProvider.notifier).loadCategories();
+      ref.read(addHabitNotifierProvider.notifier).loadUnits();
     });
   }
 
@@ -104,9 +92,9 @@ class _AddHabitScreenState extends ConsumerState<AddHabitScreen> {
 
   Future<void> _saveHabit() async {
     if (_formKey.currentState!.validate()) {
-      final viewModel = ref.read(habitNotifierProvider.notifier);
+      final addHabitViewModel = ref.read(addHabitNotifierProvider.notifier);
+      final addHabitState = ref.read(addHabitNotifierProvider);
 
-      // Get current user from AuthViewModel, not from Supabase
       final authState = ref.read(authNotifierProvider);
       final currentUser = authState.user;
 
@@ -120,21 +108,26 @@ class _AddHabitScreenState extends ConsumerState<AddHabitScreen> {
       }
 
       try {
-        await ref
-            .read(habitNotifierProvider.notifier)
-            .addHabit(
-              name: _nameController.text,
-              frequency: _selectedFrequency,
-              categoryId: _selectedCategoryId,
-              startDate: _startDate ?? DateTime.now(),
-              endDate: _endDateEnabled ? _endDate : null,
-              notes: _noteController.text,
-              targetValue: _targetValue,
-              reminderEnabled: _reminderEnabled,
-              reminderTime: _reminderTime,
-            );
+        final matchedUnit = addHabitState.units
+            .where((unit) => unit.name == _selectedUnit)
+            .cast<TargetUnitModel?>()
+            .firstWhere((unit) => unit != null, orElse: () => null);
 
-        await viewModel.loadUserHabits();
+        await addHabitViewModel.addHabit(
+          name: _nameController.text,
+          frequency: _selectedFrequency,
+          categoryId: _selectedCategoryId,
+          unitId: matchedUnit?.id,
+          startDate: _startDate ?? DateTime.now(),
+          endDate: _endDateEnabled ? _endDate : null,
+          notes: _noteController.text,
+          targetValue: _targetValue,
+          reminderEnabled: _reminderEnabled,
+          reminderTime: _reminderTime,
+        );
+
+        await ref.read(habitNotifierProvider.notifier).loadUserHabits();
+        await ref.read(homeNotifierProvider.notifier).initializeHome();
 
         if (mounted) {
           Navigator.of(context).pop();
@@ -163,8 +156,15 @@ class _AddHabitScreenState extends ConsumerState<AddHabitScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final habitState = ref.watch(habitNotifierProvider);
-    final List<CategoryModel> userCategories = habitState.categories;
+    final addHabitState = ref.watch(addHabitNotifierProvider);
+    final List<CategoryModel> userCategories = addHabitState.categories;
+    final List<String> loadedUnitOptions = addHabitState.units
+        .map((unit) => unit.name)
+        .toList();
+    final List<String> unitOptions = loadedUnitOptions;
+    final String selectedUnitValue = unitOptions.contains(_selectedUnit)
+        ? _selectedUnit
+        : unitOptions.first;
 
     return Scaffold(
       appBar: AppBar(
@@ -272,7 +272,7 @@ class _AddHabitScreenState extends ConsumerState<AddHabitScreen> {
                         ),
                         child: CategoryDropdown(
                           userCategories: userCategories,
-                          selectedCategoryId: _selectedCategoryId ?? 1,
+                          selectedCategoryId: _selectedCategoryId,
                           onChanged: _handleCategoryChange,
                         ),
                       ),
@@ -419,7 +419,7 @@ class _AddHabitScreenState extends ConsumerState<AddHabitScreen> {
                                 borderRadius: BorderRadius.circular(12),
                               ),
                               child: DropdownButtonFormField<String>(
-                                value: _selectedUnit,
+                                value: selectedUnitValue,
                                 decoration: InputDecoration(
                                   border: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(12),
@@ -432,7 +432,7 @@ class _AddHabitScreenState extends ConsumerState<AddHabitScreen> {
                                   filled: true,
                                   fillColor: Colors.transparent,
                                 ),
-                                items: _unitOptions
+                                items: unitOptions
                                     .map(
                                       (unit) => DropdownMenuItem(
                                         value: unit,

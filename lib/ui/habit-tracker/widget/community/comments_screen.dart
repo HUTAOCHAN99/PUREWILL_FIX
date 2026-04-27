@@ -2,9 +2,9 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:purewill/ui/auth/auth_provider.dart';
 import 'package:purewill/ui/habit-tracker/screen/user_profile_screen.dart';
 import 'package:purewill/ui/habit-tracker/widget/community/chat_bubble_comment.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:purewill/data/services/community/comment_service.dart';
 import 'package:purewill/domain/model/community_model.dart';
 
@@ -14,25 +14,28 @@ final commentServiceProvider = Provider((ref) => CommentService());
 // Provider untuk komentar post
 final postCommentsProvider = StreamProvider.autoDispose
     .family<List<CommunityComment>, String>((ref, postId) async* {
-  final commentService = ref.read(commentServiceProvider);
-  final user = Supabase.instance.client.auth.currentUser;
+      final commentService = ref.read(commentServiceProvider);
+      final authState = ref.watch(authNotifierProvider);
+      final userId = authState.user?.id;
 
-  if (user == null) {
-    yield [];
-    return;
-  }
+      if (userId == null) {
+        yield [];
+        return;
+      }
 
-  try {
-    // Get initial comments
-    final initialComments =
-        await commentService.getPostComments(postId, userId: user.id);
+      try {
+        // Get initial comments
+        final initialComments = await commentService.getPostComments(
+          postId,
+          userId: userId,
+        );
 
-    // Return as stream
-    yield initialComments;
-  } catch (e) {
-    yield [];
-  }
-});
+        // Return as stream
+        yield initialComments;
+      } catch (e) {
+        yield [];
+      }
+    });
 
 class CommentsScreen extends ConsumerStatefulWidget {
   final String postId;
@@ -82,10 +85,11 @@ class _CommentsScreenState extends ConsumerState<CommentsScreen> {
   }
 
   void _getCurrentUser() {
-    final user = Supabase.instance.client.auth.currentUser;
-    if (user != null) {
+    final authState = ref.read(authNotifierProvider);
+    final userId = authState.user?.id;
+    if (userId != null) {
       setState(() {
-        _currentUserId = user.id;
+        _currentUserId = userId;
         _isLoading = false;
       });
     } else {
@@ -302,8 +306,10 @@ class _CommentsScreenState extends ConsumerState<CommentsScreen> {
                     ),
                     filled: true,
                     fillColor: Colors.grey[100],
-                    contentPadding:
-                        const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
                   ),
                   onSubmitted: (_) => _postComment(),
                 ),
@@ -418,10 +424,7 @@ class _CommentsScreenState extends ConsumerState<CommentsScreen> {
         children: [
           const CircularProgressIndicator(),
           const SizedBox(height: 16),
-          Text(
-            'Memuat komentar...',
-            style: TextStyle(color: Colors.grey[600]),
-          ),
+          Text('Memuat komentar...', style: TextStyle(color: Colors.grey[600])),
         ],
       ),
     );
@@ -449,7 +452,8 @@ class _CommentsScreenState extends ConsumerState<CommentsScreen> {
           ),
           const SizedBox(height: 16),
           ElevatedButton(
-            onPressed: () => ref.invalidate(postCommentsProvider(widget.postId)),
+            onPressed: () =>
+                ref.invalidate(postCommentsProvider(widget.postId)),
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.blue,
               foregroundColor: Colors.white,
