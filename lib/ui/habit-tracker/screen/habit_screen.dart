@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'dart:developer';
 import 'dart:ui';
 import 'package:purewill/domain/model/habit_model.dart';
 import 'package:purewill/domain/model/habit_log_model.dart';
@@ -13,6 +12,7 @@ import 'package:purewill/ui/habit-tracker/widget/habit_screen_card.dart';
 import 'package:purewill/ui/habit-tracker/widget/clean_bottom_navigation_bar.dart';
 import 'package:purewill/ui/habit-tracker/screen/habit_detail_screen.dart';
 import 'package:purewill/ui/habit-tracker/screen/add_habit_screen.dart';
+import 'package:purewill/ui/habit-tracker/screen/category_unit_management_screen.dart';
 import 'package:purewill/ui/habit-tracker/screen/nofap_screen.dart';
 import 'package:purewill/utils/habit_icon_helper.dart';
 
@@ -24,7 +24,15 @@ class HabitScreen extends ConsumerStatefulWidget {
 
 class _HabitScreenState extends ConsumerState<HabitScreen> {
   final _currentIndex = 1;
+  final TextEditingController _habitSearchController = TextEditingController();
   Map<int, LogStatus> _todayCompletionStatus = {};
+  String _habitSearchQuery = '';
+
+  @override
+  void dispose() {
+    _habitSearchController.dispose();
+    super.dispose();
+  }
 
   @override
   void initState() {
@@ -51,19 +59,6 @@ class _HabitScreenState extends ConsumerState<HabitScreen> {
     }
   }
 
-  void _showSnackBar(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message), duration: const Duration(seconds: 2)),
-    );
-  }
-
-  void _logNotImplemented(String mechanism) {
-    log(
-      '$mechanism: belum di impelemtnasikan di habit service',
-      name: 'HABIT_SERVICE_MIGRATION',
-    );
-  }
-
   void _onNavBarTap(int index) {
     if (index == 0) {
       Navigator.of(context).pushReplacement(
@@ -88,6 +83,12 @@ class _HabitScreenState extends ConsumerState<HabitScreen> {
     }
   }
 
+  void _onHabitSearchChanged(String value) {
+    setState(() {
+      _habitSearchQuery = value.trim().toLowerCase();
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final habitsState = ref.watch(habitNotifierProvider);
@@ -107,6 +108,17 @@ class _HabitScreenState extends ConsumerState<HabitScreen> {
           ),
         ),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.tune, color: Colors.black87),
+            tooltip: 'Manage Category & Unit',
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => const CategoryUnitManagementScreen(),
+                ),
+              );
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.add, color: Colors.black87),
             onPressed: _addHabit,
@@ -227,6 +239,32 @@ class _HabitScreenState extends ConsumerState<HabitScreen> {
                           ),
                         ),
                         const SizedBox(height: 12),
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 12),
+                          child: TextField(
+                            controller: _habitSearchController,
+                            onChanged: _onHabitSearchChanged,
+                            decoration: InputDecoration(
+                              hintText: 'Search habit by name',
+                              prefixIcon: const Icon(Icons.search),
+                              suffixIcon: _habitSearchQuery.isNotEmpty
+                                  ? IconButton(
+                                      icon: const Icon(Icons.clear),
+                                      onPressed: () {
+                                        _habitSearchController.clear();
+                                        _onHabitSearchChanged('');
+                                      },
+                                    )
+                                  : null,
+                              filled: true,
+                              fillColor: Colors.white,
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide.none,
+                              ),
+                            ),
+                          ),
+                        ),
                         _buildHabitsList(userHabits),
                       ],
                     ),
@@ -428,44 +466,6 @@ class _HabitScreenState extends ConsumerState<HabitScreen> {
     );
   }
 
-  void _handleCheckboxTap(HabitModel habit) async {
-    try {
-      final currentStatus =
-          _todayCompletionStatus[habit.id] == LogStatus.success;
-      final newStatus = !currentStatus;
-
-      setState(() {
-        _todayCompletionStatus[habit.id] = newStatus
-            ? LogStatus.success
-            : LogStatus.neutral;
-      });
-
-      await ref
-          .read(habitNotifierProvider.notifier)
-          .toggleHabitCompletion(habit);
-
-      if (newStatus) {
-        _logNotImplemented('badge check after habit completion');
-        _showSnackBar('Habit completed!');
-      }
-    } catch (e) {
-      final previousStatus =
-          _todayCompletionStatus[habit.id] == LogStatus.success;
-      setState(() {
-        _todayCompletionStatus[habit.id] = previousStatus
-            ? LogStatus.neutral
-            : LogStatus.success;
-      });
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Failed to update habit: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
-    }
-  }
-
   Widget _buildHabitsList(List<HabitModel> userHabits) {
     final habitsState = ref.watch(habitNotifierProvider);
 
@@ -488,9 +488,21 @@ class _HabitScreenState extends ConsumerState<HabitScreen> {
           return _buildCustomEmptyState();
         }
         final userCustomHabits = userHabits.where((h) => !h.isDefault).toList();
+        final filteredHabits = _habitSearchQuery.isEmpty
+            ? userCustomHabits
+            : userCustomHabits
+                  .where(
+                    (habit) =>
+                        habit.name.toLowerCase().contains(_habitSearchQuery),
+                  )
+                  .toList();
+
+        if (filteredHabits.isEmpty) {
+          return _buildHabitSearchEmptyState();
+        }
 
         return Column(
-          children: userCustomHabits.map((habit) {
+          children: filteredHabits.map((habit) {
             // Tentukan kategori berdasarkan categoryId
             final categoryName = _determineCategory(habit);
 
@@ -514,6 +526,39 @@ class _HabitScreenState extends ConsumerState<HabitScreen> {
       case HabitStatus.initial:
         return const SizedBox.shrink();
     }
+  }
+
+  Widget _buildHabitSearchEmptyState() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.9),
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.08),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Icon(Icons.search_off, size: 56, color: Colors.grey.shade400),
+          const SizedBox(height: 12),
+          const Text(
+            'No habits found',
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'Try a different keyword.',
+            style: TextStyle(color: Colors.grey.shade600),
+          ),
+        ],
+      ),
+    );
   }
 
   // Method untuk menentukan kategori habit

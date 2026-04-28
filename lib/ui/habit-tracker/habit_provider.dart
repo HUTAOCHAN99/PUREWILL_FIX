@@ -5,6 +5,7 @@ import 'package:purewill/data/services/habits/habit_api_service.dart';
 import 'package:purewill/data/services/me/me_api_service.dart';
 import 'package:purewill/data/services/motivation_service.dart';
 import 'package:purewill/data/services/nofap/nofap_session_api_service.dart';
+import 'package:purewill/data/services/units/unit_api_service.dart';
 import 'package:purewill/ui/habit-tracker/view_model/add_habit_view_model.dart';
 import 'package:purewill/ui/habit-tracker/view_model/habit_view_model.dart';
 import 'package:purewill/ui/habit-tracker/view_model/home_view_model.dart';
@@ -17,6 +18,10 @@ final habitApiServiceProvider = Provider<HabitApiService>((ref) {
 
 final categoryApiServiceProvider = Provider<CategoryApiService>((ref) {
   return CategoryApiService();
+});
+
+final unitApiServiceProvider = Provider<UnitApiService>((ref) {
+  return UnitApiService();
 });
 
 final meApiServiceProvider = Provider<MeApiService>((ref) {
@@ -56,6 +61,7 @@ final habitTokenSyncProvider = Provider<void>((ref) {
   final authState = ref.watch(authNotifierProvider);
   final habitService = ref.watch(habitApiServiceProvider);
   final categoryService = ref.watch(categoryApiServiceProvider);
+  final unitService = ref.watch(unitApiServiceProvider);
   final meService = ref.watch(meApiServiceProvider);
   final nofapService = ref.watch(nofapSessionApiServiceProvider);
   final authRepo = ref.watch(authRepositoryProvider);
@@ -63,6 +69,7 @@ final habitTokenSyncProvider = Provider<void>((ref) {
   if (authState.user != null && authRepo.accessToken != null) {
     habitService.setAccessToken(authRepo.accessToken!);
     categoryService.setAccessToken(authRepo.accessToken!);
+    unitService.setAccessToken(authRepo.accessToken!);
     meService.setAccessToken(authRepo.accessToken!);
     nofapService.setAccessToken(authRepo.accessToken!);
   }
@@ -95,9 +102,11 @@ final habitNotifierProvider = StateNotifierProvider<HabitsViewModel, HabitsState
         final habitService = ref.read(habitApiServiceProvider);
         final meService = ref.read(meApiServiceProvider);
         final categoryService = ref.read(categoryApiServiceProvider);
+        final unitService = ref.read(unitApiServiceProvider);
         if (authRepo.accessToken != null) {
           habitService.setAccessToken(authRepo.accessToken!);
           categoryService.setAccessToken(authRepo.accessToken!);
+          unitService.setAccessToken(authRepo.accessToken!);
           meService.setAccessToken(authRepo.accessToken!);
         }
       }

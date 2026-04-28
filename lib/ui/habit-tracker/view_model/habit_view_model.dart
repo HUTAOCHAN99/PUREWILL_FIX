@@ -318,9 +318,20 @@ class HabitsViewModel extends StateNotifier<HabitsState> {
     state = state.copyWith(status: HabitStatus.loading, errorMessage: null);
     try {
       final allHabits = await _fetchUserHabits();
-      final habits = allHabits
-          .where((habit) => habit.isActive == true)
-          .toList();
+      final now = DateTime.now();
+      final todayOnly = DateTime(now.year, now.month, now.day);
+
+      final habits = allHabits.where((habit) {
+        // Only include explicitly active habits
+        if (habit.isActive != true) return false;
+
+        // Normalize start date to date-only for comparison
+        final s = habit.startDate;
+        final startOnly = DateTime(s.year, s.month, s.day);
+
+        // Include habit when startDate is today or before
+        return startOnly.compareTo(todayOnly) <= 0;
+      }).toList();
 
       print(habits);
 
