@@ -404,6 +404,7 @@ class _HabitScreenState extends ConsumerState<HabitScreen> {
   }
 
   int _getCompletedTodayCount() {
+    print(_todayCompletionStatus.values);
     return _todayCompletionStatus.values
         .where((status) => status == LogStatus.success)
         .length;

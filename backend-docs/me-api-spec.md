@@ -253,14 +253,44 @@ Mengambil data nofap session milik user yang sedang login.
 
 ```json
 {
-  "message": "successfully get me nofap session",
-  "data": {
-    "id": 1,
-    "startDate": "2026-04-20T00:00:00.000Z",
-    "endDate": null,
-    "relapseNotes": null,
-    "userId": 1
-  }
+  "message": "successfully get me nofap sessions",
+  "data": [
+    {
+      "id": 5,
+      "startDate": "2026-04-20T00:00:00.000Z",
+      "endDate": null,
+      "relapseNotes": null,
+      "userId": 1
+    },
+    {
+      "id": 4,
+      "startDate": "2026-04-10T08:00:00.000Z",
+      "endDate": "2026-04-19T22:00:00.000Z",
+      "relapseNotes": "Stres karena pekerjaan menumpuk.",
+      "userId": 1
+    },
+    {
+      "id": 3,
+      "startDate": "2026-03-25T10:00:00.000Z",
+      "endDate": "2026-04-09T23:30:00.000Z",
+      "relapseNotes": "Terlalu lama scrolling media sosial di malam hari.",
+      "userId": 1
+    },
+    {
+      "id": 2,
+      "startDate": "2026-03-15T09:00:00.000Z",
+      "endDate": "2026-03-24T15:00:00.000Z",
+      "relapseNotes": "Lupa mematikan filter konten dewasa.",
+      "userId": 1
+    },
+    {
+      "id": 1,
+      "startDate": "2026-03-01T12:00:00.000Z",
+      "endDate": "2026-03-14T20:00:00.000Z",
+      "relapseNotes": "Sesi pertama, masih penyesuaian.",
+      "userId": 1
+    }
+  ]
 }
 ```
 
@@ -271,7 +301,7 @@ Mengambil data nofap session milik user yang sedang login.
 
 ### Notes
 
-- Jika user belum memiliki nofap session, nilai `data` akan `null`.
+- Jika user belum memiliki nofap session, `currentSession` bernilai `null`, `sessions` bernilai empty array, dan summary bernilai `0` / `false`.
 
 ---
 

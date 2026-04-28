@@ -32,11 +32,6 @@ class _EditHabitScreenState extends ConsumerState<EditHabitScreen> {
   bool _reminderEnabled = false;
   TimeOfDay? _reminderTime;
 
-  final List<Map<String, dynamic>> _frequencyOptions = [
-    {'value': 'daily', 'label': 'Daily'},
-    {'value': 'weekly', 'label': 'Weekly'},
-  ];
-
   final List<String> _unitOptions = [
     'glasses',
     'pages',
@@ -336,58 +331,6 @@ class _EditHabitScreenState extends ConsumerState<EditHabitScreen> {
                           onChanged: _handleCategoryChange,
                         ),
                       ),
-                    ),
-                    const SizedBox(height: 24),
-
-                    const Text(
-                      'Frequency',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.black87,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    Column(
-                      children: _frequencyOptions.map((frequency) {
-                        return Padding(
-                          padding: const EdgeInsets.only(bottom: 8),
-                          child: Container(
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(12),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withOpacity(0.1),
-                                  blurRadius: 10,
-                                  offset: const Offset(0, 4),
-                                ),
-                              ],
-                            ),
-                            child: Container(
-                              decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.95),
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: RadioListTile<String>(
-                                title: Text(
-                                  frequency['label'],
-                                  style: const TextStyle(fontSize: 14),
-                                ),
-                                value: frequency['value'],
-                                groupValue: _selectedFrequency,
-                                onChanged: (value) {
-                                  setState(() {
-                                    _selectedFrequency = value!;
-                                  });
-                                },
-                                contentPadding: const EdgeInsets.symmetric(
-                                  horizontal: 8,
-                                ),
-                              ),
-                            ),
-                          ),
-                        );
-                      }).toList(),
                     ),
                     const SizedBox(height: 24),
 

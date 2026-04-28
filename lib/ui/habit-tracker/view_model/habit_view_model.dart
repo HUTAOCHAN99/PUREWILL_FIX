@@ -9,7 +9,6 @@ import 'package:purewill/domain/model/habit_model.dart';
 import 'package:purewill/domain/model/profile_model.dart';
 import 'package:purewill/domain/model/reminder_setting_model.dart';
 import 'package:purewill/domain/model/target_unit_model.dart';
-// import '../../../data/repository/daily_log_repository.dart';
 
 enum HabitStatus { initial, loading, success, failure }
 
@@ -72,19 +71,9 @@ class HabitsState {
 class HabitsViewModel extends StateNotifier<HabitsState> {
   final HabitApiService _habitApiService;
   final MeApiService _meApiService;
-  // final ReminderSettingRepository _reminderSettingRepository;
-  // final HabitSessionRepository _habitSessionRepository;
-  // final TargetUnitRepository _targetUnitRepository;
-  // final UserRepository _userRepository;
 
-  HabitsViewModel(
-    this._habitApiService,
-    this._meApiService,
-    // this._reminderSettingRepository,
-    // this._habitSessionRepository,
-    // this._targetUnitRepository,
-    // this._userRepository,
-  ) : super(HabitsState());
+  HabitsViewModel(this._habitApiService, this._meApiService)
+    : super(HabitsState());
 
   void clearState() {
     state = HabitsState(
@@ -162,22 +151,10 @@ class HabitsViewModel extends StateNotifier<HabitsState> {
   }
 
   ProfileModel _mapMeResponseToProfile(Map<String, dynamic> data) {
-    // final id = data['id']?.toString() ?? '';
     return ProfileModel(
-      // id: id,
-      // userId: id,
       username: data['username']?.toString() ?? '',
       email: data['email']?.toString() ?? '',
       fullName: data['profile']["fullname"]?.toString() ?? '',
-
-      // avatarUrl: data['avatarUrl']?.toString(),
-      // level: (data['level'] as int?) ?? 1,
-      // currentXP: (data['currentXp'] as int?) ?? 0,
-      // xpToNextLevel: (data['xpToNextLevel'] as int?) ?? 100,
-      // isPremiumUser: data['isPremium'] == true,
-      // currentPlanId: data['currentPlanId'] as int?,
-      // currentPlanName: data['currentPlanName']?.toString(),
-      // subscriptionStatus: data['subscriptionStatus']?.toString(),
     );
   }
 
@@ -186,8 +163,6 @@ class HabitsViewModel extends StateNotifier<HabitsState> {
     try {
       final response = await _meApiService.getMe();
       final data = response['data'] as Map<String, dynamic>? ?? {};
-      print("ini adalah data");
-      print(data);
       final currentUser = _mapMeResponseToProfile(data);
       // print(currentUser);
       state = state.copyWith(
@@ -444,15 +419,7 @@ class HabitsViewModel extends StateNotifier<HabitsState> {
 
   Future<Map<int, LogStatus>> getTodayCompletionStatus() async {
     try {
-      // final todayLogs = await _dailyLogRepository.fetchLogsByDate(
-      //   DateTime.now(),
-      // );
       final completionStatus = <int, LogStatus>{};
-
-      // for (final log in todayLogs) {
-      //   completionStatus[log.habitId] = log.status;
-      // }
-
       return completionStatus;
     } catch (e) {
       return {};
@@ -552,95 +519,6 @@ class HabitsViewModel extends StateNotifier<HabitsState> {
       rethrow;
     }
   }
-
-  // Future<void> loadLogsForCalendar({
-  //   required int habitId,
-  //   required DateTime startDate,
-  //   required DateTime endDate,
-  // }) async {
-  //   try {
-  //     final response = await _habitApiService.getLogsByDateRange(
-  //       habitId: habitId,
-  //       startDate: startDate,
-  //       endDate: endDate,
-  //     );
-
-  //     final data = response['data'] as List? ?? [];
-  //     final habitLogForThisMonth = data
-  //         .map((json) => HabitLogModel.fromJson(json))
-  //         .toList();
-
-  //     DateTime now = DateTime.now();
-  //     DateTime monthStartDate = DateTime(now.year, now.month, 1);
-  //     DateTime monthEndDate = DateTime(now.year, now.month + 1, 0);
-
-  //     final today = DateTime(now.year, now.month, now.day);
-  //     final startOfWeek = today.subtract(
-  //       Duration(days: today.weekday - 1),
-  //     );
-
-  //     final endOfWeek = startOfWeek.add(const Duration(days: 6)); // Minggu
-
-  //     final habitLogForThisWeek = await ref
-  //         .read(habitNotifierProvider.notifier)
-  //         .loadLogsForCalendar(
-  //           startDate: startOfWeek,
-  //           endDate: endOfWeek,
-  //           habitId: habitId,
-  //         );
-
-  //     final streak = await ref
-  //         .read(habitNotifierProvider.notifier)
-  //         .fetchHabitLogStreak(habitId: habitId);
-
-  //     // Safe handling untuk empty list tanpa null check yang unnecessary
-  //     final List<DateTime> localCompletionDates = habitLogForThisMonth
-  //         .map((dailyLog) => dailyLog.logDate)
-  //         .toList();
-
-  //     final completeDays = localCompletionDates.length;
-
-  //     // Hitung weekly performance dari data log minggu ini
-  //     final weeklyPerformanceData = _calculateWeeklyPerformance(
-  //       habitLogForThisWeek,
-  //     );
-
-  //     state = state.copyWith(status: HabitStatus.success, habitLogs: habitLogs);
-  //   } catch (e) {
-  //     state = state.copyWith(
-  //       status: HabitStatus.failure,
-  //       errorMessage: 'Failed to delete habit.',
-  //     );
-  //     rethrow;
-  //   }
-  // }
-
-  // Future<int> fetchHabitLogStreak({required int habitId}) async {
-  //   try {
-  //     final streak = await _dailyLogRepository.fetchHabitLogStreak(habitId);
-  //     return streak;
-  //   } catch (e) {
-  //     state = state.copyWith(
-  //       status: HabitStatus.failure,
-  //       errorMessage: 'Failed to fetch habit streak.',
-  //     );
-  //     rethrow;
-  //   }
-  // }
-
-  // Future<List<HabitLogModel>> fetchLogsByHabit({required int habitId}) async {
-  //   try {
-  //     // final logs = await _dailyLogRepository.fetchLogsByHabit(habitId);
-
-  //     return logs;
-  //   } catch (e) {
-  //     state = state.copyWith(
-  //       status: HabitStatus.failure,
-  //       errorMessage: 'Failed to fetch log habit.',
-  //     );
-  //     rethrow;
-  //   }
-  // }
 
   Future<void> updateHabits({
     required int habitId,
@@ -770,17 +648,6 @@ class HabitsViewModel extends StateNotifier<HabitsState> {
       rethrow;
     }
   }
-
-  // Future<ReminderSettingModel> loadCurrentReminderSetting(int habitId) async {
-  //   try {
-  //     final reminderSetting = await _reminderSettingRepository
-  //         .fetchReminderSettingsByHabit(habitId);
-
-  //     return reminderSetting;
-  //   } catch (e) {
-  //     rethrow;
-  //   }
-  // }
 
   Future<void> deleteReminderSetting(int habitId) async {
     try {

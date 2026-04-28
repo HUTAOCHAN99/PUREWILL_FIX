@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/legacy.dart';
 import 'package:purewill/data/services/categories/category_api_service.dart';
 import 'package:purewill/data/services/habits/habit_api_service.dart';
 import 'package:purewill/data/services/me/me_api_service.dart';
+import 'package:purewill/data/services/motivation_service.dart';
 import 'package:purewill/data/services/nofap/nofap_session_api_service.dart';
 import 'package:purewill/ui/habit-tracker/view_model/add_habit_view_model.dart';
 import 'package:purewill/ui/habit-tracker/view_model/habit_view_model.dart';
@@ -24,6 +25,10 @@ final meApiServiceProvider = Provider<MeApiService>((ref) {
 
 final nofapSessionApiServiceProvider = Provider<NofapSessionApiService>((ref) {
   return NofapSessionApiService();
+});
+
+final motivationServiceProvider = Provider<MotivationService>((ref) {
+  return MotivationService();
 });
 
 // ==================== DEBUG REPOSITORIES (BELUM ADA DI BACKEND) ====================
@@ -159,6 +164,7 @@ final nofapNotifierProvider = StateNotifierProvider<NofapViewModel, NofapState>(
 
     final nofapService = ref.watch(nofapSessionApiServiceProvider);
     final meService = ref.watch(meApiServiceProvider);
+    final motivationService = ref.watch(motivationServiceProvider);
 
     ref.listen(authNotifierProvider, (previous, next) {
       if (previous?.user?.id != next.user?.id) {
@@ -173,6 +179,6 @@ final nofapNotifierProvider = StateNotifierProvider<NofapViewModel, NofapState>(
       }
     });
 
-    return NofapViewModel(nofapService, meService);
+    return NofapViewModel(nofapService, meService, motivationService);
   },
 );

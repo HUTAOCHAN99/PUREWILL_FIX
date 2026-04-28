@@ -36,22 +36,18 @@ class _NoFapScreenState extends ConsumerState<NoFapScreen> {
         MaterialPageRoute(builder: (context) => const HomeScreen()),
       );
     } else if (index == 1) {
-      // Navigate to Habit Screen
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(builder: (context) => const HabitScreen()),
       );
     } else if (index == 2) {
-      // Already on NoFap Screen, do nothing
       return;
     } else if (index == 3) {
-      // Navigate to Community Screen
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(
           builder: (context) => const CommunitySelectionScreen(),
         ),
       );
     } else if (index == 4) {
-      // Navigate to Consultation Screen
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(builder: (context) => const ConsultationScreen()),
       );
@@ -429,16 +425,36 @@ class _NoFapScreenState extends ConsumerState<NoFapScreen> {
                           color: Colors.purple,
                         ),
                         const SizedBox(height: 12),
-                        Text(
-                          nofapState.motivationalQuote,
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontStyle: FontStyle.italic,
-                            color: Colors.black87,
-                            height: 1.5,
+                        if (nofapState.motivation != null) ...[
+                          Text(
+                            '"${nofapState.motivation!.quote}"',
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontStyle: FontStyle.italic,
+                              color: Colors.black87,
+                              height: 1.5,
+                            ),
+                            textAlign: TextAlign.center,
                           ),
-                          textAlign: TextAlign.center,
-                        ),
+                          const SizedBox(height: 12),
+                          Text(
+                            '— ${nofapState.motivation!.author}',
+                            style: const TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                              color: Colors.purple,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ] else
+                          const Text(
+                            'Loading motivation...',
+                            style: TextStyle(
+                              fontSize: 16,
+                              color: Colors.black54,
+                              fontStyle: FontStyle.italic,
+                            ),
+                          ),
                       ],
                     ),
                   ),
