@@ -151,6 +151,11 @@ class HabitApiService {
         'frequencyType': habit.frequency.toUpperCase(),
         if (habit.targetValue != null) 'targetValue': habit.targetValue,
         'reminderEnabled': habit.reminderEnabled,
+        'isLocationLocked': habit.isLocationLocked,
+        if (habit.locationName != null) 'locationName': habit.locationName,
+        if (habit.targetLat != null) 'targetLat': habit.targetLat,
+        if (habit.targetLong != null) 'targetLong': habit.targetLong,
+        if (habit.radius != null) 'radius': habit.radius,
       };
 
       if (kDebugMode) print('📡 POST $baseUrl/habits');
@@ -251,13 +256,23 @@ class HabitApiService {
   }
 
   /// PATCH /api/habits/:id/logs - Toggle daily habit log
-  Future<Map<String, dynamic>> toggleHabitLog(int habitId) async {
+  Future<Map<String, dynamic>> toggleHabitLog(
+    int habitId, {
+    double? currentLat,
+    double? currentLong,
+  }) async {
     try {
       if (kDebugMode) print('📡 PATCH $baseUrl/habits/$habitId/logs');
+
+      final body = {
+        if (currentLat != null) 'currentLat': currentLat,
+        if (currentLong != null) 'currentLong': currentLong,
+      };
 
       final response = await _client.patch(
         Uri.parse('$baseUrl/habits/$habitId/logs'),
         headers: _headers,
+        body: jsonEncode(body),
       );
       if (kDebugMode) print('📡 Response status: ${response.statusCode}');
 

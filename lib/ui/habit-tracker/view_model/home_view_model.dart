@@ -5,6 +5,8 @@ import 'package:purewill/domain/model/habit_log_model.dart';
 import 'package:purewill/domain/model/habit_model.dart';
 import 'package:purewill/domain/model/profile_model.dart';
 import 'package:purewill/ui/habit-tracker/view_model/habit_view_model.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'package:geolocator/geolocator.dart';
 
 class HomeState {
   final HabitStatus status;
@@ -165,7 +167,22 @@ class HomeViewModel extends StateNotifier<HomeState> {
     state = state.copyWith(todayCompletionStatus: optimisticMap);
 
     try {
-      await _habitApiService.toggleHabitLog(habit.id);
+      double? lat;
+      double? long;
+      if (habit.isLocationLocked) {
+        final status = await Permission.location.request();
+        if (!status.isGranted) {
+          throw Exception('Location permission denied');
+        }
+        final pos = await Geolocator.getCurrentPosition();
+        lat = pos.latitude;
+        long = pos.longitude;
+      }
+      await _habitApiService.toggleHabitLog(
+        habit.id,
+        currentLat: lat,
+        currentLong: long,
+      );
     } catch (e) {
       final rollbackMap = Map<int, LogStatus>.from(state.todayCompletionStatus);
       rollbackMap[habit.id] = previousStatus;

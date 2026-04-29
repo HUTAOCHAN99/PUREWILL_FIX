@@ -45,6 +45,11 @@ class HabitModel {
   final TodayLogStatus todayLogStatus;
   final bool reminderEnabled;
   final TimeOfDay? reminderTime;
+  final bool isLocationLocked;
+  final String? locationName;
+  final double? targetLat;
+  final double? targetLong;
+  final int? radius;
   final bool isDefault;
   final DateTime? createdAt;
   final DateTime? updatedAt;
@@ -66,6 +71,11 @@ class HabitModel {
     this.todayLogStatus = TodayLogStatus.netural,
     this.reminderEnabled = false,
     this.reminderTime,
+    this.isLocationLocked = false,
+    this.locationName,
+    this.targetLat,
+    this.targetLong,
+    this.radius,
     this.isDefault = false,
     this.createdAt,
     this.updatedAt,
@@ -199,6 +209,23 @@ class HabitModel {
       reminderTime: parseReminderTime(
         json['reminderTime'] ?? json['reminder_time'],
       ),
+      isLocationLocked:
+          (json['isLocationLocked'] ?? json['is_location_locked']) == true,
+      locationName:
+          json['locationName']?.toString() ?? json['location_name']?.toString(),
+      targetLat: json['targetLat'] is num
+          ? (json['targetLat'] as num).toDouble()
+          : (json['target_lat'] is num
+                ? (json['target_lat'] as num).toDouble()
+                : null),
+      targetLong: json['targetLong'] is num
+          ? (json['targetLong'] as num).toDouble()
+          : (json['target_long'] is num
+                ? (json['target_long'] as num).toDouble()
+                : null),
+      radius: _parseNullableInt(
+        json['radius'] ?? json['radious'] ?? json['radius'],
+      ),
       isDefault: (json['isDefault'] ?? json['is_default']) == true,
       createdAt: _parseNullableDate(json['createdAt'] ?? json['created_at']),
       updatedAt: _parseNullableDate(json['updatedAt'] ?? json['updated_at']),
@@ -240,6 +267,21 @@ class HabitModel {
     }
     if (unitId != null) {
       json['unitId'] = unitId!;
+    }
+    if (isLocationLocked != null) {
+      json['isLocationLocked'] = isLocationLocked;
+    }
+    if (locationName != null) {
+      json['locationName'] = locationName!;
+    }
+    if (targetLat != null) {
+      json['targetLat'] = targetLat!;
+    }
+    if (targetLong != null) {
+      json['targetLong'] = targetLong!;
+    }
+    if (radius != null) {
+      json['radius'] = radius!;
     }
     if (createdAt != null) {
       json['createdAt'] = createdAt!.toIso8601String();

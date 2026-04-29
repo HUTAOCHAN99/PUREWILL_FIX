@@ -8,6 +8,8 @@ import 'package:purewill/domain/model/habit_log_model.dart';
 import 'package:purewill/domain/model/habit_model.dart';
 import 'package:purewill/domain/model/profile_model.dart';
 import 'package:purewill/domain/model/reminder_setting_model.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:purewill/domain/model/target_unit_model.dart';
 
 enum HabitStatus { initial, loading, success, failure }
@@ -71,6 +73,8 @@ class HabitsState {
 class HabitsViewModel extends StateNotifier<HabitsState> {
   final HabitApiService _habitApiService;
   final MeApiService _meApiService;
+  // geolocation
+  // imported lazily where needed
 
   HabitsViewModel(this._habitApiService, this._meApiService)
     : super(HabitsState());
@@ -389,11 +393,29 @@ class HabitsViewModel extends StateNotifier<HabitsState> {
 
   Future<void> toggleHabitCompletion(HabitModel habit) async {
     try {
-      // debugPrint("habit id to toggle: ${habit.id}");
-      // final today = DateTime.now();
       state = state.copyWith(status: HabitStatus.loading);
 
-      await _habitApiService.toggleHabitLog(habit.id);
+      double? lat;
+      double? long;
+
+      if (habit.isLocationLocked) {
+        final permission = await Permission.location.request();
+        if (!permission.isGranted) {
+          throw Exception('Location permission denied');
+        }
+
+        final position = await Geolocator.getCurrentPosition(
+          desiredAccuracy: LocationAccuracy.best,
+        );
+        lat = position.latitude;
+        long = position.longitude;
+      }
+
+      await _habitApiService.toggleHabitLog(
+        habit.id,
+        currentLat: lat,
+        currentLong: long,
+      );
 
       state = state.copyWith(status: HabitStatus.success);
     } catch (e) {
@@ -401,6 +423,7 @@ class HabitsViewModel extends StateNotifier<HabitsState> {
         status: HabitStatus.failure,
         errorMessage: 'Failed to update habit status. $e',
       );
+      rethrow;
     }
   }
 

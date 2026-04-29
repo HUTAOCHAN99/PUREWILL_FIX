@@ -2,7 +2,7 @@ name: purewill
 description: "A new Flutter project."
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
-publish_to: 'none' # Remove this line if you wish to publish to pub.dev
+publish_to: "none" # Remove this line if you wish to publish to pub.dev
 
 # The following defines the version and build number for your application.
 # A version number is three numbers separated by dots, like 1.2.43
@@ -52,16 +52,17 @@ dependencies:
   permission_handler: ^12.0.1
   gallery_saver_plus: ^3.2.8
   share_plus: ^12.0.1
+  geolocator: ^9.0.2
+  flutter_map: ^8.3.0
+  latlong2: ^0.9.0
   photo_view: ^0.15.0
   local_auth: ^2.1.6
   flutter_secure_storage: ^9.0.0
   intl: ^0.18.0
-  
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-    
 
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is
@@ -70,13 +71,11 @@ dev_dependencies:
   # rules and activating additional ones.
   flutter_lints: ^5.0.0
 
-
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
 
 # The following section is specific to Flutter packages.
 flutter:
-
   # The following line ensures that the Material Icons font is
   # included with your application, so that you can use the icons in
   # the material Icons class.
@@ -84,10 +83,10 @@ flutter:
 
   # To add assets to your application, add an assets section, like this:
   assets:
-    - assets/images/auth/bg.png 
+    - assets/images/auth/bg.png
     - assets/images/auth/bg2.png
-    - assets/images/auth/icon.png 
-    - assets/images/auth/icon_walk.png 
+    - assets/images/auth/icon.png
+    - assets/images/auth/icon_walk.png
     - assets/images/auth/sun_icon.png
     - assets/images/auth/mail.png
     - assets/images/auth/show.png
@@ -97,7 +96,6 @@ flutter:
     - .env
     - assets/images/home/habit_detail/fire-flame.gif
     - assets/images/consultation/doctor.jpg
-    
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

@@ -1,4 +1,3 @@
-// lib/ui/habit-tracker/screen/chatbot_screen.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:purewill/ui/habit-tracker/providers/chat_providers.dart';

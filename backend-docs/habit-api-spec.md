@@ -11,7 +11,7 @@
 - `GET /api/habits/:id/logs` mendapatkan daftar log harian untuk habit tertentu.
 - `GET /api/habits/:id/reminder-settings` mendapatkan reminder settings untuk habit tertentu.
 - `POST /api/habits` membuat habit baru untuk user.
-- `PATCH /api/habits/:id/logs` toggle status log harian habit.
+- `PATCH /api/habits/:id/logs` toggle status log harian habit dengan validasi lokasi.
 - `PATCH /api/habits` mengupdate habit yang sudah ada.
 - `DELETE /api/habits` menghapus habit.
 
@@ -41,26 +41,50 @@
   "data": {
     "id": 1,
     "name": "Jogging",
-    "notes": "Morning jog in the park",
     "status": "NEUTRAL",
     "isActive": true,
     "startDate": "2026-04-20T00:00:00.000Z",
     "endDate": null,
+    "notes": "Morning jog in the park",
     "categoryId": 1,
     "frequencyType": "DAILY",
-    "targetValue": 5,
+    "targetValue": 10,
+    "locationName": "Kantor",
+    "isLocationLocked": true,
+    "targetLat": -6.200000,
+    "targetLong": 106.816666,
+    "radius": 100,
     "reminderEnabled": true,
-    "unitId": 1,
     "userId": 1,
     "createdAt": "2026-04-20T10:30:00.000Z",
-    "updatedAt": "2026-04-20T10:30:00.000Z"
+    "updatedAt": "2026-04-20T10:30:00.000Z",
+    "category": {
+      "id": 1,
+      "name": "Health",
+      "description": "Daily health related habit",
+      "isDefault": false,
+      "color": "#ffffff",
+      "createdAt": "2026-04-20T09:00:00.000Z",
+      "updatedAt": "2026-04-20T09:00:00.000Z",
+      "userId": 1
+    },
+    "unitId": 1,
+    "unit": {
+      "id": 1,
+      "name": "Kilometer",
+      "abbreviation": "km",
+      "createdAt": "2026-04-20T09:00:00.000Z",
+      "updatedAt": "2026-04-20T09:00:00.000Z"
+    }
   }
 }
 ```
 
 ### Error Responses
 
-- `400 Bad Request` - habit id must be a number / habit not found
+- `400 Bad Request` - habit id must be a number / user id required to get habit detail
+- `403 Forbidden` - forbidden to access this habit
+- `404 Not Found` - habit not found
 - `401 Unauthorized` - access token is required
 
 ---
@@ -153,19 +177,25 @@
   "data": [
     {
       "id": 1,
-      "status": "neutral",
-      "habitId": 1,
-      "actualValue": 20,
       "createdAt": "2026-04-26T06:10:00.000Z",
-      "updatedAt": "2026-04-26T06:10:00.000Z"
+      "updatedAt": "2026-04-26T06:10:00.000Z",
+      "actualValue": 20,
+      "actualLat": -6.2001,
+      "actualLong": 106.8167,
+      "logDate": "2026-04-26T00:00:00.000Z",
+      "status": "NEUTRAL",
+      "habitId": 1
     },
     {
       "id": 2,
-      "status": "success",
-      "habitId": 1,
-      "actualValue": 20,
       "createdAt": "2026-04-27T06:12:00.000Z",
-      "updatedAt": "2026-04-27T06:12:00.000Z"
+      "updatedAt": "2026-04-27T06:12:00.000Z",
+      "actualValue": 20,
+      "actualLat": -6.2001,
+      "actualLong": 106.8167,
+      "logDate": "2026-04-27T00:00:00.000Z",
+      "status": "SUCCESS",
+      "habitId": 1
     }
   ]
 }
@@ -174,7 +204,15 @@
 ### Error Responses
 
 - `400 Bad Request` - habit id must be a number / user id required to get habit logs
+- `403 Forbidden` - forbidden to access this habit logs
+- `404 Not Found` - habit not found
 - `401 Unauthorized` - access token is required
+
+### Notes
+
+- Mengembalikan array log habit mentah milik habit tersebut.
+- Data diurutkan berdasarkan `createdAt` descending.
+- Jika habit belum memiliki log, response akan mengembalikan empty array.
 
 ---
 
@@ -196,7 +234,12 @@
   "unitId": 1,
   "frequencyType": "DAILY",
   "targetValue": 5,
-  "reminderEnabled": true
+  "reminderEnabled": true,
+  "isLocationLocked": true,
+  "locationName": "Kantor",
+  "targetLat": -6.200000,
+  "targetLong": 106.816666,
+  "radius": 100
 }
 ```
 
@@ -211,6 +254,16 @@
 - `frequencyType` - enum: `DAILY`, `WEEKLY`, `MONTHLY` (default: DAILY)
 - `targetValue` - number (optional)
 - `reminderEnabled` - boolean (default: false)
+- `isLocationLocked` - boolean (default: false)
+- `locationName` - string (optional)
+- `targetLat` - number (required jika `isLocationLocked = true`)
+- `targetLong` - number (required jika `isLocationLocked = true`)
+- `radius` - number in meter (optional, default 50)
+
+### Location Rules
+
+- Jika `isLocationLocked = true`, maka `targetLat` dan `targetLong` wajib diisi.
+- Backend akan menyimpan koordinat target dan membandingkannya saat log harian ditoggle.
 
 ### Success Response
 
@@ -230,6 +283,11 @@
     "categoryId": 1,
     "frequencyType": "DAILY",
     "targetValue": 5,
+    "isLocationLocked": true,
+    "locationName": "Kantor",
+    "targetLat": -6.200000,
+    "targetLong": 106.816666,
+    "radius": 100,
     "reminderEnabled": true,
     "unitId": 1,
     "userId": 1,
@@ -275,6 +333,11 @@
 - `frequencyType` - enum: `DAILY`, `WEEKLY`, `MONTHLY` (optional)
 - `targetValue` - number (optional)
 - `reminderEnabled` - boolean (optional)
+- `isLocationLocked` - boolean (optional)
+- `locationName` - string (optional)
+- `targetLat` - number (optional, required jika `isLocationLocked = true`)
+- `targetLong` - number (optional, required jika `isLocationLocked = true`)
+- `radius` - number in meter (optional)
 
 ### Success Response
 
@@ -294,6 +357,11 @@
     "categoryId": 1,
     "frequencyType": "WEEKLY",
     "targetValue": 10,
+    "isLocationLocked": true,
+    "locationName": "Kantor",
+    "targetLat": -6.200000,
+    "targetLong": 106.816666,
+    "radius": 100,
     "reminderEnabled": true,
     "unitId": 1,
     "userId": 1,
@@ -327,19 +395,36 @@
 - Membutuhkan header `Authorization: Bearer <access_token>`.
 - Endpoint ini akan toggle status log habit berdasarkan hari berjalan.
 
+### Request Body (JSON)
+
+```json
+{
+  "currentLat": -6.20012,
+  "currentLong": 106.81670
+}
+```
+
+### Validation & Location Rules
+
+- `currentLat` - number, required
+- `currentLong` - number, required
+- Jika habit memakai `isLocationLocked = true`, server menghitung ulang jarak dengan algoritma Haversine.
+- Jika jarak user lebih besar dari `radius`, response akan `403 Forbidden` dengan pesan `user di luar jangkauan`.
+
 ### Success Response
 
 - Status: `200 OK`
 
 ```json
 {
-  "message": "successfully to toggle log habit, current status log is DONE"
+  "message": "successfully to toggle log habit, current status log is <SUCCESS|FAILED|NEUTRAL>"
 }
 ```
 
 ### Error Responses
 
-- `400 Bad Request` - habit id must be a number / user id required to get habit logs
+- `400 Bad Request` - habit id must be a number / user id required to get habit logs / validation error
+- `403 Forbidden` - user di luar jangkauan
 - `401 Unauthorized` - access token is required
 
 ---
