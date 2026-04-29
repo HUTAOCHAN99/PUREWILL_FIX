@@ -185,16 +185,6 @@ class AuthViewModel extends StateNotifier<AuthState> {
         );
         return false;
       }
-
-      final savedCredentials = await _secureStorage.getSavedCredentials();
-      if (savedCredentials == null) {
-        state = state.copyWith(
-          status: AuthStatus.failure,
-          errorMessage: 'No saved login found. Please login first.',
-        );
-        return false;
-      }
-
       final result = await _biometricService.authenticate(
         reason: 'Authenticate to login to PureWill',
         title: 'Login with Fingerprint',
@@ -211,24 +201,30 @@ class AuthViewModel extends StateNotifier<AuthState> {
         return false;
       }
 
+      // After successful biometric verification, attempt to restore session
+      // using stored tokens (refresh token). This avoids storing user password.
       state = state.copyWith(status: AuthStatus.loading);
 
-      final user = await _repository.login(
-        email: savedCredentials.email,
-        password: savedCredentials.password,
-      );
+      try {
+        final restoredUser = await _repository.restoreSession();
+        if (restoredUser != null) {
+          state = state.copyWith(
+            status: AuthStatus.success,
+            errorMessage: null,
+            user: restoredUser,
+          );
+          return true;
+        }
 
-      if (user != null) {
-        state = state.copyWith(
-          status: AuthStatus.success,
-          errorMessage: null,
-          user: user,
-        );
-        return true;
-      } else {
         state = state.copyWith(
           status: AuthStatus.failure,
-          errorMessage: 'Failed to login with saved credentials',
+          errorMessage: 'Failed to restore session after biometric auth',
+        );
+        return false;
+      } catch (e) {
+        state = state.copyWith(
+          status: AuthStatus.failure,
+          errorMessage: 'Session restore failed: $e',
         );
         return false;
       }
@@ -249,12 +245,12 @@ class AuthViewModel extends StateNotifier<AuthState> {
 
   Future<void> saveCredentialsForBiometric({
     required String email,
-    required String password,
     required bool enableBiometric,
   }) async {
+    // We deliberately DO NOT store the password. Only save email and the
+    // biometric enabled flag; session tokens are already stored elsewhere.
     await _secureStorage.saveCredentials(
       email: email,
-      password: password,
       enableBiometric: enableBiometric,
     );
   }

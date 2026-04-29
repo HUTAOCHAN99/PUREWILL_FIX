@@ -5,6 +5,7 @@ import 'package:purewill/domain/model/profile_model.dart';
 import 'package:purewill/ui/auth/auth_provider.dart';
 import 'package:purewill/ui/auth/screen/login_screen.dart';
 import 'package:purewill/ui/habit-tracker/habit_provider.dart';
+import 'package:purewill/ui/habit-tracker/screen/chatbot_screen.dart';
 import 'package:purewill/ui/habit-tracker/screen/community_selection_screen.dart';
 // import 'package:purewill/ui/habit-tracker/screen/membership_screen.dart';
 import 'package:purewill/ui/habit-tracker/view_model/habit_view_model.dart';
@@ -70,6 +71,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     } else if (index == 4) {
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(builder: (context) => const ConsultationScreen()),
+      );
+    } else if (index == 5) {
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (context) => const ChatBotScreen()),
+      );
+    } else if (index == 6) {
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (context) => const ChatBotScreen()),
       );
     } else {
       setState(() {
@@ -275,12 +284,29 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         _showSnackBar('Habit reset to neutral.');
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Failed to update habit: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      final msg = e.toString();
+      if (msg.contains('di luar jangkauan') || msg.contains('out of range')) {
+        showDialog(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            title: const Text('Lokasi di luar jangkauan'),
+            content: Text(msg),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(ctx).pop(),
+                child: const Text('OK'),
+              ),
+            ],
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to update habit: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 

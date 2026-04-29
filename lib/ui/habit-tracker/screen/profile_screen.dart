@@ -1,22 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:purewill/data/services/auth/biometric_service.dart';
+import 'package:purewill/data/repository/secure_storage_repository.dart';
+import 'package:purewill/ui/auth/auth_provider.dart';
 import 'package:purewill/ui/habit-tracker/provider/profile_provider.dart';
 import 'package:purewill/ui/habit-tracker/screen/edit_profile_screen.dart';
 
-class ProfileScreen extends ConsumerWidget {
+class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
 
-  String _initials(String value) {
-    final cleaned = value.trim();
-    if (cleaned.isEmpty) return '?';
-    final parts = cleaned
-        .split(RegExp(r'\s+'))
-        .where((p) => p.isNotEmpty)
-        .toList();
-    if (parts.isEmpty) return cleaned.substring(0, 1).toUpperCase();
-    if (parts.length == 1) return parts.first.substring(0, 1).toUpperCase();
-    return '${parts.first[0]}${parts[1][0]}'.toUpperCase();
-  }
+  @override
+  ConsumerState<ProfileScreen> createState() => _ProfileScreenState();
+}
+
+class _ProfileScreenState extends ConsumerState<ProfileScreen> {
+  final BiometricService _biometricService = BiometricService();
+  bool _biometricEnabled = false;
 
   Future<void> _onRefresh(WidgetRef ref) async {
     await ref.read(profileViewModelProvider.notifier).loadProfile();
@@ -59,8 +58,38 @@ class ProfileScreen extends ConsumerWidget {
     );
   }
 
+  Future<void> _loadBiometricEnabled() async {
+    final storage = SecureStorageRepository();
+    final enabled = await storage.isBiometricEnabled();
+    if (mounted) {
+      setState(() {
+        _biometricEnabled = enabled;
+      });
+    }
+  }
+
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback(
+      (_) => _loadBiometricEnabled(),
+    );
+  }
+
+  String _initials(String value) {
+    final cleaned = value.trim();
+    if (cleaned.isEmpty) return '?';
+    final parts = cleaned
+        .split(RegExp(r'\s+'))
+        .where((p) => p.isNotEmpty)
+        .toList();
+    if (parts.isEmpty) return cleaned.substring(0, 1).toUpperCase();
+    if (parts.length == 1) return parts.first.substring(0, 1).toUpperCase();
+    return '${parts.first[0]}${parts[1][0]}'.toUpperCase();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final state = ref.watch(profileViewModelProvider);
     final user = state.user;
     final currentUser = user;
@@ -164,6 +193,128 @@ class ProfileScreen extends ConsumerWidget {
                     ),
                   ),
                   const SizedBox(height: 20),
+                  // Biometric toggle
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.06),
+                          blurRadius: 12,
+                          offset: const Offset(0, 6),
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: const [
+                              Text(
+                                'Enable Fingerprint Login',
+                                style: TextStyle(fontWeight: FontWeight.w700),
+                              ),
+                              SizedBox(height: 6),
+                              Text(
+                                'Use fingerprint to quickly unlock the app',
+                                style: TextStyle(
+                                  color: Colors.grey,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Switch(
+                          value: _biometricEnabled,
+                          onChanged: (val) async {
+                            if (state.user == null) return;
+
+                            if (val) {
+                              // Enable biometric: check device support and enrolled biometrics
+                              final available = await _biometricService
+                                  .isBiometricAvailable();
+                              final types = await _biometricService
+                                  .getAvailableBiometrics();
+                              if (!available || types.isEmpty) {
+                                if (!mounted) return;
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text(
+                                      'Biometric not available or not enrolled on this device',
+                                    ),
+                                  ),
+                                );
+                                return;
+                              }
+
+                              final authResult = await _biometricService
+                                  .authenticate(
+                                    reason:
+                                        'Authenticate to enable fingerprint login',
+                                    title: 'Enable Fingerprint',
+                                    subtitle:
+                                        'Verify your fingerprint to enable',
+                                    cancelButtonText: 'Cancel',
+                                  );
+
+                              if (!authResult.success) {
+                                if (!mounted) return;
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                      authResult.errorMessage ??
+                                          'Authentication failed',
+                                    ),
+                                  ),
+                                );
+                                return;
+                              }
+
+                              // Save preference (we do not save password). Tokens are already stored.
+                              await ref
+                                  .read(authNotifierProvider.notifier)
+                                  .saveCredentialsForBiometric(
+                                    email: state.user!.email,
+                                    enableBiometric: true,
+                                  );
+                              if (!mounted) return;
+                              setState(() {
+                                _biometricEnabled = true;
+                              });
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Fingerprint login enabled'),
+                                ),
+                              );
+                            } else {
+                              // Disable
+                              await ref
+                                  .read(authNotifierProvider.notifier)
+                                  .clearSavedCredentials();
+                              if (!mounted) return;
+                              setState(() {
+                                _biometricEnabled = false;
+                              });
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Fingerprint login disabled'),
+                                ),
+                              );
+                            }
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 12),
                   FilledButton.icon(
                     onPressed:
                         state.isLogoutLoading || state.isLoading || user == null

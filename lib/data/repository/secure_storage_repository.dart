@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 class SecureStorageRepository {
@@ -14,12 +13,11 @@ class SecureStorageRepository {
   /// Save user credentials after successful login
   Future<void> saveCredentials({
     required String email,
-    required String password,
     required bool enableBiometric,
   }) async {
+    // Do NOT store user password for biometric login. Only store email and enabled flag.
     if (enableBiometric) {
       await _storage.write(key: _keyEmail, value: email);
-      await _storage.write(key: _keyPassword, value: _encodePassword(password));
       await _storage.write(key: _keyBiometricEnabled, value: 'true');
       await _storage.write(key: _keyLastLoginEmail, value: email);
     } else {
@@ -49,12 +47,12 @@ class SecureStorageRepository {
   Future<SavedCredentials?> getSavedCredentials() async {
     try {
       final email = await _storage.read(key: _keyEmail);
-      final encodedPassword = await _storage.read(key: _keyPassword);
       final isEnabled = await _storage.read(key: _keyBiometricEnabled);
 
-      if (email != null && encodedPassword != null && isEnabled == 'true') {
-        final password = _decodePassword(encodedPassword);
-        return SavedCredentials(email: email, password: password);
+      if (email != null && isEnabled == 'true') {
+        // We intentionally do not return a stored password. Biometric flow will use
+        // refresh token flow to restore session instead of reusing stored password.
+        return SavedCredentials(email: email, password: null);
       }
       return null;
     } catch (e) {
@@ -100,18 +98,12 @@ class SecureStorageRepository {
     await clearCredentials();
   }
 
-  String _encodePassword(String password) {
-    return base64.encode(utf8.encode(password));
-  }
-
-  String _decodePassword(String encoded) {
-    return utf8.decode(base64.decode(encoded));
-  }
+  // Password encoding helpers were removed to avoid storing passwords.
 }
 
 class SavedCredentials {
   final String email;
-  final String password;
+  final String? password;
 
-  SavedCredentials({required this.email, required this.password});
+  SavedCredentials({required this.email, this.password});
 }

@@ -1,10 +1,13 @@
-// lib/ui/habit-tracker/screen/add_habit_screen.dart
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:purewill/domain/model/category_model.dart';
 import 'package:purewill/domain/model/target_unit_model.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart' as ll;
 import 'package:purewill/ui/habit-tracker/habit_provider.dart';
 import 'package:purewill/domain/model/habit_model.dart';
 import 'package:purewill/ui/habit-tracker/widget/category_dropdown.dart';
@@ -28,6 +31,7 @@ class _AddHabitScreenState extends ConsumerState<AddHabitScreen> {
   final _targetValueController = TextEditingController(text: '30');
   final _customUnitController = TextEditingController();
   final _noteController = TextEditingController();
+  final _locationNameController = TextEditingController();
 
   int? _selectedCategoryId;
   String _selectedFrequency = 'daily';
@@ -39,12 +43,22 @@ class _AddHabitScreenState extends ConsumerState<AddHabitScreen> {
   DateTime? _startDate;
   DateTime? _endDate;
   bool _endDateEnabled = false;
+  // Location
+  bool _isLocationLocked = false;
+  double? _targetLat;
+  double? _targetLong;
+  int _radius = 50;
 
   @override
   void initState() {
     super.initState();
 
     if (widget.defaultHabit != null) {
+      _isLocationLocked = widget.defaultHabit!.isLocationLocked;
+      _locationNameController.text = widget.defaultHabit!.locationName ?? '';
+      _targetLat = widget.defaultHabit!.targetLat;
+      _targetLong = widget.defaultHabit!.targetLong;
+      _radius = widget.defaultHabit!.radius ?? 50;
       _nameController.text = widget.defaultHabit!.name;
       _targetValue = widget.defaultHabit!.targetValue ?? 30;
       _targetValueController.text = _targetValue.toString();
@@ -69,6 +83,7 @@ class _AddHabitScreenState extends ConsumerState<AddHabitScreen> {
     _targetValueController.dispose();
     _customUnitController.dispose();
     _noteController.dispose();
+    _locationNameController.dispose();
     super.dispose();
   }
 
@@ -82,6 +97,208 @@ class _AddHabitScreenState extends ConsumerState<AddHabitScreen> {
         _reminderTime = picked;
       });
     }
+  }
+
+  Future<void> _handleLocationToggle(bool value) async {
+    if (value) {
+      final status = await Permission.location.request();
+      if (!status.isGranted) {
+        if (mounted) {
+          showDialog(
+            context: context,
+            builder: (ctx) => AlertDialog(
+              title: const Text('Location permission'),
+              content: const Text(
+                'Location permission is required to lock habit location. Please grant permission in app settings.',
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(ctx).pop(),
+                  child: const Text('Close'),
+                ),
+                TextButton(
+                  onPressed: () {
+                    openAppSettings();
+                    Navigator.of(ctx).pop();
+                  },
+                  child: const Text('Open Settings'),
+                ),
+              ],
+            ),
+          );
+        }
+        return;
+      }
+
+      setState(() {
+        _isLocationLocked = true;
+      });
+
+      await _showLocationPicker();
+    } else {
+      setState(() {
+        _isLocationLocked = false;
+        _targetLat = null;
+        _targetLong = null;
+      });
+    }
+  }
+
+  Future<void> _showLocationPicker() async {
+    double? tempLat = _targetLat;
+    double? tempLong = _targetLong;
+    int tempRadius = _radius;
+
+    ll.LatLng center = ll.LatLng(-6.200000, 106.816666);
+    try {
+      final pos = await Geolocator.getCurrentPosition();
+      center = ll.LatLng(pos.latitude, pos.longitude);
+      tempLat ??= center.latitude;
+      tempLong ??= center.longitude;
+    } catch (_) {
+      // ignore - use default
+      tempLat ??= center.latitude;
+      tempLong ??= center.longitude;
+    }
+
+    await showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (ctx, setModalState) {
+            return SizedBox(
+              height: MediaQuery.of(context).size.height * 0.75,
+              child: Column(
+                children: [
+                  Expanded(
+                    child: FlutterMap(
+                      options: MapOptions(
+                        initialCenter: ll.LatLng(tempLat!, tempLong!),
+                        initialZoom: 15.0,
+                        onTap: (tapPos, point) {
+                          setModalState(() {
+                            tempLat = point.latitude;
+                            tempLong = point.longitude;
+                          });
+                        },
+                      ),
+                      // nonRotatedChildren: [],
+                      children: [
+                        TileLayer(
+                          urlTemplate:
+                              'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+                          subdomains: ['a', 'b', 'c'],
+                        ),
+                        CircleLayer(
+                          circles: [
+                            CircleMarker(
+                              point: ll.LatLng(tempLat!, tempLong!),
+                              color: Colors.blue.withOpacity(0.2),
+                              borderStrokeWidth: 2,
+                              radius: tempRadius.toDouble(),
+                            ),
+                          ],
+                        ),
+                        MarkerLayer(
+                          markers: [
+                            Marker(
+                              width: 40,
+                              height: 40,
+                              point: ll.LatLng(tempLat!, tempLong!),
+                              child: Icon(
+                                Icons.location_on,
+                                color: Colors.red,
+                                size: 36,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.all(12.0),
+                    child: Column(
+                      children: [
+                        Row(
+                          children: [
+                            ElevatedButton(
+                              onPressed: () async {
+                                try {
+                                  final p =
+                                      await Geolocator.getCurrentPosition();
+                                  setModalState(() {
+                                    tempLat = p.latitude;
+                                    tempLong = p.longitude;
+                                  });
+                                } catch (e) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text(
+                                        'Failed to get current location',
+                                      ),
+                                    ),
+                                  );
+                                }
+                              },
+                              child: const Text('Use current location'),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                tempLat != null && tempLong != null
+                                    ? 'Lat: ${tempLat!.toStringAsFixed(6)}, Lng: ${tempLong!.toStringAsFixed(6)}'
+                                    : 'Tap map to choose location',
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            const Text('Radius (m):'),
+                            Expanded(
+                              child: Slider(
+                                value: tempRadius.toDouble(),
+                                min: 10,
+                                max: 1000,
+                                divisions: 99,
+                                label: '\$tempRadius m',
+                                onChanged: (v) =>
+                                    setModalState(() => tempRadius = v.toInt()),
+                              ),
+                            ),
+                            Text('$tempRadius'),
+                          ],
+                        ),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: ElevatedButton(
+                                onPressed: () {
+                                  setState(() {
+                                    _targetLat = tempLat;
+                                    _targetLong = tempLong;
+                                    _radius = tempRadius;
+                                  });
+                                  Navigator.of(ctx).pop();
+                                },
+                                child: const Text('Save Location'),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
   }
 
   Future<void> _saveHabit() async {
@@ -118,6 +335,13 @@ class _AddHabitScreenState extends ConsumerState<AddHabitScreen> {
           targetValue: _targetValue,
           reminderEnabled: _reminderEnabled,
           reminderTime: _reminderTime,
+          isLocationLocked: _isLocationLocked,
+          locationName: _locationNameController.text.isNotEmpty
+              ? _locationNameController.text
+              : null,
+          targetLat: _targetLat,
+          targetLong: _targetLong,
+          radius: _radius,
         );
 
         await ref.read(habitNotifierProvider.notifier).loadUserHabits();
@@ -156,9 +380,12 @@ class _AddHabitScreenState extends ConsumerState<AddHabitScreen> {
         .map((unit) => unit.name)
         .toList();
     final List<String> unitOptions = loadedUnitOptions;
-    final String selectedUnitValue = unitOptions.contains(_selectedUnit)
+    final List<String> unitOptionsSafe = unitOptions.isNotEmpty
+        ? unitOptions
+        : ['other'];
+    final String selectedUnitValue = unitOptionsSafe.contains(_selectedUnit)
         ? _selectedUnit
-        : unitOptions.first;
+        : unitOptionsSafe.first;
 
     return Scaffold(
       appBar: AppBar(
@@ -372,7 +599,7 @@ class _AddHabitScreenState extends ConsumerState<AddHabitScreen> {
                                   filled: true,
                                   fillColor: Colors.transparent,
                                 ),
-                                items: unitOptions
+                                items: unitOptionsSafe
                                     .map(
                                       (unit) => DropdownMenuItem(
                                         value: unit,
@@ -754,6 +981,118 @@ class _AddHabitScreenState extends ConsumerState<AddHabitScreen> {
                                   ),
                                 ),
                               ),
+                            ],
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+
+                    // Location Lock
+                    Container(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(12),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.1),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.95),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                const Text(
+                                  'Lock Location',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.black87,
+                                  ),
+                                ),
+                                Switch(
+                                  value: _isLocationLocked,
+                                  onChanged: (v) => _handleLocationToggle(v),
+                                  activeColor: Colors.blue,
+                                ),
+                              ],
+                            ),
+                            if (_isLocationLocked) ...[
+                              const SizedBox(height: 12),
+                              const Text(
+                                'Location Name',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w500,
+                                  color: Colors.black87,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Container(
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(12),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withValues(
+                                        alpha: 0.1,
+                                      ),
+                                      blurRadius: 10,
+                                      offset: const Offset(0, 4),
+                                    ),
+                                  ],
+                                ),
+                                child: TextFormField(
+                                  controller: _locationNameController,
+                                  decoration: InputDecoration(
+                                    border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                      borderSide: BorderSide.none,
+                                    ),
+                                    contentPadding: const EdgeInsets.symmetric(
+                                      horizontal: 16,
+                                      vertical: 12,
+                                    ),
+                                    hintText: 'e.g. Office, Home, Gym',
+                                    filled: true,
+                                    fillColor: Colors.white.withValues(
+                                      alpha: 0.95,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+                              ElevatedButton(
+                                onPressed: _showLocationPicker,
+                                child: Text(
+                                  _targetLat != null && _targetLong != null
+                                      ? 'Change Location'
+                                      : 'Pick Location on Map',
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              if (_targetLat != null &&
+                                  _targetLong != null) ...[
+                                Text('Lat: ${_targetLat!.toStringAsFixed(6)}'),
+                                Text('Lng: ${_targetLong!.toStringAsFixed(6)}'),
+                                const SizedBox(height: 8),
+                                Row(
+                                  children: [
+                                    const Text('Radius (m):'),
+                                    const SizedBox(width: 8),
+                                    Text('$_radius'),
+                                  ],
+                                ),
+                              ],
                             ],
                           ],
                         ),

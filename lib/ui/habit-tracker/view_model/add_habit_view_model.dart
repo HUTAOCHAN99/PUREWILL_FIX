@@ -98,6 +98,11 @@ class AddHabitViewModel extends StateNotifier<AddHabitState> {
     int? targetValue,
     bool? reminderEnabled,
     TimeOfDay? reminderTime,
+    bool? isLocationLocked,
+    String? locationName,
+    double? targetLat,
+    double? targetLong,
+    int? radius,
   }) async {
     final previousStatus = state.status;
     state = state.copyWith(
@@ -127,6 +132,11 @@ class AddHabitViewModel extends StateNotifier<AddHabitState> {
         notes: notes,
         reminderEnabled: reminderEnabled ?? false,
         reminderTime: reminderTime,
+        isLocationLocked: isLocationLocked ?? false,
+        locationName: locationName,
+        targetLat: targetLat,
+        targetLong: targetLong,
+        radius: radius,
       );
 
       await _habitApiService.createHabit(newHabit);
