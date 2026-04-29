@@ -1,5 +1,3 @@
-// lib/domain/model/daily_log_model.dart
-
 enum LogStatus { neutral, success, failed }
 
 class HabitLogModel {

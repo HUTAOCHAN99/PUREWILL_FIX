@@ -10,6 +10,7 @@ class ReminderSettingModel {
   final bool isSoundEnabled;
   final bool isVibrationEnabled;
   final DateTime createdAt;
+  final DateTime? updatedAt;
 
   ReminderSettingModel({
     required this.id,
@@ -21,57 +22,95 @@ class ReminderSettingModel {
     required this.isSoundEnabled,
     required this.isVibrationEnabled,
     required this.createdAt,
+    this.updatedAt,
   });
 
   factory ReminderSettingModel.fromJson(Map<String, dynamic> json) {
-    // debugPrint('🎯 REMINDER SETTING FROM JSON:');
-    // debugPrint('   - Raw time from DB: ${json['time']}');
+    int parseInt(dynamic value, {int fallback = 0}) {
+      if (value is int) return value;
+      return int.tryParse(value?.toString() ?? '') ?? fallback;
+    }
+
+    bool parseBool(dynamic value, {bool fallback = false}) {
+      if (value is bool) return value;
+      if (value is num) return value != 0;
+      final raw = value?.toString().toLowerCase();
+      if (raw == 'true' || raw == '1') return true;
+      if (raw == 'false' || raw == '0') return false;
+      return fallback;
+    }
 
     // Parse the timestamp as-is
     DateTime parsedTime;
     try {
       if (json['time'] is String) {
         parsedTime = DateTime.parse(json['time'] as String);
-        // debugPrint('   ✅ Parsed time as-is: $parsedTime');
       } else {
         parsedTime = DateTime.now();
-        // debugPrint('   ⚠️  Time is not string, using current time');
       }
     } catch (e) {
-      // debugPrint('❌ Error parsing time: $e');
       parsedTime = DateTime.now();
     }
 
-    // debugPrint('   - Final time: $parsedTime');
-    // debugPrint('   - Hour: ${parsedTime.hour}, Minute: ${parsedTime.minute}');
+    DateTime? parsedCreatedAt;
+    try {
+      final createdAtValue = json['createdAt'] ?? json['created_at'];
+      if (createdAtValue is String) {
+        parsedCreatedAt = DateTime.parse(createdAtValue);
+      }
+    } catch (_) {
+      parsedCreatedAt = null;
+    }
+
+    DateTime? parsedUpdatedAt;
+    try {
+      final updatedAtValue = json['updatedAt'] ?? json['updated_at'];
+      if (updatedAtValue is String) {
+        parsedUpdatedAt = DateTime.parse(updatedAtValue);
+      }
+    } catch (_) {
+      parsedUpdatedAt = null;
+    }
+
+    final habitId = json['habitId'] ?? json['habit_id'];
+    final isEnabled = json['isEnabled'] ?? json['is_enabled'];
+    final snoozeDuration = json['snoozeDuration'] ?? json['snooze_duration'];
+    final repeatDaily = json['repeatDaily'] ?? json['repeat_daily'];
+    final isSoundEnabled = json['isSoundEnabled'] ?? json['is_sound_enabled'];
+    final isVibrationEnabled =
+        json['isVibrationEnabled'] ?? json['is_vibration_enabled'];
 
     return ReminderSettingModel(
       id: json['id']?.toString() ?? '',
-      habitId: json['habit_id'] as int? ?? 0,
-      isEnabled: json['is_enabled'] as bool? ?? false,
+      habitId: parseInt(habitId),
+      isEnabled: parseBool(isEnabled),
       time: parsedTime,
-      snoozeDuration: json['snooze_duration'] as int? ?? 10,
-      repeatDaily: json['repeat_daily'] as bool? ?? true,
-      isSoundEnabled: json['is_sound_enabled'] as bool? ?? true,
-      isVibrationEnabled: json['is_vibration_enabled'] as bool? ?? false,
-      createdAt: DateTime.now(),
+      snoozeDuration: parseInt(snoozeDuration, fallback: 10),
+      repeatDaily: parseBool(repeatDaily, fallback: true),
+      isSoundEnabled: parseBool(isSoundEnabled, fallback: true),
+      isVibrationEnabled: parseBool(isVibrationEnabled, fallback: false),
+      createdAt: parsedCreatedAt ?? DateTime.now(),
+      updatedAt: parsedUpdatedAt,
     );
   }
 
   Map<String, dynamic> toJson() {
     final json = {
-      'habit_id': habitId,
-      'is_enabled': isEnabled,
+      'habitId': habitId,
+      'isEnabled': isEnabled,
       'time': time.toIso8601String(),
-      'snooze_duration': snoozeDuration,
-      'repeat_daily': repeatDaily,
-      'is_sound_enabled': isSoundEnabled,
-      'is_vibration_enabled': isVibrationEnabled,
+      'snoozeDuration': snoozeDuration,
+      'repeatDaily': repeatDaily,
+      'isSoundEnabled': isSoundEnabled,
+      'isVibrationEnabled': isVibrationEnabled,
     };
 
     // Only add id if not empty (for update)
     if (id.isNotEmpty) {
-      json['id'] = int.tryParse(id) as Object;
+      final parsedId = int.tryParse(id);
+      if (parsedId != null) {
+        json['id'] = parsedId;
+      }
     }
 
     // debugPrint('🎯 REMINDER SETTING TO JSON:');
@@ -107,6 +146,7 @@ class ReminderSettingModel {
     bool? isSoundEnabled,
     bool? isVibrationEnabled,
     DateTime? createdAt,
+    DateTime? updatedAt,
   }) {
     return ReminderSettingModel(
       id: id ?? this.id,
@@ -118,12 +158,13 @@ class ReminderSettingModel {
       isSoundEnabled: isSoundEnabled ?? this.isSoundEnabled,
       isVibrationEnabled: isVibrationEnabled ?? this.isVibrationEnabled,
       createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
     );
   }
 
   @override
   String toString() {
-    return 'ReminderSettingModel{id: $id, habitId: $habitId, isEnabled: $isEnabled, time: $time, snoozeDuration: $snoozeDuration, repeatDaily: $repeatDaily, isSoundEnabled: $isSoundEnabled, isVibrationEnabled: $isVibrationEnabled, createdAt: $createdAt}';
+    return 'ReminderSettingModel{id: $id, habitId: $habitId, isEnabled: $isEnabled, time: $time, snoozeDuration: $snoozeDuration, repeatDaily: $repeatDaily, isSoundEnabled: $isSoundEnabled, isVibrationEnabled: $isVibrationEnabled, createdAt: $createdAt, updatedAt: $updatedAt}';
   }
 
   // Helper methods

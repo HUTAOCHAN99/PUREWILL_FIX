@@ -2,15 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:purewill/domain/model/habit_log_model.dart';
 import 'package:purewill/domain/model/habit_model.dart';
-import 'package:purewill/domain/model/reminder_setting_model.dart';
 import 'package:purewill/ui/habit-tracker/habit_provider.dart';
 import 'package:purewill/ui/habit-tracker/provider/habit_detail_provider.dart';
 import 'package:purewill/ui/habit-tracker/screen/edit_habit_screen.dart';
-import 'package:purewill/ui/habit-tracker/screen/reminder_setting_screen.dart';
+import 'package:purewill/ui/habit-tracker/screen/reminder_list_screen.dart';
 import 'package:purewill/ui/habit-tracker/view_model/habit_detail_view_model.dart';
 import 'package:purewill/ui/habit-tracker/widget/habit_detail/calendar_tracker_widget.dart';
 import 'package:purewill/ui/habit-tracker/widget/habit_detail/habit_actions_dropdown.dart';
-// import 'package:purewill/ui/habit-tracker/widget/habit_detail/performance_chart_widget.dart';
+import 'package:purewill/ui/habit-tracker/widget/habit_detail/habit_detail_explanation_widget.dart';
 import 'package:purewill/ui/habit-tracker/widget/habit_detail/progress_widget.dart';
 import 'package:purewill/ui/habit-tracker/widget/habit_detail/weekly_streak_widget.dart';
 import 'package:purewill/utils/habit_icon_helper.dart';
@@ -29,15 +28,6 @@ class HabitDetailScreen extends ConsumerStatefulWidget {
 }
 
 class _HabitDetailScreenState extends ConsumerState<HabitDetailScreen> {
-  // late bool _isCompleted;
-  // int _completedDays = 0;
-  // int _habitLogStreak = 0;
-  // int _possibleDays = 0;
-  // List<HabitLogModel>? _habitLogForThisMonth;
-  // List<double> _weeklyPerformance = [];
-  // bool _isLoading = true;
-  ReminderSettingModel? _reminderSetting;
-
   @override
   void initState() {
     super.initState();
@@ -47,115 +37,6 @@ class _HabitDetailScreenState extends ConsumerState<HabitDetailScreen> {
           .loadHabitDetailData(habitId: widget.habit.id);
     });
   }
-
-  // Future<void> _loadReminderSetting(int habitId) async {
-  //   try {
-  //     final reminderSetting = await ref
-  //         .read(habitNotifierProvider.notifier)
-  //         .loadCurrentReminderSetting(habitId);
-  //     if (mounted) {
-  //       setState(() {
-  //         _reminderSetting = reminderSetting;
-  //       });
-  //     }
-  //   } catch (e) {
-  //     print('Error loading reminder setting: $e');
-  //     if (mounted) {
-  //       setState(() {
-  //         _reminderSetting = null;
-  //       });
-  //     }
-  //   }
-  // }
-
-  // Future<void> _loadHabitLogForThisMonth(int habitId) async {
-  //   try {
-  //     // Untuk monthly calendar data
-
-  //     final habitLogForThisMonth = await ref
-  //         .read(habitNotifierProvider.notifier)
-  //         .loadLogsForCalendar(
-  //           startDate: monthStartDate,
-  //           endDate: monthEndDate,
-  //           habitId: habitId,
-  //         );
-
-  //     // Untuk weekly performance, ambil data minggu ini (bisa lintas bulan)
-  //     f
-
-  //     final habitLogForThisWeek = await ref
-  //         .read(habitNotifierProvider.notifier)
-  //         .loadLogsForCalendar(
-  //           startDate: startOfWeek,
-  //           endDate: endOfWeek,
-  //           habitId: habitId,
-  //         );
-
-  //     final streak = await ref
-  //         .read(habitNotifierProvider.notifier)
-  //         .fetchHabitLogStreak(habitId: habitId);
-
-  //     // Safe handling untuk empty list tanpa null check yang unnecessary
-  //     final List<DateTime> localCompletionDates = habitLogForThisMonth
-  //         .map((dailyLog) => dailyLog.logDate)
-  //         .toList();
-
-  //     final completeDays = localCompletionDates.length;
-
-  //     // Hitung weekly performance dari data log minggu ini
-  //     final weeklyPerformanceData = _calculateWeeklyPerformance(habitLogForThisWeek);
-
-  //     print('Weekly dates range: ${startOfWeek.toString().split(' ')[0]} to ${endOfWeek.toString().split(' ')[0]}');
-  //     print('Weekly performance data: $weeklyPerformanceData');
-
-  //     if (mounted) {
-  //       setState(() {
-  //         _habitLogForThisMonth = habitLogForThisMonth;
-  //         _completedDays = completeDays;
-  //         _weeklyPerformance = weeklyPerformanceData; // Set data yang benar
-  //         _isLoading = false;
-  //         _habitLogStreak = streak;
-  //       });
-  //     }
-  //   } catch (e) {
-  //     print('Error loading completion status: $e');
-
-  //     // Set default values jika terjadi error
-  //     if (mounted) {
-  //       setState(() {
-  //         _habitLogForThisMonth = [];
-  //         _completedDays = 0;
-  //         _weeklyPerformance = List.filled(7, 0.0); // Default weekly performance
-  //         _isLoading = false;
-  //         _habitLogStreak = 0;
-  //       });
-  //     }
-  //   }
-  // }
-
-  // Method untuk menghitung weekly performance berdasarkan data log minggu ini
-
-  // Helper method untuk mendapatkan nama hari
-  // String _getDayName(int weekday) {
-  //   switch (weekday) {
-  //     case 1:
-  //       return 'Monday';
-  //     case 2:
-  //       return 'Tuesday';
-  //     case 3:
-  //       return 'Wednesday';
-  //     case 4:
-  //       return 'Thursday';
-  //     case 5:
-  //       return 'Friday';
-  //     case 6:
-  //       return 'Saturday';
-  //     case 7:
-  //       return 'Sunday';
-  //     default:
-  //       return 'Unknown';
-  //   }
-  // }
 
   @override
   Widget build(BuildContext context) {
@@ -218,6 +99,12 @@ class _HabitDetailScreenState extends ConsumerState<HabitDetailScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  HabitDetailExplanationWidget(
+                    habit: habit,
+                    habitColor: iconColor,
+                  ),
+                  const SizedBox(height: 24),
+
                   ProgressWidget(
                     // isCompleted: _isCompleted,
                     isCompleted: _isTodayCompleted(habitDetailState.habitLogs),
@@ -230,16 +117,10 @@ class _HabitDetailScreenState extends ConsumerState<HabitDetailScreen> {
 
                   WeeklyStreakWidget(streak: habitDetailState.habitLogStreak),
                   const SizedBox(height: 24),
-
-                  // PerformanceChartWidget(weeklyPerformance: _weeklyPerformance),
-                  // const SizedBox(height: 24),
                   CalendarTrackerWidget(
                     habitLogForThisMonth: habitDetailState.habitLogForThisMonth,
                   ),
                   const SizedBox(height: 16),
-
-                  // MotivationalQuotesWidget(),
-                  const SizedBox(height: 20),
                 ],
               ),
             ),
@@ -288,10 +169,9 @@ class _HabitDetailScreenState extends ConsumerState<HabitDetailScreen> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => ReminderSettingScreen(
+        builder: (context) => ReminderListScreen(
           habit:
               ref.read(habitDetailProvider).currentHabitDetail ?? widget.habit,
-          reminderSetting: _reminderSetting,
         ),
       ),
     );

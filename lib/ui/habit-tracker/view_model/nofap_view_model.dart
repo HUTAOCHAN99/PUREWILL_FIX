@@ -122,9 +122,6 @@ class NofapViewModel extends StateNotifier<NofapState> {
       final meSessions = await _loadMeSessions();
       final motivation = await _motivationService.getRandomMotivation();
 
-      print("get motivation ");
-      print(motivation);
-
       state = state.copyWith(
         status: NofapStatus.success,
         currentSession: currentData is Map<String, dynamic>

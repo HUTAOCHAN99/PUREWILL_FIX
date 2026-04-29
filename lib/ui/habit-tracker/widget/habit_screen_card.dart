@@ -1,114 +1,104 @@
 import 'package:flutter/material.dart';
+import 'package:purewill/domain/model/habit_model.dart';
 
 class HabitScreenCard extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final String subtitle;
-  final Color color;
-  final String? categoryName;
+  final HabitModel habit;
   final VoidCallback onTap;
 
-  const HabitScreenCard({
-    super.key,
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-    required this.color,
-    this.categoryName,
-    required this.onTap,
-  });
+  const HabitScreenCard({super.key, required this.habit, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
+    final String rawColor = habit.category?.color ?? "#9E9E9E"; 
+    final Color categoryColor = Color(int.parse(rawColor.replaceFirst('#', '0xFF')));
+
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        margin: const EdgeInsets.only(bottom: 12),
+        margin: const EdgeInsets.only(bottom: 12, left: 16, right: 16),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.95),
-          borderRadius: BorderRadius.circular(16),
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.08),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
+              color: Colors.black.withOpacity(0.04),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
             ),
           ],
         ),
         child: Row(
           children: [
-            // Icon Container
             Container(
-              width: 50,
-              height: 50,
+              padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: color.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(12),
+                color: categoryColor.withOpacity(0.1),
+                shape: BoxShape.circle,
               ),
-              child: Icon(icon, color: color, size: 24),
+              child: Icon(
+                Icons.auto_awesome, 
+                color: categoryColor,
+                size: 20,
+              ),
             ),
-
+            
             const SizedBox(width: 16),
-
-            // Content
+            
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Title
                   Text(
-                    title,
+                    habit.name,
                     style: const TextStyle(
                       fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.black87,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF2D3142),
                     ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
                   ),
-
-                  const SizedBox(height: 4),
-
-                  // Subtitle
-                  Text(
-                    subtitle,
-                    style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-
-                  if (categoryName != null && categoryName!.trim().isNotEmpty)
-                    const SizedBox(height: 8),
-
-                  if (categoryName != null && categoryName!.trim().isNotEmpty)
+                  
+                  const SizedBox(height: 6),
+                  if (habit.category?.name != null)
                     Container(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 8,
                         vertical: 4,
                       ),
                       decoration: BoxDecoration(
-                        color: color.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(8),
+                        color: categoryColor.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(6),
                       ),
-                      child: Text(
-                        categoryName!,
-                        style: TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w500,
-                          color: color,
-                        ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            width: 6,
+                            height: 6,
+                            decoration: BoxDecoration(
+                              color: categoryColor,
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            habit.category!.name,
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: categoryColor.withOpacity(0.9),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                 ],
               ),
             ),
-
-            // Arrow Icon
+            
             Icon(
-              Icons.arrow_forward_ios,
+              Icons.chevron_right_rounded,
               color: Colors.grey.shade400,
-              size: 16,
             ),
           ],
         ),

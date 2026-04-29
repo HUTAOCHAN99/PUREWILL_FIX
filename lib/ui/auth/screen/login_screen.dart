@@ -20,7 +20,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   bool _isBiometricLoginLoading = false;
 
   final TextEditingController _emailController = TextEditingController(
-    text: 'rahaditya.putra@example.com',
+    text: 'user1@purewill.dev',
   );
   final TextEditingController _passwordController = TextEditingController(
     text: 'Password123!',

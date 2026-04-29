@@ -12,7 +12,7 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:purewill/domain/model/target_unit_model.dart';
 
-enum HabitStatus { initial, loading, success, failure }
+enum HabitStatus { loading, success, failure }
 
 class HabitsState {
   final HabitStatus status;
@@ -29,7 +29,7 @@ class HabitsState {
   ProfileModel? currentUser;
 
   HabitsState({
-    this.status = HabitStatus.initial,
+    this.status = HabitStatus.loading,
     this.errorMessage,
     this.habits = const [],
     this.todayHabit = const [],
@@ -73,15 +73,12 @@ class HabitsState {
 class HabitsViewModel extends StateNotifier<HabitsState> {
   final HabitApiService _habitApiService;
   final MeApiService _meApiService;
-  // geolocation
-  // imported lazily where needed
-
   HabitsViewModel(this._habitApiService, this._meApiService)
     : super(HabitsState());
 
   void clearState() {
     state = HabitsState(
-      status: HabitStatus.initial,
+      status: HabitStatus.loading,
       errorMessage: null,
       habits: const [],
       todayHabit: const [],
@@ -453,7 +450,57 @@ class HabitsViewModel extends StateNotifier<HabitsState> {
 
   Future<Map<int, LogStatus>> getTodayCompletionStatus() async {
     try {
+      final habits = state.habits.isNotEmpty
+          ? state.habits
+          : await _fetchUserHabits();
+
+      if (habits.isEmpty) {
+        return <int, LogStatus>{};
+      }
+
+      final today = DateTime.now();
+      final todayOnly = DateTime(today.year, today.month, today.day);
       final completionStatus = <int, LogStatus>{};
+
+      for (final habit in habits) {
+        try {
+          final response = await _habitApiService.getHabitLogs(
+            habitId: habit.id,
+          );
+          final data = response['data'] as List? ?? [];
+
+          final logs = data
+              .whereType<Map>()
+              .map(
+                (json) =>
+                    HabitLogModel.fromJson(Map<String, dynamic>.from(json)),
+              )
+              .toList();
+
+          if (logs.isEmpty) {
+            completionStatus[habit.id] = LogStatus.neutral;
+            continue;
+          }
+
+          final todayLogs = logs.where((log) {
+            final d = log.logDate;
+            final logOnly = DateTime(d.year, d.month, d.day);
+            return logOnly == todayOnly;
+          }).toList();
+
+          if (todayLogs.isEmpty) {
+            completionStatus[habit.id] = LogStatus.neutral;
+            continue;
+          }
+
+          todayLogs.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+          completionStatus[habit.id] = todayLogs.first.status;
+        } catch (e) {
+          completionStatus[habit.id] = LogStatus.neutral;
+        }
+      }
+
+      state = state.copyWith(habitLogs: const []);
       return completionStatus;
     } catch (e) {
       return {};

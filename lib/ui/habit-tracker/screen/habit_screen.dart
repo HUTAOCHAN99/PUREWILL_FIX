@@ -14,7 +14,7 @@ import 'package:purewill/ui/habit-tracker/screen/habit_detail_screen.dart';
 import 'package:purewill/ui/habit-tracker/screen/add_habit_screen.dart';
 import 'package:purewill/ui/habit-tracker/screen/category_unit_management_screen.dart';
 import 'package:purewill/ui/habit-tracker/screen/nofap_screen.dart';
-import 'package:purewill/utils/habit_icon_helper.dart';
+// import 'package:purewill/utils/habit_icon_helper.dart';
 
 class HabitScreen extends ConsumerStatefulWidget {
   const HabitScreen({super.key});
@@ -503,28 +503,12 @@ class _HabitScreenState extends ConsumerState<HabitScreen> {
 
         return Column(
           children: filteredHabits.map((habit) {
-            // Tentukan kategori berdasarkan categoryId
-            final categoryName = _determineCategory(habit);
-
-            // Dapatkan icon dan warna dari habit_icon_helper berdasarkan kategori
-            final iconData = HabitIconHelper.getHabitIcon(categoryName);
-            final fallbackColor = HabitIconHelper.getHabitColor(categoryName);
-            final resolvedColor =
-                _parseCategoryColor(habit.category?.color) ?? fallbackColor;
-
             return HabitScreenCard(
-              icon: iconData,
-              title: habit.name,
-              subtitle: _buildHabitSubtitle(habit),
-              color: resolvedColor,
-              categoryName: habit.category?.name,
+              habit: habit,
               onTap: () => _handleHabitTap(habit),
             );
           }).toList(),
         );
-
-      case HabitStatus.initial:
-        return const SizedBox.shrink();
     }
   }
 
@@ -561,75 +545,74 @@ class _HabitScreenState extends ConsumerState<HabitScreen> {
     );
   }
 
-  // Method untuk menentukan kategori habit
-  String _determineCategory(HabitModel habit) {
-    // Prioritas 1: Jika habit punya categoryId, mapping ke nama kategori
-    final categoryId = habit.category?.id;
-    if (categoryId != null) {
-      final categoryName = _mapCategoryIdToName(categoryId);
-      return categoryName;
-    }
+  // String _determineCategory(HabitModel habit) {
+  //   // Prioritas 1: Jika habit punya categoryId, mapping ke nama kategori
+  //   final categoryId = habit.category?.id;
+  //   if (categoryId != null) {
+  //     final categoryName = _mapCategoryIdToName(categoryId);
+  //     return categoryName;
+  //   }
 
-    // Prioritas 2: Gunakan habit_icon_helper untuk menentukan kategori dari nama habit
-    final categoryFromName = HabitIconHelper.getHabitCategory(habit.name);
-    return categoryFromName;
-  }
+  //   // Prioritas 2: Gunakan habit_icon_helper untuk menentukan kategori dari nama habit
+  //   final categoryFromName = HabitIconHelper.getHabitCategory(habit.name);
+  //   return categoryFromName;
+  // }
 
   // Mapping categoryId ke nama kategori
-  String _mapCategoryIdToName(int categoryId) {
-    switch (categoryId) {
-      case 1:
-        return "Health & Fitness";
-      case 2:
-        return "Learning & Education";
-      case 3:
-        return "Productivity";
-      case 4:
-        return "Mindfulness & Mental Health";
-      case 5:
-        return "Personal Care";
-      case 6:
-        return "Social & Relationships";
-      case 7:
-        return "Finance";
-      case 8:
-        return "Hobbies & Creativity";
-      case 9:
-        return "Work & Career";
-      case 10:
-        return "Other";
-      default:
-        return "Other";
-    }
-  }
+  // String _mapCategoryIdToName(int categoryId) {
+  //   switch (categoryId) {
+  //     case 1:
+  //       return "Health & Fitness";
+  //     case 2:
+  //       return "Learning & Education";
+  //     case 3:
+  //       return "Productivity";
+  //     case 4:
+  //       return "Mindfulness & Mental Health";
+  //     case 5:
+  //       return "Personal Care";
+  //     case 6:
+  //       return "Social & Relationships";
+  //     case 7:
+  //       return "Finance";
+  //     case 8:
+  //       return "Hobbies & Creativity";
+  //     case 9:
+  //       return "Work & Career";
+  //     case 10:
+  //       return "Other";
+  //     default:
+  //       return "Other";
+  //   }
+  // }
 
-  String _buildHabitSubtitle(HabitModel habit) {
-    if (habit.targetValue != null) {
-      if (habit.unit != null && habit.unit!.isNotEmpty) {
-        return '${habit.targetValue} ${habit.unit}';
-      }
-      return '${habit.targetValue}';
-    }
-    return 'Daily habit';
-  }
+  // String _buildHabitSubtitle(HabitModel habit) {
+  //   if (habit.targetValue != null) {
+  //     if (habit.unit != null && habit.unit!.isNotEmpty) {
+  //       return '${habit.targetValue} ${habit.unit}';
+  //     }
+  //     return '${habit.targetValue}';
+  //   }
+  //   return 'Daily habit';
+  // }
 
-  Color? _parseCategoryColor(String? rawColor) {
-    if (rawColor == null || rawColor.trim().isEmpty) {
-      return null;
-    }
+  // Color? _parseCategoryColor(String? rawColor) {
+  //   if (rawColor == null || rawColor.trim().isEmpty) {
+  //     return null;
+  //   }
 
-    var hex = rawColor.trim().replaceFirst('#', '');
-    if (hex.length == 6) {
-      hex = 'FF$hex';
-    }
-    if (hex.length != 8) {
-      return null;
-    }
+  //   var hex = rawColor.trim().replaceFirst('#', '');
+  //   if (hex.length == 6) {
+  //     hex = 'FF$hex';
+  //   }
+  //   if (hex.length != 8) {
+  //     return null;
+  //   }
 
-    final value = int.tryParse(hex, radix: 16);
-    if (value == null) {
-      return null;
-    }
-    return Color(value);
-  }
+  //   final value = int.tryParse(hex, radix: 16);
+  //   if (value == null) {
+  //     return null;
+  //   }
+  //   return Color(value);
+  // }
 }

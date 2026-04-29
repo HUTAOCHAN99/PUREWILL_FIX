@@ -74,8 +74,7 @@ class HabitCardsList extends StatelessWidget {
             );
           }).toList(),
         );
-      case HabitStatus.initial:
-        throw UnimplementedError();
+
     }
   }
 

@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
 import 'package:purewill/data/services/categories/category_api_service.dart';
 import 'package:purewill/data/services/habits/habit_api_service.dart';
+import 'package:purewill/data/services/reminder_api_service.dart';
 import 'package:purewill/data/services/me/me_api_service.dart';
 import 'package:purewill/data/services/motivation_service.dart';
 import 'package:purewill/data/services/nofap/nofap_session_api_service.dart';
@@ -30,6 +31,10 @@ final meApiServiceProvider = Provider<MeApiService>((ref) {
 
 final nofapSessionApiServiceProvider = Provider<NofapSessionApiService>((ref) {
   return NofapSessionApiService();
+});
+
+final reminderApiServiceProvider = Provider<ReminderApiService>((ref) {
+  return ReminderApiService();
 });
 
 final motivationServiceProvider = Provider<MotivationService>((ref) {
@@ -63,6 +68,7 @@ final habitTokenSyncProvider = Provider<void>((ref) {
   final categoryService = ref.watch(categoryApiServiceProvider);
   final unitService = ref.watch(unitApiServiceProvider);
   final meService = ref.watch(meApiServiceProvider);
+  final reminderService = ref.watch(reminderApiServiceProvider);
   final nofapService = ref.watch(nofapSessionApiServiceProvider);
   final authRepo = ref.watch(authRepositoryProvider);
 
@@ -71,6 +77,7 @@ final habitTokenSyncProvider = Provider<void>((ref) {
     categoryService.setAccessToken(authRepo.accessToken!);
     unitService.setAccessToken(authRepo.accessToken!);
     meService.setAccessToken(authRepo.accessToken!);
+    reminderService.setAccessToken(authRepo.accessToken!);
     nofapService.setAccessToken(authRepo.accessToken!);
   }
 });

@@ -57,7 +57,7 @@ class HomeState {
   }
 
   HomeState({
-    this.status = HabitStatus.initial,
+    this.status = HabitStatus.loading,
     this.errorMessage,
     this.todayHabits = const [],
     this.todayCompletionStatus = const {},

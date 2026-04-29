@@ -7,15 +7,11 @@ import 'package:purewill/ui/auth/screen/login_screen.dart';
 import 'package:purewill/ui/habit-tracker/habit_provider.dart';
 import 'package:purewill/ui/habit-tracker/screen/chatbot_screen.dart';
 import 'package:purewill/ui/habit-tracker/screen/community_selection_screen.dart';
-// import 'package:purewill/ui/habit-tracker/screen/membership_screen.dart';
 import 'package:purewill/ui/habit-tracker/view_model/habit_view_model.dart';
-// import 'package:purewill/ui/membership/plan_provider.dart';
 import 'package:purewill/ui/habit-tracker/widget/clean_bottom_navigation_bar.dart';
 import 'package:purewill/ui/habit-tracker/widget/habit_cards_list.dart';
 import 'package:purewill/ui/habit-tracker/widget/habit_header.dart';
-import 'package:purewill/ui/habit-tracker/widget/habit_welcome_message.dart';
 import 'package:purewill/ui/habit-tracker/widget/progress_card.dart';
-// import 'package:purewill/
 import 'package:purewill/ui/habit-tracker/screen/habit_detail_screen.dart';
 import 'package:purewill/ui/habit-tracker/screen/add_habit_screen.dart';
 import 'package:purewill/ui/habit-tracker/screen/habit_screen.dart';
@@ -36,22 +32,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(homeNotifierProvider.notifier).initializeHome();
-
-      // Schedule reminders setelah login
-      // _scheduleReminders();
     });
   }
-
-  // Future<void> _scheduleReminders() async {
-  //   try {
-  //     // debugPrint('🔄 Scheduling reminders for current user...');
-  //     final reminderService = ReminderSyncService();
-  //     await reminderService.rescheduleAllReminders();
-  //     // debugPrint('✅ Reminders scheduled successfully');
-  //   } catch (e) {
-  //     // debugPrint('❌ Error scheduling reminders: $e');
-  //   }
-  // }
 
   void _onNavBarTap(int index) {
     if (index == 1) {
@@ -104,9 +86,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final List<HabitModel> userHabits = homeState.todayHabits;
     final effectiveCompletionStatus = homeState.effectiveCompletionStatus;
     final ProfileModel? currentUser = homeState.currentUser;
-    print(currentUser);
-    final String userName = currentUser?.fullName ?? "User";
-    final String userEmail = currentUser?.email ?? "email@example.com";
+    final String username = currentUser?.username ?? "user";
+    final String fullName = currentUser?.fullName ?? "user";
 
     final completedToday = homeState.completedToday;
     final totalHabits = homeState.totalHabits;
@@ -128,9 +109,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             child: Column(
               children: [
                 HabitHeader(
-                  userEmail: userEmail,
-                  userName: userName,
-                  userRole: homeState.userRole,
+                  fullname: fullName,
+                  username: username,
                   onLogout: _performLogout,
                 ),
                 Expanded(
@@ -142,8 +122,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        HabitWelcomeMessage(name: userName),
-
                         if (homeState.userRole == 'doctor' ||
                             homeState.userRole == 'admin')
                           Container(
@@ -201,7 +179,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         const SizedBox(height: 16),
 
                         const Text(
-                          "Your Habits",
+                          "Your Today Habits",
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,

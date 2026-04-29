@@ -202,28 +202,56 @@ class ReminderSettingController with ChangeNotifier {
       // debugPrint('   - Enabled: $_pushNotification');
       // debugPrint('   - Repeat Daily: $_repeatDaily');
 
-      // Delete old reminder if exists
-      if (_reminderSetting != null && _reminderSetting!.id.isNotEmpty) {
-        await _repository.deleteReminderSetting(_reminderSetting!.id.hashCode);
-      }
-
       // Update habit table
       await _updateHabitReminderSettings(_pushNotification);
 
-      // Create new reminder dengan waktu yang benar
-      final newReminder = ReminderSettingModel(
-        id: '', // Force new creation
-        habitId: habit.id,
-        isEnabled: _pushNotification,
-        time: scheduledDateTime, // Ini yang akan disimpan ke database
-        snoozeDuration: snoozeDuration,
-        repeatDaily: _repeatDaily,
-        isSoundEnabled: _soundEnabled,
-        isVibrationEnabled: _vibrationEnabled,
-        createdAt: DateTime.now(),
-      );
+      if (_reminderSetting != null && _reminderSetting!.id.isNotEmpty) {
+        final reminderId = int.tryParse(_reminderSetting!.id);
+        if (reminderId != null) {
+          await _repository.updateReminderSetting(
+            reminderSettingId: reminderId,
+            updates: {
+              'time': scheduledDateTime.toIso8601String(),
+              'isEnabled': _pushNotification,
+              'snoozeDuration': snoozeDuration,
+              'repeatDaily': _repeatDaily,
+              'isSoundEnabled': _soundEnabled,
+              'isVibrationEnabled': _vibrationEnabled,
+            },
+          );
+        } else {
+          final newReminder = ReminderSettingModel(
+            id: '',
+            habitId: habit.id,
+            isEnabled: _pushNotification,
+            time: scheduledDateTime,
+            snoozeDuration: snoozeDuration,
+            repeatDaily: _repeatDaily,
+            isSoundEnabled: _soundEnabled,
+            isVibrationEnabled: _vibrationEnabled,
+            createdAt: DateTime.now(),
+          );
 
-      _reminderSetting = await _repository.createReminderSetting(newReminder);
+          _reminderSetting = await _repository.createReminderSetting(
+            newReminder,
+          );
+        }
+      } else {
+        // Create new reminder dengan waktu yang benar
+        final newReminder = ReminderSettingModel(
+          id: '', // Force new creation
+          habitId: habit.id,
+          isEnabled: _pushNotification,
+          time: scheduledDateTime, // Ini yang akan disimpan ke database
+          snoozeDuration: snoozeDuration,
+          repeatDaily: _repeatDaily,
+          isSoundEnabled: _soundEnabled,
+          isVibrationEnabled: _vibrationEnabled,
+          createdAt: DateTime.now(),
+        );
+
+        _reminderSetting = await _repository.createReminderSetting(newReminder);
+      }
 
       // Schedule notification if enabled
       if (_pushNotification) {

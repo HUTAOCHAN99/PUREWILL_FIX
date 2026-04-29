@@ -1,7 +1,4 @@
-// lib/ui/habit-tracker/screen/reminder_setting_screen.dart
-
 import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:purewill/data/services/local_notification_service.dart';
@@ -47,9 +44,11 @@ class _ReminderSettingScreenState extends ConsumerState<ReminderSettingScreen> {
       habitApiService.setAccessToken(token);
     }
 
+    final reminderApi = ref.read(reminderApiServiceProvider);
+
     _controller = ReminderSettingController(
       habit: widget.habit,
-      repository: ReminderSettingRepository(),
+      repository: ReminderSettingRepository(apiService: reminderApi),
       notificationService: LocalNotificationService(),
       habitApiService: habitApiService,
     )..addListener(_onControllerUpdate);
