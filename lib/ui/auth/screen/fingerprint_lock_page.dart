@@ -73,9 +73,7 @@ class _FingerprintLockPageState extends ConsumerState<FingerprintLockPage> {
       final authState = ref.read(authNotifierProvider);
       if (authState.user != null) {
         if (!mounted) return;
-        Navigator.of(
-          context,
-        ).pushNamedAndRemoveUntil('/home', (route) => false);
+        Navigator.of(context).pushNamedAndRemoveUntil('/home', (route) => false);
         return;
       }
 

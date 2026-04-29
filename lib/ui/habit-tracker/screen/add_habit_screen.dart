@@ -49,6 +49,25 @@ class _AddHabitScreenState extends ConsumerState<AddHabitScreen> {
   double? _targetLong;
   int _radius = 50;
 
+  Future<void> onRefresh(WidgetRef ref) async {
+    try {
+      await ref.read(addHabitNotifierProvider.notifier).loadCategories();
+      await ref.read(addHabitNotifierProvider.notifier).loadUnits();
+      if (mounted) {
+        setState(() {});
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to refresh data: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -72,8 +91,7 @@ class _AddHabitScreenState extends ConsumerState<AddHabitScreen> {
     }
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(addHabitNotifierProvider.notifier).loadCategories();
-      ref.read(addHabitNotifierProvider.notifier).loadUnits();
+      onRefresh(ref);
     });
   }
 

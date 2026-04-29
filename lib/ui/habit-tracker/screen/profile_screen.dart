@@ -17,10 +17,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   final BiometricService _biometricService = BiometricService();
   bool _biometricEnabled = false;
 
-  Future<void> _onRefresh(WidgetRef ref) async {
-    await ref.read(profileViewModelProvider.notifier).loadProfile();
-  }
-
   Future<void> _showLogoutDialog(BuildContext context, WidgetRef ref) async {
     final confirm = await showDialog<bool>(
       context: context,
@@ -65,6 +61,22 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       setState(() {
         _biometricEnabled = enabled;
       });
+    }
+  }
+
+  Future<void> _onRefresh(WidgetRef ref) async {
+    try {
+      await ref.read(profileViewModelProvider.notifier).loadProfile();
+      await _loadBiometricEnabled();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to refresh: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 
