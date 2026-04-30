@@ -19,15 +19,15 @@ class ConversationModel {
   factory ConversationModel.fromJson(Map<String, dynamic> json) {
     final createdAtValue = json['createdAt'];
     final updatedAtValue = json['updatedAt'];
-    
+
     return ConversationModel(
       id: json['id'] as String? ?? '',
       userId: json['userId'] as String? ?? '',
       title: json['title'] as String?,
-      createdAt: createdAtValue is String 
+      createdAt: createdAtValue is String
           ? DateTime.parse(createdAtValue as String)
           : DateTime.now(),
-      updatedAt: updatedAtValue is String 
+      updatedAt: updatedAtValue is String
           ? DateTime.parse(updatedAtValue as String)
           : DateTime.now(),
     );
@@ -41,13 +41,18 @@ class ConversationModel {
     'updatedAt': updatedAt.toIso8601String(),
   };
 
-  String get displayTitle => title?.isEmpty ?? true ? 'New Conversation' : title!;
-  
+  String get displayTitle =>
+      title?.isEmpty ?? true ? 'New Conversation' : title!;
+
   String getFormattedDate() {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
     final yesterday = today.subtract(const Duration(days: 1));
-    final messageDate = DateTime(updatedAt.year, updatedAt.month, updatedAt.day);
+    final messageDate = DateTime(
+      updatedAt.year,
+      updatedAt.month,
+      updatedAt.day,
+    );
 
     if (messageDate == today) {
       return DateFormat('HH:mm').format(updatedAt);
@@ -79,13 +84,13 @@ class MessageModel {
 
   factory MessageModel.fromJson(Map<String, dynamic> json) {
     final createdAtValue = json['createdAt'];
-    
+
     return MessageModel(
       id: json['id'] as String? ?? '',
       conversationId: json['conversationId'] as String? ?? '',
       role: json['role'] as String? ?? 'USER',
       content: json['content'] as String? ?? '',
-      createdAt: createdAtValue is String 
+      createdAt: createdAtValue is String
           ? DateTime.parse(createdAtValue as String)
           : DateTime.now(),
     );
@@ -115,8 +120,12 @@ class MessageResponseModel {
 
   factory MessageResponseModel.fromJson(Map<String, dynamic> json) {
     return MessageResponseModel(
-      userMessage: MessageModel.fromJson(json['userMessage'] as Map<String, dynamic>),
-      assistantMessage: MessageModel.fromJson(json['assistantMessage'] as Map<String, dynamic>),
+      userMessage: MessageModel.fromJson(
+        json['userMessage'] as Map<String, dynamic>,
+      ),
+      assistantMessage: MessageModel.fromJson(
+        json['assistantMessage'] as Map<String, dynamic>,
+      ),
     );
   }
 }

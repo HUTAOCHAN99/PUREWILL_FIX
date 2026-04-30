@@ -8,10 +8,12 @@ class ConversationListScreen extends ConsumerStatefulWidget {
   const ConversationListScreen({super.key});
 
   @override
-  ConsumerState<ConversationListScreen> createState() => _ConversationListScreenState();
+  ConsumerState<ConversationListScreen> createState() =>
+      _ConversationListScreenState();
 }
 
-class _ConversationListScreenState extends ConsumerState<ConversationListScreen> {
+class _ConversationListScreenState
+    extends ConsumerState<ConversationListScreen> {
   @override
   Widget build(BuildContext context) {
     final conversationsAsync = ref.watch(conversationNotifierProvider);
@@ -34,9 +36,7 @@ class _ConversationListScreenState extends ConsumerState<ConversationListScreen>
         ],
       ),
       body: conversationsAsync.when(
-        loading: () => const Center(
-          child: CircularProgressIndicator(),
-        ),
+        loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, stackTrace) => Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -68,7 +68,11 @@ class _ConversationListScreenState extends ConsumerState<ConversationListScreen>
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Icon(Icons.chat_outlined, size: 48, color: Colors.grey),
+                    const Icon(
+                      Icons.chat_outlined,
+                      size: 48,
+                      color: Colors.grey,
+                    ),
                     const SizedBox(height: 16),
                     Text(
                       'No conversations yet',
@@ -90,7 +94,9 @@ class _ConversationListScreenState extends ConsumerState<ConversationListScreen>
               )
             : RefreshIndicator(
                 onRefresh: () async {
-                  await ref.read(conversationNotifierProvider.notifier).refresh();
+                  await ref
+                      .read(conversationNotifierProvider.notifier)
+                      .refresh();
                 },
                 child: ListView.builder(
                   itemCount: conversations.length,
@@ -110,7 +116,7 @@ class _ConversationListScreenState extends ConsumerState<ConversationListScreen>
 
   void _createNewConversation() async {
     final titleController = TextEditingController();
-    
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -131,13 +137,14 @@ class _ConversationListScreenState extends ConsumerState<ConversationListScreen>
           ElevatedButton(
             onPressed: () async {
               Navigator.pop(context);
-              final title = titleController.text.trim().isEmpty 
-                  ? null 
+              final title = titleController.text.trim().isEmpty
+                  ? null
                   : titleController.text.trim();
-              
-              final result = await ref.read(conversationNotifierProvider.notifier)
+
+              final result = await ref
+                  .read(conversationNotifierProvider.notifier)
                   .createConversation(title: title);
-              
+
               if (result != null && mounted) {
                 _openConversation(result);
               }
@@ -153,7 +160,8 @@ class _ConversationListScreenState extends ConsumerState<ConversationListScreen>
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => ConversationDetailScreen(conversation: conversation),
+        builder: (context) =>
+            ConversationDetailScreen(conversation: conversation),
       ),
     );
   }
@@ -163,7 +171,9 @@ class _ConversationListScreenState extends ConsumerState<ConversationListScreen>
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Delete Conversation'),
-        content: const Text('Are you sure you want to delete this conversation?'),
+        content: const Text(
+          'Are you sure you want to delete this conversation?',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
@@ -172,18 +182,17 @@ class _ConversationListScreenState extends ConsumerState<ConversationListScreen>
           ElevatedButton(
             onPressed: () async {
               Navigator.pop(context);
-              final success = await ref.read(conversationNotifierProvider.notifier)
+              final success = await ref
+                  .read(conversationNotifierProvider.notifier)
                   .deleteConversation(conversationId);
-              
+
               if (success && mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(content: Text('Conversation deleted')),
                 );
               }
             },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
-            ),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
             child: const Text('Delete'),
           ),
         ],
@@ -221,10 +230,7 @@ class ConversationListItem extends StatelessWidget {
       ),
       trailing: PopupMenuButton(
         itemBuilder: (context) => [
-          PopupMenuItem(
-            child: const Text('Delete'),
-            onTap: onDelete,
-          ),
+          PopupMenuItem(child: const Text('Delete'), onTap: onDelete),
         ],
       ),
       onTap: onTap,

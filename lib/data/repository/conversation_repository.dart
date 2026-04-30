@@ -16,7 +16,11 @@ class ConversationRepository {
     } on AuthException {
       rethrow;
     } catch (e, stackTrace) {
-      log('FAILURE: Failed to get conversations', error: e, stackTrace: stackTrace);
+      log(
+        'FAILURE: Failed to get conversations',
+        error: e,
+        stackTrace: stackTrace,
+      );
       rethrow;
     }
   }
@@ -28,7 +32,11 @@ class ConversationRepository {
     } on AuthException {
       rethrow;
     } catch (e, stackTrace) {
-      log('FAILURE: Failed to create conversation', error: e, stackTrace: stackTrace);
+      log(
+        'FAILURE: Failed to create conversation',
+        error: e,
+        stackTrace: stackTrace,
+      );
       rethrow;
     }
   }
@@ -40,7 +48,11 @@ class ConversationRepository {
     } on AuthException {
       rethrow;
     } catch (e, stackTrace) {
-      log('FAILURE: Failed to get conversation detail', error: e, stackTrace: stackTrace);
+      log(
+        'FAILURE: Failed to get conversation detail',
+        error: e,
+        stackTrace: stackTrace,
+      );
       rethrow;
     }
   }
@@ -52,7 +64,11 @@ class ConversationRepository {
     } on AuthException {
       rethrow;
     } catch (e, stackTrace) {
-      log('FAILURE: Failed to delete conversation', error: e, stackTrace: stackTrace);
+      log(
+        'FAILURE: Failed to delete conversation',
+        error: e,
+        stackTrace: stackTrace,
+      );
       rethrow;
     }
   }

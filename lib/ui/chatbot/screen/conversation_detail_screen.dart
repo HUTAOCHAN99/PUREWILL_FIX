@@ -7,16 +7,15 @@ import 'package:intl/intl.dart';
 class ConversationDetailScreen extends ConsumerStatefulWidget {
   final ConversationModel conversation;
 
-  const ConversationDetailScreen({
-    super.key,
-    required this.conversation,
-  });
+  const ConversationDetailScreen({super.key, required this.conversation});
 
   @override
-  ConsumerState<ConversationDetailScreen> createState() => _ConversationDetailScreenState();
+  ConsumerState<ConversationDetailScreen> createState() =>
+      _ConversationDetailScreenState();
 }
 
-class _ConversationDetailScreenState extends ConsumerState<ConversationDetailScreen> {
+class _ConversationDetailScreenState
+    extends ConsumerState<ConversationDetailScreen> {
   late TextEditingController _messageController;
   late ScrollController _scrollController;
   bool _isSending = false;
@@ -62,7 +61,7 @@ class _ConversationDetailScreenState extends ConsumerState<ConversationDetailScr
 
     if (mounted) {
       setState(() => _isSending = false);
-      
+
       if (success) {
         _scrollToBottom();
       } else {
@@ -91,14 +90,16 @@ class _ConversationDetailScreenState extends ConsumerState<ConversationDetailScr
         children: [
           Expanded(
             child: messagesAsync.when(
-              loading: () => const Center(
-                child: CircularProgressIndicator(),
-              ),
+              loading: () => const Center(child: CircularProgressIndicator()),
               error: (error, stackTrace) => Center(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Icon(Icons.error_outline, size: 48, color: Colors.red),
+                    const Icon(
+                      Icons.error_outline,
+                      size: 48,
+                      color: Colors.red,
+                    ),
                     const SizedBox(height: 16),
                     Text(
                       'Error loading messages',
@@ -114,9 +115,11 @@ class _ConversationDetailScreenState extends ConsumerState<ConversationDetailScr
                     ElevatedButton(
                       onPressed: () {
                         ref
-                            .read(conversationMessagesNotifierProvider(
-                                    widget.conversation.id)
-                                .notifier)
+                            .read(
+                              conversationMessagesNotifierProvider(
+                                widget.conversation.id,
+                              ).notifier,
+                            )
                             .refresh();
                       },
                       child: const Text('Retry'),
@@ -129,7 +132,11 @@ class _ConversationDetailScreenState extends ConsumerState<ConversationDetailScr
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          const Icon(Icons.chat_outlined, size: 48, color: Colors.grey),
+                          const Icon(
+                            Icons.chat_outlined,
+                            size: 48,
+                            color: Colors.grey,
+                          ),
                           const SizedBox(height: 16),
                           Text(
                             'No messages yet',
@@ -146,7 +153,10 @@ class _ConversationDetailScreenState extends ConsumerState<ConversationDetailScr
                   : ListView.builder(
                       controller: _scrollController,
                       itemCount: messages.length,
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 8,
+                      ),
                       itemBuilder: (context, index) {
                         final message = messages[index];
                         return MessageBubble(message: message);
@@ -160,10 +170,7 @@ class _ConversationDetailScreenState extends ConsumerState<ConversationDetailScr
             decoration: BoxDecoration(
               color: Colors.white,
               border: Border(
-                top: BorderSide(
-                  color: Colors.grey[200]!,
-                  width: 1,
-                ),
+                top: BorderSide(color: Colors.grey[200]!, width: 1),
               ),
             ),
             child: Row(
@@ -176,15 +183,11 @@ class _ConversationDetailScreenState extends ConsumerState<ConversationDetailScr
                       hintText: 'Type a message...',
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(24),
-                        borderSide: BorderSide(
-                          color: Colors.grey[300]!,
-                        ),
+                        borderSide: BorderSide(color: Colors.grey[300]!),
                       ),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(24),
-                        borderSide: BorderSide(
-                          color: Colors.grey[300]!,
-                        ),
+                        borderSide: BorderSide(color: Colors.grey[300]!),
                       ),
                       contentPadding: const EdgeInsets.symmetric(
                         horizontal: 16,
@@ -207,7 +210,9 @@ class _ConversationDetailScreenState extends ConsumerState<ConversationDetailScr
                           height: 20,
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              Colors.white,
+                            ),
                           ),
                         )
                       : const Icon(Icons.send),
@@ -224,10 +229,7 @@ class _ConversationDetailScreenState extends ConsumerState<ConversationDetailScr
 class MessageBubble extends StatelessWidget {
   final MessageModel message;
 
-  const MessageBubble({
-    super.key,
-    required this.message,
-  });
+  const MessageBubble({super.key, required this.message});
 
   @override
   Widget build(BuildContext context) {
@@ -244,14 +246,14 @@ class MessageBubble extends StatelessWidget {
           right: isUser ? 0 : 32,
         ),
         child: Column(
-          crossAxisAlignment: isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+          crossAxisAlignment: isUser
+              ? CrossAxisAlignment.end
+              : CrossAxisAlignment.start,
           children: [
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               decoration: BoxDecoration(
-                color: isUser
-                    ? Colors.blue[500]
-                    : Colors.grey[200],
+                color: isUser ? Colors.blue[500] : Colors.grey[200],
                 borderRadius: BorderRadius.circular(16),
               ),
               child: Text(
@@ -267,10 +269,7 @@ class MessageBubble extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Text(
                 timeString,
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.grey[600],
-                ),
+                style: TextStyle(fontSize: 12, color: Colors.grey[600]),
               ),
             ),
           ],

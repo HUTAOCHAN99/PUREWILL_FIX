@@ -8,7 +8,8 @@ class ConversationApiService {
   late final String _baseUrl;
   String? _accessToken;
 
-  ConversationApiService({http.Client? client}) : _client = client ?? http.Client() {
+  ConversationApiService({http.Client? client})
+    : _client = client ?? http.Client() {
     final host = dotenv.env['API_HOST'] ?? 'localhost';
     final port = dotenv.env['API_PORT'] ?? '4000';
     _baseUrl = 'http://$host:$port/api/conversations';
@@ -40,9 +41,13 @@ class ConversationApiService {
 
     if (response.statusCode == 200) {
       final data = _decodeBody(response);
-      final conversations = (data['data'] as List<dynamic>?)
-          ?.map((e) => ConversationModel.fromJson(e as Map<String, dynamic>))
-          .toList() ?? [];
+      final conversations =
+          (data['data'] as List<dynamic>?)
+              ?.map(
+                (e) => ConversationModel.fromJson(e as Map<String, dynamic>),
+              )
+              .toList() ??
+          [];
       return conversations;
     }
 
@@ -50,7 +55,9 @@ class ConversationApiService {
       throw AuthException('Unauthorized');
     }
 
-    throw AuthException('Failed to fetch conversations: ${response.statusCode}');
+    throw AuthException(
+      'Failed to fetch conversations: ${response.statusCode}',
+    );
   }
 
   /// POST /api/conversations
@@ -79,7 +86,9 @@ class ConversationApiService {
       throw AuthException(error['message']?.toString() ?? 'Invalid request');
     }
 
-    throw AuthException('Failed to create conversation: ${response.statusCode}');
+    throw AuthException(
+      'Failed to create conversation: ${response.statusCode}',
+    );
   }
 
   /// GET /api/conversations/:id
@@ -103,7 +112,9 @@ class ConversationApiService {
     }
 
     if (response.statusCode == 403) {
-      throw AuthException('Forbidden: You do not have access to this conversation');
+      throw AuthException(
+        'Forbidden: You do not have access to this conversation',
+      );
     }
 
     if (response.statusCode == 404) {
@@ -133,14 +144,18 @@ class ConversationApiService {
     }
 
     if (response.statusCode == 403) {
-      throw AuthException('Forbidden: You do not have access to this conversation');
+      throw AuthException(
+        'Forbidden: You do not have access to this conversation',
+      );
     }
 
     if (response.statusCode == 404) {
       throw AuthException('Conversation not found');
     }
 
-    throw AuthException('Failed to delete conversation: ${response.statusCode}');
+    throw AuthException(
+      'Failed to delete conversation: ${response.statusCode}',
+    );
   }
 
   /// GET /api/conversations/:id/messages
@@ -150,11 +165,12 @@ class ConversationApiService {
     int limit = 10,
     String? cursor,
   }) async {
-    final uri = Uri.parse('$_baseUrl/$conversationId/messages')
-        .replace(queryParameters: {
-      'limit': limit.toString(),
-      if (cursor != null) 'cursor': cursor,
-    });
+    final uri = Uri.parse('$_baseUrl/$conversationId/messages').replace(
+      queryParameters: {
+        'limit': limit.toString(),
+        if (cursor != null) 'cursor': cursor,
+      },
+    );
 
     final response = await _client.get(
       uri,
@@ -166,9 +182,11 @@ class ConversationApiService {
 
     if (response.statusCode == 200) {
       final data = _decodeBody(response);
-      final messages = (data['data'] as List<dynamic>?)
-          ?.map((e) => MessageModel.fromJson(e as Map<String, dynamic>))
-          .toList() ?? [];
+      final messages =
+          (data['data'] as List<dynamic>?)
+              ?.map((e) => MessageModel.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          [];
       return messages;
     }
 
@@ -177,7 +195,9 @@ class ConversationApiService {
     }
 
     if (response.statusCode == 403) {
-      throw AuthException('Forbidden: You do not have access to this conversation');
+      throw AuthException(
+        'Forbidden: You do not have access to this conversation',
+      );
     }
 
     if (response.statusCode == 404) {
@@ -206,7 +226,9 @@ class ConversationApiService {
 
     if (response.statusCode == 201) {
       final data = _decodeBody(response);
-      return MessageResponseModel.fromJson(data['data'] as Map<String, dynamic>);
+      return MessageResponseModel.fromJson(
+        data['data'] as Map<String, dynamic>,
+      );
     }
 
     if (response.statusCode == 401) {
@@ -214,7 +236,9 @@ class ConversationApiService {
     }
 
     if (response.statusCode == 403) {
-      throw AuthException('Forbidden: You do not have access to this conversation');
+      throw AuthException(
+        'Forbidden: You do not have access to this conversation',
+      );
     }
 
     if (response.statusCode == 404) {
