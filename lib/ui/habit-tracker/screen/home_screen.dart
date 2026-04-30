@@ -4,9 +4,9 @@ import 'package:purewill/domain/model/habit_model.dart';
 import 'package:purewill/domain/model/profile_model.dart';
 import 'package:purewill/ui/auth/auth_provider.dart';
 import 'package:purewill/ui/auth/screen/login_screen.dart';
+import 'package:purewill/ui/chatbot/screen/conversation_list_screen.dart';
 import 'package:purewill/ui/habit-tracker/habit_provider.dart';
 import 'package:purewill/ui/habit-tracker/screen/chatbot_screen.dart';
-import 'package:purewill/ui/habit-tracker/screen/community_selection_screen.dart';
 import 'package:purewill/ui/habit-tracker/view_model/habit_view_model.dart';
 import 'package:purewill/ui/habit-tracker/widget/clean_bottom_navigation_bar.dart';
 import 'package:purewill/ui/habit-tracker/widget/habit_cards_list.dart';
@@ -15,7 +15,6 @@ import 'package:purewill/ui/habit-tracker/widget/progress_card.dart';
 import 'package:purewill/ui/habit-tracker/screen/habit_detail_screen.dart';
 import 'package:purewill/ui/habit-tracker/screen/add_habit_screen.dart';
 import 'package:purewill/ui/habit-tracker/screen/habit_screen.dart';
-import 'package:purewill/ui/habit-tracker/screen/consultation_screen.dart';
 import 'package:purewill/ui/habit-tracker/screen/nofap_screen.dart';
 import 'package:purewill/domain/model/habit_log_model.dart';
 
@@ -47,16 +46,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     } else if (index == 3) {
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(
-          builder: (context) => const CommunitySelectionScreen(),
+          builder: (context) => const ConversationListScreen(),
         ),
       );
     } else if (index == 4) {
       Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (context) => const ConsultationScreen()),
+        MaterialPageRoute(builder: (context) => const ConversationListScreen()),
       );
     } else if (index == 5) {
       Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (context) => const ChatBotScreen()),
+        MaterialPageRoute(builder: (context) => const ConversationListScreen()),
       );
     } else if (index == 6) {
       Navigator.of(context).pushReplacement(
