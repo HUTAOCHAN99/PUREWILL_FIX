@@ -1,3 +1,5 @@
+import 'package:purewill/utils/indonesia_timezone.dart';
+
 enum LogStatus { neutral, success, failed }
 
 class HabitLogModel {
@@ -31,11 +33,7 @@ class HabitLogModel {
   }
 
   static DateTime _parseDate(dynamic value) {
-    if (value is String) {
-      final parsed = DateTime.tryParse(value);
-      if (parsed != null) return parsed;
-    }
-    return DateTime.now();
+    return parseUtcToIndonesia(value, fallback: nowInIndonesia());
   }
 
   static int _parseInt(dynamic value, {int fallback = 0}) {

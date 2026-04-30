@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/legacy.dart';
 import 'package:purewill/data/services/habits/habit_api_service.dart';
 import 'package:purewill/domain/model/habit_log_model.dart';
 import 'package:purewill/domain/model/habit_model.dart';
+import 'package:purewill/utils/indonesia_timezone.dart';
 
 enum HabitStatus { initial, loading, success, failure }
 
@@ -132,18 +133,20 @@ class HabitDetailViewModel extends StateNotifier<HabitDetailState> {
   }
 
   DateTime _dateOnly(DateTime date) {
-    return DateTime(date.year, date.month, date.day);
+    final local = dateOnlyInIndonesia(date);
+    return DateTime(local.year, local.month, local.day);
   }
 
   List<HabitLogModel> _getLogsForCurrentMonth(List<HabitLogModel> logs) {
-    final now = DateTime.now();
+    final now = _dateOnly(nowInIndonesia());
     return logs.where((log) {
-      return log.logDate.year == now.year && log.logDate.month == now.month;
+      final d = _dateOnly(log.logDate);
+      return d.year == now.year && d.month == now.month;
     }).toList();
   }
 
   List<HabitLogModel> _getLogsForCurrentWeek(List<HabitLogModel> logs) {
-    final now = _dateOnly(DateTime.now());
+    final now = _dateOnly(nowInIndonesia());
     final startOfWeek = now.subtract(Duration(days: now.weekday - 1));
     final endOfWeek = startOfWeek.add(const Duration(days: 6));
 
@@ -167,7 +170,7 @@ class HabitDetailViewModel extends StateNotifier<HabitDetailState> {
     DateTime habitStartDate,
     DateTime? habitEndDate,
   ) {
-    final today = _dateOnly(DateTime.now());
+    final today = _dateOnly(nowInIndonesia());
     final startOfWeek = today.subtract(Duration(days: today.weekday - 1));
 
     final normalizedStart = _dateOnly(habitStartDate);
@@ -204,7 +207,7 @@ class HabitDetailViewModel extends StateNotifier<HabitDetailState> {
       statusByDate[key] ??= log.status;
     }
 
-    final today = _dateOnly(DateTime.now());
+    final today = _dateOnly(nowInIndonesia());
     final minDate = _dateOnly(habitStartDate);
 
     var streak = 0;

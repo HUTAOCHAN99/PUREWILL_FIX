@@ -20,7 +20,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   bool _isBiometricLoginLoading = false;
 
   final TextEditingController _emailController = TextEditingController(
-    text: 'user1@purewill.dev',
+    text: 'rahaditya.putra@example.com',
   );
   final TextEditingController _passwordController = TextEditingController(
     text: 'Password123!',
@@ -39,11 +39,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   Future<void> _checkBiometricAvailability() async {
     final isAvailable = await _biometricService.isBiometricAvailable();
-    if (mounted) {
-      setState(() {
-        _isBiometricAvailable = isAvailable;
-      });
-    }
+
+    if (!mounted) return;
+
+    setState(() {
+      _isBiometricAvailable = isAvailable;
+    });
   }
 
   Future<void> _checkSavedLogin() async {
@@ -60,6 +61,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   Future<void> _loginWithBiometric() async {
     if (_isBiometricLoginLoading) return;
+
+    if (!mounted) return;
 
     setState(() {
       _isBiometricLoginLoading = true;

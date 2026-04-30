@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:purewill/domain/model/habit_model.dart';
 import 'package:purewill/ui/habit-tracker/screen/edit_habit_screen.dart';
-import 'package:purewill/ui/habit-tracker/screen/reminder_setting_screen.dart';
+import 'package:purewill/ui/habit-tracker/screen/reminder_list_screen.dart';
 
 class HabitActionsDropdown extends StatelessWidget {
   final Function(String) onActionSelected;
@@ -115,9 +115,9 @@ class HabitActionsDropdown extends StatelessWidget {
             context: context,
             habitName: habitName,
             onConfirm: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('"$habitName" deleted')),
-              );
+              ScaffoldMessenger.of(
+                context,
+              ).showSnackBar(SnackBar(content: Text('"$habitName" deleted')));
               Navigator.pop(context); // Kembali ke home setelah delete
             },
           );
@@ -129,18 +129,17 @@ class HabitActionsDropdown extends StatelessWidget {
   static void _navigateToEditScreen(BuildContext context, HabitModel habit) {
     Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (context) => EditHabitScreen(habit: habit),
-      ),
+      MaterialPageRoute(builder: (context) => EditHabitScreen(habit: habit)),
     );
   }
 
-  static void _navigateToReminderSettings(BuildContext context, HabitModel habit) {
+  static void _navigateToReminderSettings(
+    BuildContext context,
+    HabitModel habit,
+  ) {
     Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (context) => ReminderSettingScreen(habit: habit),
-      ),
+      MaterialPageRoute(builder: (context) => ReminderListScreen(habit: habit)),
     );
   }
 

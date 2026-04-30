@@ -454,8 +454,8 @@ class _HabitScreenState extends ConsumerState<HabitScreen> {
     ).push(MaterialPageRoute(builder: (context) => const AddHabitScreen()));
   }
 
-  void _handleHabitTap(HabitModel habit) {
-    Navigator.push(
+  Future<void> _handleHabitTap(HabitModel habit) async {
+    final shouldRefresh = await Navigator.push<bool>(
       context,
       MaterialPageRoute(
         builder: (context) => HabitDetailScreen(
@@ -464,6 +464,11 @@ class _HabitScreenState extends ConsumerState<HabitScreen> {
         ),
       ),
     );
+
+    if (shouldRefresh == true && mounted) {
+      await ref.read(habitNotifierProvider.notifier).loadUserHabits();
+      await _loadTodayCompletionStatus();
+    }
   }
 
   Widget _buildHabitsList(List<HabitModel> userHabits) {

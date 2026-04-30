@@ -14,27 +14,29 @@ import 'package:purewill/ui/habit-tracker/view_model/nofap_view_model.dart';
 import 'package:purewill/ui/auth/auth_provider.dart';
 
 final habitApiServiceProvider = Provider<HabitApiService>((ref) {
-  return HabitApiService();
+  return HabitApiService(authRepository: ref.watch(authRepositoryProvider));
 });
 
 final categoryApiServiceProvider = Provider<CategoryApiService>((ref) {
-  return CategoryApiService();
+  return CategoryApiService(authRepository: ref.watch(authRepositoryProvider));
 });
 
 final unitApiServiceProvider = Provider<UnitApiService>((ref) {
-  return UnitApiService();
+  return UnitApiService(authRepository: ref.watch(authRepositoryProvider));
 });
 
 final meApiServiceProvider = Provider<MeApiService>((ref) {
-  return MeApiService();
+  return MeApiService(authRepository: ref.watch(authRepositoryProvider));
 });
 
 final nofapSessionApiServiceProvider = Provider<NofapSessionApiService>((ref) {
-  return NofapSessionApiService();
+  return NofapSessionApiService(
+    authRepository: ref.watch(authRepositoryProvider),
+  );
 });
 
 final reminderApiServiceProvider = Provider<ReminderApiService>((ref) {
-  return ReminderApiService();
+  return ReminderApiService(authRepository: ref.watch(authRepositoryProvider));
 });
 
 final motivationServiceProvider = Provider<MotivationService>((ref) {

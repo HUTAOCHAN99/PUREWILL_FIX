@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:purewill/domain/model/habit_log_model.dart';
+import 'package:purewill/utils/indonesia_timezone.dart';
 
 class CalendarTrackerWidget extends StatelessWidget {
   final List<HabitLogModel> habitLogForThisMonth;
@@ -8,7 +9,10 @@ class CalendarTrackerWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final now = DateTime.now();
+    for (final log in habitLogForThisMonth) {
+      print('date: ${log.logDate}, status: ${log.status}');
+    }
+    final now = nowInIndonesia();
     final firstDayOfMonth = DateTime(now.year, now.month, 1);
     final lastDayOfMonth = DateTime(now.year, now.month + 1, 0);
 
@@ -159,9 +163,9 @@ class CalendarTrackerWidget extends StatelessWidget {
     final logForDate = habitLogForThisMonth
         .where(
           (log) =>
-              log.logDate.year == date.year &&
-              log.logDate.month == date.month &&
-              log.logDate.day == date.day,
+              dateOnlyInIndonesia(log.logDate).year == date.year &&
+              dateOnlyInIndonesia(log.logDate).month == date.month &&
+              dateOnlyInIndonesia(log.logDate).day == date.day,
         )
         .toList();
 
@@ -182,7 +186,7 @@ class CalendarTrackerWidget extends StatelessWidget {
   }
 
   bool _isToday(DateTime date) {
-    final now = DateTime.now();
+    final now = nowInIndonesia();
     return date.year == now.year &&
         date.month == now.month &&
         date.day == now.day;

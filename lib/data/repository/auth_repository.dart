@@ -1,6 +1,7 @@
 import 'dart:developer';
 
 import 'package:purewill/data/repository/secure_storage_repository.dart';
+import 'package:purewill/data/services/auth/biometric_service.dart';
 import 'package:purewill/data/services/auth/auth_service.dart';
 import 'package:purewill/domain/model/auth_model.dart';
 import 'package:purewill/domain/model/user_model.dart';
@@ -8,13 +9,16 @@ import 'package:purewill/domain/model/user_model.dart';
 class AuthRepository {
   final AuthService _authService;
   final SecureStorageRepository _secureStorageRepository;
+  final BiometricService _biometricService;
   String? _accessToken;
 
   AuthRepository(
     this._authService, [
     SecureStorageRepository? secureStorageRepository,
+    BiometricService? biometricService,
   ]) : _secureStorageRepository =
-           secureStorageRepository ?? SecureStorageRepository();
+           secureStorageRepository ?? SecureStorageRepository(),
+       _biometricService = biometricService ?? BiometricService();
 
   String? get accessToken => _accessToken;
 
@@ -35,12 +39,22 @@ class AuthRepository {
     }
   }
 
-  Future<UserModel?> restoreSession() async {
+  Future<UserModel?> restoreSession({bool requireBiometric = false}) async {
     await restoreAccessToken();
 
     if (_accessToken != null) {
       try {
-        final response = await _authService.checkSession();
+        final response = await _authService.checkSession(skipRefresh: true);
+        _accessToken = _authService.accessToken;
+        if (_accessToken != null) {
+          await _secureStorageRepository.saveAccessToken(_accessToken!);
+        }
+
+        final refreshCookie = _authService.refreshTokenCookie;
+        if (refreshCookie != null) {
+          await _secureStorageRepository.saveRefreshTokenCookie(refreshCookie);
+        }
+
         return _userFromSessionResponse(response);
       } on AuthException {
         await _secureStorageRepository.clearAccessToken();
@@ -52,6 +66,29 @@ class AuthRepository {
         .getRefreshTokenCookie();
     if (storedRefreshCookie == null) {
       return null;
+    }
+
+    // If this restore is invoked during cold startup and the caller
+    // requests biometric verification, require biometric auth before
+    // calling the refresh endpoint. This prevents the app from
+    // automatically hitting the refresh endpoint when the app is
+    // reopened and biometric lock is enabled.
+    if (requireBiometric) {
+      final isEnabled = await _secureStorageRepository.isBiometricEnabled();
+      if (isEnabled) {
+        final result = await _biometricService.authenticate(
+          reason: 'Authenticate to restore session',
+          title: 'Unlock PureWill',
+          subtitle: 'Use your fingerprint to continue',
+          cancelButtonText: 'Use Password',
+        );
+
+        if (!result.success) {
+          await _secureStorageRepository.clearSessionTokens();
+          _accessToken = null;
+          return null;
+        }
+      }
     }
 
     try {
@@ -68,6 +105,28 @@ class AuthRepository {
 
       final session = await _authService.checkSession();
       return _userFromSessionResponse(session);
+    } on AuthException {
+      await _secureStorageRepository.clearSessionTokens();
+      _accessToken = null;
+      rethrow;
+    }
+  }
+
+  Future<String?> refreshAccessToken() async {
+    try {
+      final refreshed = await _authService.refreshSession();
+      _accessToken = refreshed['accessToken'] as String?;
+
+      if (_accessToken != null) {
+        await _secureStorageRepository.saveAccessToken(_accessToken!);
+      }
+
+      final refreshCookie = _authService.refreshTokenCookie;
+      if (refreshCookie != null) {
+        await _secureStorageRepository.saveRefreshTokenCookie(refreshCookie);
+      }
+
+      return _accessToken;
     } on AuthException {
       await _secureStorageRepository.clearSessionTokens();
       _accessToken = null;

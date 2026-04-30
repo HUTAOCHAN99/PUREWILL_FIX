@@ -40,11 +40,13 @@ class ReminderSettingModel {
       return fallback;
     }
 
-    // Parse the timestamp as-is
+    // Parse the timestamp and convert to local time (server may return UTC)
     DateTime parsedTime;
     try {
       if (json['time'] is String) {
         parsedTime = DateTime.parse(json['time'] as String);
+        // If server returned UTC (trailing Z) DateTime will be in UTC; convert to local
+        if (parsedTime.isUtc) parsedTime = parsedTime.toLocal();
       } else {
         parsedTime = DateTime.now();
       }

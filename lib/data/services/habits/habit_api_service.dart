@@ -1,15 +1,30 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:purewill/data/repository/auth_repository.dart';
 import 'package:purewill/domain/model/auth_model.dart';
 import 'package:purewill/domain/model/habit_model.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter/foundation.dart';
+import 'package:purewill/data/services/auth/auto_refresh_request.dart';
+import 'package:purewill/data/services/auth/auth_refresh_client.dart';
 
 class HabitApiService {
   late final String baseUrl;
   String? _accessToken;
+  final AuthRepository? _authRepository;
+  late final http.Client _client;
 
-  HabitApiService() {
+  HabitApiService({http.Client? client, AuthRepository? authRepository})
+    : _authRepository = authRepository {
+    _client = authRepository != null
+        ? AuthRefreshClient(
+            client ?? http.Client(),
+            authRepository,
+            onTokenRefreshed: (token) {
+              _accessToken = token;
+            },
+          )
+        : (client ?? http.Client());
     final host = dotenv.env['API_HOST'] ?? 'localhost';
     final port = dotenv.env['API_PORT'] ?? '4000';
     baseUrl = 'http://$host:$port/api';
@@ -42,16 +57,16 @@ class HabitApiService {
     }
   }
 
-  final http.Client _client = http.Client();
-
   /// GET /api/users/:id/habits - Get user habits
   Future<Map<String, dynamic>> getUserHabits(String userId) async {
     try {
       // if (kDebugMode) print('📡 GET $baseUrl/users/$userId/habits');
 
-      final response = await _client.get(
-        Uri.parse('$baseUrl/me/habits'),
-        headers: _headers,
+      final response = await sendWithAutoRefresh(
+        request: () =>
+            _client.get(Uri.parse('$baseUrl/me/habits'), headers: _headers),
+        authRepository: _authRepository,
+        updateAccessToken: (token) => _accessToken = token,
       );
 
       if (kDebugMode)
@@ -77,9 +92,13 @@ class HabitApiService {
     try {
       if (kDebugMode) print('📡 GET $baseUrl/habits/$habitId');
 
-      final response = await _client.get(
-        Uri.parse('$baseUrl/habits/$habitId'),
-        headers: _headers,
+      final response = await sendWithAutoRefresh(
+        request: () => _client.get(
+          Uri.parse('$baseUrl/habits/$habitId'),
+          headers: _headers,
+        ),
+        authRepository: _authRepository,
+        updateAccessToken: (token) => _accessToken = token,
       );
 
       if (kDebugMode) print('📡 Response status: ${response.statusCode}');
@@ -110,9 +129,13 @@ class HabitApiService {
       if (kDebugMode)
         print('📡 GET $baseUrl/habits/$habitId/reminder-settings');
 
-      final response = await _client.get(
-        Uri.parse('$baseUrl/habits/$habitId/reminder-settings'),
-        headers: _headers,
+      final response = await sendWithAutoRefresh(
+        request: () => _client.get(
+          Uri.parse('$baseUrl/habits/$habitId/reminder-settings'),
+          headers: _headers,
+        ),
+        authRepository: _authRepository,
+        updateAccessToken: (token) => _accessToken = token,
       );
 
       if (kDebugMode) print('📡 Response status: ${response.statusCode}');
@@ -473,6 +496,7 @@ class HabitApiService {
       if (kDebugMode) print('📡 Response status: ${response.statusCode}');
 
       if (response.statusCode == 200) {
+        print(response.body);
         return jsonDecode(response.body);
       } else if (response.statusCode == 401) {
         throw AuthException('Unauthorized. Please login again.');

@@ -4,7 +4,8 @@ import 'package:purewill/domain/model/habit_model.dart';
 import 'package:purewill/domain/model/reminder_setting_model.dart';
 import 'package:purewill/data/repository/reminder_setting_repository.dart';
 import 'package:purewill/data/services/local_notification_service.dart';
-import 'package:purewill/ui/habit-tracker/screen/reminder_setting_screen.dart';
+import 'package:purewill/ui/habit-tracker/screen/add_reminder_screen.dart';
+import 'package:purewill/ui/habit-tracker/screen/update_reminder_screen.dart';
 import 'package:purewill/ui/habit-tracker/habit_provider.dart';
 
 class ReminderListScreen extends ConsumerStatefulWidget {
@@ -17,7 +18,7 @@ class ReminderListScreen extends ConsumerStatefulWidget {
 
 class _ReminderListScreenState extends ConsumerState<ReminderListScreen> {
   late ReminderSettingRepository _repository;
-  ReminderSettingModel? _setting;
+  List<ReminderSettingModel> _settings = [];
   bool _isLoading = true;
 
   @override
@@ -31,19 +32,19 @@ class _ReminderListScreenState extends ConsumerState<ReminderListScreen> {
   Future<void> _load() async {
     setState(() => _isLoading = true);
     try {
-      final settings = await _repository.fetchReminderSettingsByHabit(
+      final settings = await _repository.fetchReminderSettingsListByHabit(
         widget.habit.id,
       );
-      _setting = settings;
+      _settings = settings;
     } catch (e) {
-      _setting = null;
+      _settings = [];
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
   }
 
-  Future<void> _delete() async {
-    if (_setting == null || _setting!.id.isEmpty) return;
+  Future<void> _delete(ReminderSettingModel setting) async {
+    if (setting.id.isEmpty) return;
 
     final confirm = await showDialog<bool>(
       context: context,
@@ -66,7 +67,7 @@ class _ReminderListScreenState extends ConsumerState<ReminderListScreen> {
     if (confirm != true) return;
 
     try {
-      final reminderId = int.tryParse(_setting!.id);
+      final reminderId = int.tryParse(setting.id);
       if (reminderId == null) {
         throw Exception('Invalid reminder id');
       }
@@ -101,7 +102,7 @@ class _ReminderListScreenState extends ConsumerState<ReminderListScreen> {
           await Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (_) => ReminderSettingScreen(habit: widget.habit),
+              builder: (_) => AddReminderScreen(habit: widget.habit),
             ),
           );
           await _load();
@@ -112,7 +113,7 @@ class _ReminderListScreenState extends ConsumerState<ReminderListScreen> {
           ? const Center(child: CircularProgressIndicator())
           : Padding(
               padding: const EdgeInsets.all(16),
-              child: _setting == null || _setting!.isEmpty
+              child: _settings.isEmpty
                   ? Column(
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
@@ -124,7 +125,7 @@ class _ReminderListScreenState extends ConsumerState<ReminderListScreen> {
                               context,
                               MaterialPageRoute(
                                 builder: (_) =>
-                                    ReminderSettingScreen(habit: widget.habit),
+                                    AddReminderScreen(habit: widget.habit),
                               ),
                             );
                             await _load();
@@ -133,7 +134,14 @@ class _ReminderListScreenState extends ConsumerState<ReminderListScreen> {
                         ),
                       ],
                     )
-                  : _buildSettingCard(_setting!),
+                  : ListView.separated(
+                      itemCount: _settings.length,
+                      separatorBuilder: (_, __) => const SizedBox(height: 12),
+                      itemBuilder: (context, index) {
+                        final setting = _settings[index];
+                        return _buildSettingCard(setting);
+                      },
+                    ),
             ),
     );
   }
@@ -163,7 +171,7 @@ class _ReminderListScreenState extends ConsumerState<ReminderListScreen> {
                     if (reminderId == null) return;
                     await _repository.updateReminderSetting(
                       reminderSettingId: reminderId,
-                      updates: {'is_enabled': v},
+                      updates: {'isEnabled': v},
                     );
                     await _load();
                   },
@@ -182,7 +190,7 @@ class _ReminderListScreenState extends ConsumerState<ReminderListScreen> {
                     await Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (_) => ReminderSettingScreen(
+                        builder: (_) => UpdateReminderScreen(
                           habit: widget.habit,
                           reminderSetting: setting,
                         ),
@@ -195,7 +203,7 @@ class _ReminderListScreenState extends ConsumerState<ReminderListScreen> {
                 ),
                 const SizedBox(width: 12),
                 ElevatedButton.icon(
-                  onPressed: _delete,
+                  onPressed: () => _delete(setting),
                   icon: const Icon(Icons.delete),
                   label: const Text('Hapus'),
                   style: ElevatedButton.styleFrom(backgroundColor: Colors.red),

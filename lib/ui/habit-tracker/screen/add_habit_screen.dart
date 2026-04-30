@@ -1,6 +1,7 @@
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:purewill/domain/model/category_model.dart';
 import 'package:purewill/domain/model/target_unit_model.dart';
@@ -162,6 +163,11 @@ class _AddHabitScreenState extends ConsumerState<AddHabitScreen> {
     }
   }
 
+  String _buildMapTilerUrl() {
+    // final apiKey = dotenv.env['MAPTILER_API_KEY'] ?? 'NO_API_KEY';
+    return 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
+  }
+
   Future<void> _showLocationPicker() async {
     double? tempLat = _targetLat;
     double? tempLong = _targetLong;
@@ -170,10 +176,13 @@ class _AddHabitScreenState extends ConsumerState<AddHabitScreen> {
     ll.LatLng center = ll.LatLng(-6.200000, 106.816666);
     try {
       final pos = await Geolocator.getCurrentPosition();
+      print(pos.latitude);
+      print(pos.latitude);
       center = ll.LatLng(pos.latitude, pos.longitude);
       tempLat ??= center.latitude;
       tempLong ??= center.longitude;
-    } catch (_) {
+    } catch (e) {
+      print(e.toString());
       // ignore - use default
       tempLat ??= center.latitude;
       tempLong ??= center.longitude;
@@ -201,12 +210,11 @@ class _AddHabitScreenState extends ConsumerState<AddHabitScreen> {
                           });
                         },
                       ),
-                      // nonRotatedChildren: [],
                       children: [
                         TileLayer(
-                          urlTemplate:
-                              'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-                          subdomains: ['a', 'b', 'c'],
+                          urlTemplate: _buildMapTilerUrl(),
+                          userAgentPackageName: 'com.purewill.rahaditya',
+                          subdomains: const [],
                         ),
                         CircleLayer(
                           circles: [

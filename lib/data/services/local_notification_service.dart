@@ -18,82 +18,39 @@ class LocalNotificationService {
 
   Future<void> initialize({Function(String?)? onNotificationTap}) async {
     _notificationsPlugin = FlutterLocalNotificationsPlugin();
-// <<<<<<< HEAD
-
-//     tz.initializeTimeZones();
-
-//     const AndroidInitializationSettings androidSettings =
-//         AndroidInitializationSettings('@mipmap/ic_launcher');
-
-// =======
     _onNotificationTap = onNotificationTap;
 
-    // Initialize timezone
     tz.initializeTimeZones();
+    tz.setLocalLocation(tz.getLocation('Asia/Jakarta'));
 
-    // Android initialization settings
     const AndroidInitializationSettings androidSettings =
         AndroidInitializationSettings('@mipmap/ic_launcher');
 
-    // iOS initialization settings
-// >>>>>>> f2d2932ae1d617906d117abaeeb90fd7045aea0c
     const DarwinInitializationSettings iosSettings =
         DarwinInitializationSettings(
           requestAlertPermission: true,
           requestBadgePermission: true,
           requestSoundPermission: true,
         );
-
-// <<<<<<< HEAD
-//     const LinuxInitializationSettings linuxSettings =
-//         LinuxInitializationSettings(defaultActionName: 'Open notification');
-
-// =======
-    // Combined initialization settings
-// >>>>>>> f2d2932ae1d617906d117abaeeb90fd7045aea0c
     const InitializationSettings initializationSettings =
-        InitializationSettings(
-          android: androidSettings,
-          iOS: iosSettings,
-// <<<<<<< HEAD
-//           linux: linuxSettings,
-// =======
-// >>>>>>> f2d2932ae1d617906d117abaeeb90fd7045aea0c
-        );
+        InitializationSettings(android: androidSettings, iOS: iosSettings);
 
-    // Initialize notifications plugin
     await _notificationsPlugin.initialize(
       initializationSettings,
       onDidReceiveNotificationResponse: _onNotificationResponse,
     );
 
-// <<<<<<< HEAD
-//     await _requestPermissions();
-//   }
-
-//   Future<void> _requestPermissions() async {
-//     final iOSPlatform = _notificationsPlugin
-//         .resolvePlatformSpecificImplementation<
-//           IOSFlutterLocalNotificationsPlugin
-//         >();
-//     await iOSPlatform?.requestPermissions(
-//       alert: true,
-//       badge: true,
-//       sound: true,
-//     );
-//   }
-
-//   Future<void> scheduleDailyReminder({
-// =======
-    // Create notification channels
     await _createNotificationChannels();
 
-    // debugPrint('✅ Local Notification Service initialized successfully');
+    final androidPlugin = _notificationsPlugin
+        .resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin
+        >();
+
+    await androidPlugin?.requestNotificationsPermission();
   }
 
-  // Handle notification response
   static void _onNotificationResponse(NotificationResponse response) {
-    // debugPrint('🔔 Notification tapped: ${response.payload}');
     _instance._onNotificationTap?.call(response.payload);
   }
 
@@ -141,7 +98,7 @@ class LocalNotificationService {
 
   // SIMPLIFIED: Schedule habit reminder - FIXED VERSION
   Future<void> scheduleHabitReminder({
-// >>>>>>> f2d2932ae1d617906d117abaeeb90fd7045aea0c
+    // >>>>>>> f2d2932ae1d617906d117abaeeb90fd7045aea0c
     required int id,
     required String title,
     required String body,
@@ -174,35 +131,21 @@ class LocalNotificationService {
         0, // milliseconds
       );
 
-// <<<<<<< HEAD
-//       if (scheduledDate.isBefore(now)) {
-//         scheduledDate = scheduledDate.add(const Duration(days: 1));
-//       }
-
-//       const AndroidNotificationDetails androidDetails =
-//           AndroidNotificationDetails(
-//             'daily_habit_channel',
-//             'Daily Habit Reminders',
-//             channelDescription: 'Daily reminders for your habits',
-// =======
-      // debugPrint('   - Raw Scheduled: $scheduledTime');
-
-      // If time already passed today, schedule for tomorrow
       if (scheduledTime.isBefore(now)) {
         scheduledTime = scheduledTime.add(const Duration(days: 1));
         // debugPrint('   ⏰ Time passed today, scheduling for TOMORROW');
       } else {
         // debugPrint('   ⏰ Time is in the future, scheduling for TODAY');
       }
-
-      // debugPrint('   - Final Scheduled: $scheduledTime');
-      // debugPrint('   - Time Difference: ${scheduledTime.difference(now)}');
-
-      // Convert to timezone format
-      final tzScheduledTime = tz.TZDateTime.from(scheduledTime, tz.local);
-      // debugPrint('   - TZ Scheduled: $tzScheduledTime');
-
-      // Notification details
+      final jakarta = tz.getLocation('Asia/Jakarta');
+      final tzScheduledTime = tz.TZDateTime(
+        jakarta,
+        scheduledTime.year,
+        scheduledTime.month,
+        scheduledTime.day,
+        scheduledTime.hour,
+        scheduledTime.minute,
+      );
       const AndroidNotificationDetails androidDetails =
           AndroidNotificationDetails(
             _habitChannelId,
@@ -232,7 +175,7 @@ class LocalNotificationService {
           body,
           tzScheduledTime,
           notificationDetails,
-          androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+          androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
           matchDateTimeComponents: DateTimeComponents.time,
           payload: 'habit_$habitId',
         );
@@ -244,7 +187,7 @@ class LocalNotificationService {
           body,
           tzScheduledTime,
           notificationDetails,
-          androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+          androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
           payload: 'habit_$habitId',
         );
       }
@@ -253,11 +196,10 @@ class LocalNotificationService {
 
       // Immediate verification
       await _verifyScheduledNotification(id);
-      
     } catch (e) {
       // debugPrint('❌ CRITICAL ERROR scheduling reminder: $e');
       // debugPrint('Stack trace: $stackTrace');
-      
+
       // Try fallback: immediate notification
       // debugPrint('🔄 Trying fallback: immediate notification');
       try {
@@ -276,7 +218,7 @@ class LocalNotificationService {
   Future<void> showTestNotification(String habitName) async {
     try {
       // debugPrint('🎪 ========== TEST NOTIFICATION ==========');
-      
+
       const AndroidNotificationDetails androidDetails =
           AndroidNotificationDetails(
             _testChannelId,
@@ -292,14 +234,16 @@ class LocalNotificationService {
         sound: 'default',
       );
 
-// >>>>>>> f2d2932ae1d617906d117abaeeb90fd7045aea0c
+      // >>>>>>> f2d2932ae1d617906d117abaeeb90fd7045aea0c
       const NotificationDetails notificationDetails = NotificationDetails(
         android: androidDetails,
         iOS: iosDetails,
       );
 
-      final notificationId = DateTime.now().millisecondsSinceEpoch.remainder(100000);
-      
+      final notificationId = DateTime.now().millisecondsSinceEpoch.remainder(
+        100000,
+      );
+
       // debugPrint('   - Test ID: $notificationId');
       // debugPrint('   - Habit: $habitName');
       // debugPrint('   - Time: ${DateTime.now()}');
@@ -355,41 +299,41 @@ class LocalNotificationService {
     }
   }
 
-// <<<<<<< HEAD
-//   Future<void> showTestNotification(String habitName) async {
-//     const AndroidNotificationDetails androidDetails =
-//         AndroidNotificationDetails(
-//           'test_channel_id',
-//           'Test Notifications',
-//           channelDescription: 'Channel for test notifications',
-//           importance: Importance.high,
-//           priority: Priority.high,
-//           enableVibration: true,
-//         );
+  // <<<<<<< HEAD
+  //   Future<void> showTestNotification(String habitName) async {
+  //     const AndroidNotificationDetails androidDetails =
+  //         AndroidNotificationDetails(
+  //           'test_channel_id',
+  //           'Test Notifications',
+  //           channelDescription: 'Channel for test notifications',
+  //           importance: Importance.high,
+  //           priority: Priority.high,
+  //           enableVibration: true,
+  //         );
 
-//     const DarwinNotificationDetails iosDetails = DarwinNotificationDetails();
+  //     const DarwinNotificationDetails iosDetails = DarwinNotificationDetails();
 
-//     const LinuxNotificationDetails linuxDetails = LinuxNotificationDetails();
+  //     const LinuxNotificationDetails linuxDetails = LinuxNotificationDetails();
 
-//     const NotificationDetails notificationDetails = NotificationDetails(
-//       android: androidDetails,
-//       iOS: iosDetails,
-//       linux: linuxDetails,
-//     );
+  //     const NotificationDetails notificationDetails = NotificationDetails(
+  //       android: androidDetails,
+  //       iOS: iosDetails,
+  //       linux: linuxDetails,
+  //     );
 
-//     await _notificationsPlugin.show(
-//       DateTime.now().millisecondsSinceEpoch.remainder(100000),
-//       'Habit Reminder: $habitName',
-//       'Time to complete your habit!',
-//       notificationDetails,
-//     );
+  //     await _notificationsPlugin.show(
+  //       DateTime.now().millisecondsSinceEpoch.remainder(100000),
+  //       'Habit Reminder: $habitName',
+  //       'Time to complete your habit!',
+  //       notificationDetails,
+  //     );
 
-    // debugPrint('Test notification shown for $habitName');
-//   }
+  // debugPrint('Test notification shown for $habitName');
+  //   }
 
-// =======
+  // =======
   // Check pending notifications
-// >>>>>>> f2d2932ae1d617906d117abaeeb90fd7045aea0c
+  // >>>>>>> f2d2932ae1d617906d117abaeeb90fd7045aea0c
   Future<List<PendingNotificationRequest>> getPendingNotifications() async {
     try {
       final pending = await _notificationsPlugin.pendingNotificationRequests();
@@ -483,10 +427,10 @@ class LocalNotificationService {
   Future<void> _verifyScheduledNotification(int id) async {
     try {
       // debugPrint('🔍 VERIFYING SCHEDULED NOTIFICATION: $id');
-      
+
       final pending = await _notificationsPlugin.pendingNotificationRequests();
       // debugPrint('   - Total pending notifications: ${pending.length}');
-      
+
       bool found = false;
       for (final notification in pending) {
         // debugPrint('   - Pending: ID=${notification.id}, Title="${notification.title}", Time=${notification.body}');
@@ -499,12 +443,11 @@ class LocalNotificationService {
           break;
         }
       }
-      
+
       if (!found) {
         // debugPrint('   ❌ OUR NOTIFICATION NOT FOUND IN PENDING LIST!');
         // debugPrint('   This means the scheduling failed silently');
       }
-      
     } catch (e) {
       // debugPrint('❌ Error verifying scheduled notification: $e');
     }

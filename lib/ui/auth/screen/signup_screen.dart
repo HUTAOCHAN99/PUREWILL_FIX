@@ -1,5 +1,3 @@
-// lib/ui/auth/screen/signup_screen.dart
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:purewill/domain/model/auth_model.dart';
@@ -80,7 +78,6 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
   Future<void> _signUp() async {
     if (!_formKey.currentState!.validate()) return;
 
-    // Validasi password confirmation
     if (_passwordController.text.trim() !=
         _confirmPasswordController.text.trim()) {
       _showSnackBar("Password and confirmation do not match!", isError: true);

@@ -24,17 +24,25 @@ class ReminderSyncService {
   StreamSubscription? _reminderSubscription;
 
   Future<void> initialize() async {
-    _reminderApiService = ReminderApiService();
-    _habitApiService = HabitApiService();
-    _authRepository = AuthRepository(AuthService());
+    final authService = AuthService();
+    _authRepository = AuthRepository(authService);
+    _reminderApiService = ReminderApiService(authRepository: _authRepository);
+    _habitApiService = HabitApiService(authRepository: _authRepository);
 
     await _restoreAuthAndSyncTokens();
-    await rescheduleAllReminders();
+    // Schedule reschedule as backup (non-blocking) after delay
+    // This ensures all dependencies are ready and UI scheduling takes priority
+    Future.delayed(const Duration(milliseconds: 500), () {
+      rescheduleAllReminders();
+    }).ignore();
   }
 
   Future<void> _restoreAuthAndSyncTokens() async {
     try {
-      await _authRepository.restoreSession();
+      // Require biometric verification on cold startup before using
+      // the refresh endpoint so the app doesn't refresh automatically
+      // when reopened while locked.
+      await _authRepository.restoreSession(requireBiometric: true);
       final token = _authRepository.accessToken;
       if (token == null || token.isEmpty) {
         debugPrint('ℹ️ Reminder sync skipped: no stored auth token');
@@ -49,17 +57,17 @@ class ReminderSyncService {
     }
   }
 
-  // Reschedule all reminders from database
+  // Reschedule all reminders from database (backup mechanism only)
   Future<void> rescheduleAllReminders() async {
     try {
-      debugPrint('🔄 Rescheduling all reminders...');
+      debugPrint('🔄 [BACKUP] Rescheduling all reminders from database...');
 
       // Cancel all existing notifications first
       await _notificationService.cancelAllNotifications();
 
       final token = _authRepository.accessToken;
       if (token == null || token.isEmpty) {
-        debugPrint('ℹ️ No authenticated session; skipping reminder reschedule');
+        debugPrint('ℹ️ [BACKUP] No auth token; skipping reschedule');
         return;
       }
 
@@ -75,7 +83,7 @@ class ReminderSyncService {
         }
       }
 
-      var scheduledCount = 0;
+      int scheduledCount = 0;
       for (final habit in habits) {
         try {
           final reminders = await _reminderApiService.getHabitReminderSettings(
@@ -103,14 +111,16 @@ class ReminderSyncService {
           }
         } catch (e) {
           debugPrint(
-            '⚠️ Failed to reschedule reminders for habit ${habit.id}: $e',
+            '⚠️ [BACKUP] Failed to reschedule reminders for habit ${habit.id}: $e',
           );
         }
       }
 
-      debugPrint('✅ Rescheduled $scheduledCount reminder notification(s)');
+      debugPrint(
+        '✅ [BACKUP] Backup rescheduled $scheduledCount notification(s)',
+      );
     } catch (e) {
-      debugPrint('❌ Error rescheduling reminders: $e');
+      debugPrint('❌ [BACKUP] Error during backup reschedule: $e');
     }
   }
 

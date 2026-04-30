@@ -1,5 +1,3 @@
-// lib/ui/auth/view_model/auth_view_model.dart
-
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/legacy.dart';
 import 'package:purewill/data/repository/auth_repository.dart';
@@ -38,9 +36,11 @@ class AuthViewModel extends StateNotifier<AuthState> {
 
   AuthViewModel(this._repository) : super(AuthState());
 
-  Future<void> restoreSession() async {
+  Future<void> restoreSession({bool requireBiometric = false}) async {
     try {
-      final restoredUser = await _repository.restoreSession();
+      final restoredUser = await _repository.restoreSession(
+        requireBiometric: requireBiometric,
+      );
       if (restoredUser == null) {
         return;
       }

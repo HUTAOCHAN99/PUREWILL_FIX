@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:purewill/domain/model/category_model.dart';
+import 'package:purewill/utils/indonesia_timezone.dart';
 
 enum TodayLogStatus { netural, success, failed }
 
@@ -94,10 +95,7 @@ class HabitModel {
     }
 
     DateTime? _parseNullableDate(dynamic value) {
-      if (value is String) {
-        return DateTime.tryParse(value);
-      }
-      return null;
+      return parseUtcToIndonesia(value, fallback: null);
     }
 
     CategoryModel? _parseCategory(
@@ -116,7 +114,7 @@ class HabitModel {
         return CategoryModel(
           id: parsedId,
           name: 'Unknown',
-          createdAt: DateTime.now(),
+          createdAt: nowInIndonesia(),
         );
       }
       return null;
@@ -136,8 +134,23 @@ class HabitModel {
     }
 
     TodayLogStatus _extractTodayLogStatus(Map<String, dynamic> source) {
+      final now = nowInIndonesia();
+
       final habitLogsRaw = source['habitLogs'];
       if (habitLogsRaw is List && habitLogsRaw.isNotEmpty) {
+        for (final entry in habitLogsRaw) {
+          if (entry is Map) {
+            final dateStr =
+                entry['logDate'] ??
+                entry['log_date'] ??
+                entry['createdAt'] ??
+                entry['created_at'];
+            final parsed = parseUtcToIndonesia(dateStr, fallback: now);
+            if (isSameIndonesiaDate(parsed, now)) {
+              return _parseTodayLogStatus(entry['status']);
+            }
+          }
+        }
         final first = habitLogsRaw.first;
         if (first is Map) {
           return _parseTodayLogStatus(first['status']);
@@ -146,6 +159,19 @@ class HabitModel {
 
       final logsRaw = source['logs'];
       if (logsRaw is List && logsRaw.isNotEmpty) {
+        for (final entry in logsRaw) {
+          if (entry is Map) {
+            final dateStr =
+                entry['logDate'] ??
+                entry['log_date'] ??
+                entry['createdAt'] ??
+                entry['created_at'];
+            final parsed = parseUtcToIndonesia(dateStr, fallback: now);
+            if (isSameIndonesiaDate(parsed, now)) {
+              return _parseTodayLogStatus(entry['status']);
+            }
+          }
+        }
         final first = logsRaw.first;
         if (first is Map) {
           return _parseTodayLogStatus(first['status']);
@@ -189,7 +215,7 @@ class HabitModel {
               .toLowerCase(),
       startDate:
           _parseNullableDate(json['startDate'] ?? json['start_date']) ??
-          DateTime.now(),
+          nowInIndonesia(),
       isActive: (json['isActive'] ?? json['is_active']) == true,
       category: _parseCategory(
         json['category'],
@@ -268,9 +294,7 @@ class HabitModel {
     if (unitId != null) {
       json['unitId'] = unitId!;
     }
-    if (isLocationLocked != null) {
-      json['isLocationLocked'] = isLocationLocked;
-    }
+    json['isLocationLocked'] = isLocationLocked;
     if (locationName != null) {
       json['locationName'] = locationName!;
     }

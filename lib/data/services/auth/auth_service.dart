@@ -158,7 +158,7 @@ class AuthService {
 
   Future<void> logout() => deleteSession();
 
-  Future<Map<String, dynamic>> checkSession() async {
+  Future<Map<String, dynamic>> checkSession({bool skipRefresh = false}) async {
     final response = await _client.get(
       Uri.parse('$_baseUrl/auth/session'),
       headers: {
@@ -172,6 +172,15 @@ class AuthService {
     }
 
     if (response.statusCode == 401) {
+      if (!skipRefresh && _refreshTokenCookie != null) {
+        if (kDebugMode) {
+          print('🔄 Access token expired. Refreshing session...');
+        }
+
+        await refreshSession();
+        return checkSession(skipRefresh: true);
+      }
+
       final error = _decodeBody(response);
       throw AuthException(error['message']?.toString() ?? 'Unauthorized');
     }

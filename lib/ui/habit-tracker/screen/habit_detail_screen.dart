@@ -13,6 +13,7 @@ import 'package:purewill/ui/habit-tracker/widget/habit_detail/habit_detail_expla
 import 'package:purewill/ui/habit-tracker/widget/habit_detail/progress_widget.dart';
 import 'package:purewill/ui/habit-tracker/widget/habit_detail/weekly_streak_widget.dart';
 import 'package:purewill/utils/habit_icon_helper.dart';
+import 'package:purewill/utils/indonesia_timezone.dart';
 
 class HabitDetailScreen extends ConsumerStatefulWidget {
   final HabitModel habit;
@@ -28,6 +29,8 @@ class HabitDetailScreen extends ConsumerStatefulWidget {
 }
 
 class _HabitDetailScreenState extends ConsumerState<HabitDetailScreen> {
+  bool _shouldRefreshParent = false;
+
   @override
   void initState() {
     super.initState();
@@ -52,80 +55,90 @@ class _HabitDetailScreenState extends ConsumerState<HabitDetailScreen> {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
-    return Scaffold(
-      backgroundColor: Colors.white,
-      body: CustomScrollView(
-        slivers: [
-          SliverAppBar(
-            backgroundColor: const Color.fromRGBO(184, 230, 230, 1),
-            elevation: 0,
-            surfaceTintColor: Colors.transparent,
-            pinned: true,
-            expandedHeight: 140,
-            flexibleSpace: FlexibleSpaceBar(
-              background: _buildHeaderBackground(
-                habit.name,
-                iconData,
-                iconColor,
-                category,
+    return WillPopScope(
+      onWillPop: _handleWillPop,
+      child: Scaffold(
+        backgroundColor: Colors.white,
+        body: CustomScrollView(
+          slivers: [
+            SliverAppBar(
+              backgroundColor: const Color.fromRGBO(184, 230, 230, 1),
+              elevation: 0,
+              surfaceTintColor: Colors.transparent,
+              pinned: true,
+              expandedHeight: 140,
+              flexibleSpace: FlexibleSpaceBar(
+                background: _buildHeaderBackground(
+                  habit.name,
+                  iconData,
+                  iconColor,
+                  category,
+                ),
+                titlePadding: const EdgeInsets.only(
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                ),
+                collapseMode: CollapseMode.pin,
               ),
-              titlePadding: const EdgeInsets.only(left: 0, right: 0, bottom: 0),
-              collapseMode: CollapseMode.pin,
-            ),
-            leading: IconButton(
-              icon: const Icon(Icons.arrow_back, color: Colors.white),
-              onPressed: () => Navigator.pop(context),
-            ),
-            title: const Text(
-              "Habit detail",
-              style: TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
+              leading: IconButton(
+                icon: const Icon(Icons.arrow_back, color: Colors.white),
+                onPressed: () => Navigator.pop(context, _shouldRefreshParent),
               ),
-            ),
-            centerTitle: true,
-            actions: [
-              HabitActionsDropdown(
-                onActionSelected: _handleMenuAction,
-                habitName: habit.name,
-                habit: habit,
+              title: const Text(
+                "Habit detail",
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
-            ],
-          ),
+              centerTitle: true,
+              actions: [
+                HabitActionsDropdown(
+                  onActionSelected: _handleMenuAction,
+                  habitName: habit.name,
+                  habit: habit,
+                ),
+              ],
+            ),
 
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  HabitDetailExplanationWidget(
-                    habit: habit,
-                    habitColor: iconColor,
-                  ),
-                  const SizedBox(height: 24),
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    HabitDetailExplanationWidget(
+                      habit: habit,
+                      habitColor: iconColor,
+                    ),
+                    const SizedBox(height: 24),
 
-                  ProgressWidget(
-                    // isCompleted: _isCompleted,
-                    isCompleted: _isTodayCompleted(habitDetailState.habitLogs),
-                    habitColor: iconColor,
-                    habitName: habit.name,
-                    completedDays: habitDetailState.completedDays,
-                    totalDays: habitDetailState.possibleDays,
-                  ),
-                  const SizedBox(height: 24),
+                    ProgressWidget(
+                      // isCompleted: _isCompleted,
+                      isCompleted: _isTodayCompleted(
+                        habitDetailState.habitLogs,
+                      ),
+                      habitColor: iconColor,
+                      habitName: habit.name,
+                      completedDays: habitDetailState.completedDays,
+                      totalDays: habitDetailState.possibleDays,
+                    ),
+                    const SizedBox(height: 24),
 
-                  WeeklyStreakWidget(streak: habitDetailState.habitLogStreak),
-                  const SizedBox(height: 24),
-                  CalendarTrackerWidget(
-                    habitLogForThisMonth: habitDetailState.habitLogForThisMonth,
-                  ),
-                  const SizedBox(height: 16),
-                ],
+                    WeeklyStreakWidget(streak: habitDetailState.habitLogStreak),
+                    const SizedBox(height: 24),
+                    CalendarTrackerWidget(
+                      habitLogForThisMonth:
+                          habitDetailState.habitLogForThisMonth,
+                    ),
+                    const SizedBox(height: 16),
+                  ],
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -159,6 +172,8 @@ class _HabitDetailScreenState extends ConsumerState<HabitDetailScreen> {
     if (!mounted || edited != true) {
       return;
     }
+
+    _shouldRefreshParent = true;
 
     await ref
         .read(habitDetailProvider.notifier)
@@ -207,17 +222,24 @@ class _HabitDetailScreenState extends ConsumerState<HabitDetailScreen> {
       }
       await viewModel.deleteHabit(habitId: habit.id);
 
+      _shouldRefreshParent = true;
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('"${habit.name}" berhasil dihapus')),
       );
       if (mounted) {
-        Navigator.pop(context);
+        Navigator.pop(context, true);
       }
     } catch (e) {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text('Gagal menghapus habit: $e')));
     }
+  }
+
+  Future<bool> _handleWillPop() async {
+    Navigator.pop(context, _shouldRefreshParent);
+    return false;
   }
 
   Widget _buildHeaderBackground(
@@ -306,16 +328,11 @@ class _HabitDetailScreenState extends ConsumerState<HabitDetailScreen> {
   }
 
   bool _isTodayCompleted(List<HabitLogModel> logs) {
-    final today = DateTime.now();
-    final normalizedToday = DateTime(today.year, today.month, today.day);
+    final today = dateOnlyInIndonesia(nowInIndonesia());
 
     final todayLogs = logs.where((log) {
-      final date = DateTime(
-        log.logDate.year,
-        log.logDate.month,
-        log.logDate.day,
-      );
-      return date == normalizedToday;
+      final date = dateOnlyInIndonesia(log.logDate);
+      return date == today;
     });
 
     return todayLogs.any((log) => log.status == LogStatus.success);

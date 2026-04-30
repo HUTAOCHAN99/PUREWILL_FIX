@@ -212,11 +212,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         onTap: _onNavBarTap,
       ),
 
-      floatingActionButton: FloatingActionButton(
-        onPressed: _addHabit,
-        child: const Icon(Icons.add),
-        heroTag: "add_habit_fab",
-      ),
+      // floatingActionButton: FloatingActionButton(
+      //   onPressed: _addHabit,
+      //   child: const Icon(Icons.add),
+      //   heroTag: "add_habit_fab",
+      // ),
     );
   }
 

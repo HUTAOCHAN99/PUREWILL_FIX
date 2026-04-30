@@ -3,14 +3,25 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
+import 'package:purewill/data/repository/auth_repository.dart';
 import 'package:purewill/domain/model/auth_model.dart';
+import 'package:purewill/data/services/auth/auth_refresh_client.dart';
 
 class MeApiService {
   late final String baseUrl;
   String? _accessToken;
-  final http.Client _client = http.Client();
+  late final http.Client _client;
 
-  MeApiService() {
+  MeApiService({http.Client? client, AuthRepository? authRepository}) {
+    _client = authRepository != null
+        ? AuthRefreshClient(
+            client ?? http.Client(),
+            authRepository,
+            onTokenRefreshed: (token) {
+              _accessToken = token;
+            },
+          )
+        : (client ?? http.Client());
     final host = dotenv.env['API_HOST'] ?? 'localhost';
     final port = dotenv.env['API_PORT'] ?? '4000';
     baseUrl = 'http://$host:$port/api';

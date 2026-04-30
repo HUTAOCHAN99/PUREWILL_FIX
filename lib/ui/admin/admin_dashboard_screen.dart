@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:purewill/data/services/doctor/doctor_activation_service.dart';
+import 'package:purewill/utils/indonesia_timezone.dart';
 
 class AdminDashboardScreen extends ConsumerStatefulWidget {
   const AdminDashboardScreen({super.key});
@@ -103,7 +104,11 @@ class AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(Icons.admin_panel_settings, size: 80, color: Colors.red),
+              const Icon(
+                Icons.admin_panel_settings,
+                size: 80,
+                color: Colors.red,
+              ),
               const SizedBox(height: 20),
               const Text(
                 'Akses Ditolak',
@@ -128,12 +133,8 @@ class AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
 
   Widget _buildLoadingScreen() {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Admin Dashboard'),
-      ),
-      body: const Center(
-        child: CircularProgressIndicator(),
-      ),
+      appBar: AppBar(title: const Text('Admin Dashboard')),
+      body: const Center(child: CircularProgressIndicator()),
     );
   }
 
@@ -223,10 +224,8 @@ class AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
               const SizedBox(height: 32),
 
               // Pending Requests Section
-              if (_pendingRequests.isNotEmpty)
-                _buildPendingRequestsSection(),
-              if (_pendingRequests.isEmpty)
-                _buildNoRequestsSection(),
+              if (_pendingRequests.isNotEmpty) _buildPendingRequestsSection(),
+              if (_pendingRequests.isEmpty) _buildNoRequestsSection(),
 
               const SizedBox(height: 32),
 
@@ -273,10 +272,7 @@ class AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
             const SizedBox(height: 8),
             Text(
               title,
-              style: TextStyle(
-                color: Colors.grey[700],
-                fontSize: 14,
-              ),
+              style: TextStyle(color: Colors.grey[700], fontSize: 14),
             ),
           ],
         ),
@@ -318,7 +314,10 @@ class AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
               //     builder: (context) => const DoctorActivationRequestsScreen(),
               //   ),
               // );
-              _showComingSoonSnackbar(context, 'Doctor Activation Requests Screen');
+              _showComingSoonSnackbar(
+                context,
+                'Doctor Activation Requests Screen',
+              );
             },
             child: const Text('Lihat Semua Requests'),
           ),
@@ -328,9 +327,9 @@ class AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
   }
 
   Widget _buildRequestCard(Map<String, dynamic> request) {
-    final createdAt = DateTime.parse(request['created_at']);
+    final createdAt = parseUtcToIndonesia(request['created_at']);
     final timeAgo = _timeAgo(createdAt);
-    
+
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       child: Padding(
@@ -351,7 +350,10 @@ class AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: _withOpacity(Colors.orange, 0.1),
                     borderRadius: BorderRadius.circular(8),
@@ -398,7 +400,10 @@ class AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
                 Expanded(
                   child: OutlinedButton(
                     onPressed: () {
-                      _showRequestDetails(context, request); // Tambahkan context
+                      _showRequestDetails(
+                        context,
+                        request,
+                      ); // Tambahkan context
                     },
                     child: const Text('Detail'),
                   ),
@@ -407,7 +412,10 @@ class AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
                 Expanded(
                   child: ElevatedButton(
                     onPressed: () {
-                      _approveRequest(context, request['id']); // Tambahkan context
+                      _approveRequest(
+                        context,
+                        request['id'],
+                      ); // Tambahkan context
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.green,
@@ -522,10 +530,7 @@ class AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [
-                _withOpacity(color, 0.1),
-                _withOpacity(color, 0.05),
-              ],
+              colors: [_withOpacity(color, 0.1), _withOpacity(color, 0.05)],
             ),
           ),
           child: Column(
@@ -536,10 +541,7 @@ class AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
               Text(
                 title,
                 textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: color,
-                  fontWeight: FontWeight.w600,
-                ),
+                style: TextStyle(color: color, fontWeight: FontWeight.w600),
               ),
             ],
           ),
@@ -549,9 +551,9 @@ class AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
   }
 
   String _timeAgo(DateTime date) {
-    final now = DateTime.now();
+    final now = nowInIndonesia();
     final difference = now.difference(date);
-    
+
     if (difference.inDays > 0) {
       return '${difference.inDays} hari yang lalu';
     } else if (difference.inHours > 0) {
@@ -586,13 +588,17 @@ class AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
               ListTile(
                 leading: const Icon(Icons.calendar_today),
                 title: const Text('Tanggal Request'),
-                subtitle: Text(DateTime.parse(request['created_at']).toString()),
+                subtitle: Text(
+                  parseUtcToIndonesia(request['created_at']).toString(),
+                ),
               ),
               if (request['expires_at'] != null)
                 ListTile(
                   leading: const Icon(Icons.timer),
                   title: const Text('Expires At'),
-                  subtitle: Text(DateTime.parse(request['expires_at']).toString()),
+                  subtitle: Text(
+                    parseUtcToIndonesia(request['expires_at']).toString(),
+                  ),
                 ),
             ],
           ),
@@ -655,10 +661,7 @@ class AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error: $e'),
-            backgroundColor: Colors.red,
-          ),
+          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
         );
       }
     }

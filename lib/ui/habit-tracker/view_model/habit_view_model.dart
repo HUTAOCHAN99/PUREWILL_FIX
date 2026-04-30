@@ -11,6 +11,7 @@ import 'package:purewill/domain/model/reminder_setting_model.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:purewill/domain/model/target_unit_model.dart';
+import 'package:purewill/utils/indonesia_timezone.dart';
 
 enum HabitStatus { loading, success, failure }
 
@@ -319,8 +320,8 @@ class HabitsViewModel extends StateNotifier<HabitsState> {
     state = state.copyWith(status: HabitStatus.loading, errorMessage: null);
     try {
       final allHabits = await _fetchUserHabits();
-      final now = DateTime.now();
-      final todayOnly = DateTime(now.year, now.month, now.day);
+      final now = nowInIndonesia();
+      final todayOnly = dateOnlyInIndonesia(now);
 
       final habits = allHabits.where((habit) {
         // Only include explicitly active habits
@@ -328,7 +329,7 @@ class HabitsViewModel extends StateNotifier<HabitsState> {
 
         // Normalize start date to date-only for comparison
         final s = habit.startDate;
-        final startOnly = DateTime(s.year, s.month, s.day);
+        final startOnly = dateOnlyInIndonesia(s);
 
         // Include habit when startDate is today or before
         return startOnly.compareTo(todayOnly) <= 0;
@@ -458,8 +459,8 @@ class HabitsViewModel extends StateNotifier<HabitsState> {
         return <int, LogStatus>{};
       }
 
-      final today = DateTime.now();
-      final todayOnly = DateTime(today.year, today.month, today.day);
+      final today = nowInIndonesia();
+      final todayOnly = dateOnlyInIndonesia(today);
       final completionStatus = <int, LogStatus>{};
 
       for (final habit in habits) {
@@ -484,7 +485,7 @@ class HabitsViewModel extends StateNotifier<HabitsState> {
 
           final todayLogs = logs.where((log) {
             final d = log.logDate;
-            final logOnly = DateTime(d.year, d.month, d.day);
+            final logOnly = dateOnlyInIndonesia(d);
             return logOnly == todayOnly;
           }).toList();
 

@@ -31,6 +31,6 @@ final authNotifierProvider = StateNotifierProvider<AuthViewModel, AuthState>((
 ) {
   final repository = ref.watch(authRepositoryProvider);
   final viewModel = AuthViewModel(repository);
-  Future.microtask(viewModel.restoreSession);
+  Future.microtask(() => viewModel.restoreSession(requireBiometric: true));
   return viewModel;
 });

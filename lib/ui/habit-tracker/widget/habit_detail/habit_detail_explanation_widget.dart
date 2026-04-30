@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:purewill/domain/model/habit_model.dart';
+import 'package:purewill/utils/indonesia_timezone.dart';
 
 class HabitDetailExplanationWidget extends StatelessWidget {
   final HabitModel habit;
@@ -179,7 +180,7 @@ class HabitDetailExplanationWidget extends StatelessWidget {
   }
 
   String _calculateDaysRunning(DateTime startDate) {
-    final now = DateTime.now();
+    final now = nowInIndonesia();
     final difference = now.difference(startDate).inDays + 1;
     return '$difference hari';
   }
